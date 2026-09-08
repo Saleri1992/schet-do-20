@@ -23,11 +23,29 @@
   <canvas class="fw-canvas" id="fireworks" aria-hidden="true"></canvas>
   <div class="toast-stack" id="toastStack"></div>
 
+  <div class="modal-overlay hidden" id="welcomeModal" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
+    <div class="modal-card welcome-modal">
+      <p class="modal-kicker" id="welcomeTitle">Приветствие</p>
+      <p class="welcome-banner-text">Всем привет от папы Ариадны! Учитесь хорошо — успехов в учёбе )</p>
+      <button type="button" class="btn primary" id="welcomeOkBtn">Понятно!</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="sixSevenModal" role="dialog" aria-modal="true" aria-labelledby="sixSevenTitle">
+    <div class="modal-card six-seven-modal">
+      <div class="six-seven-nums" aria-hidden="true">
+        <span class="six-n">6</span>
+        <span class="seven-n">7</span>
+      </div>
+      <p class="modal-kicker" id="sixSevenTitle">Пасхалка</p>
+      <p class="six-seven-line">Six Seven!</p>
+      <p class="six-seven-sub">Ты прошёл все уровни на 10/10. Легенда. 🔥</p>
+      <button type="button" class="btn primary" id="sixSevenOkBtn">Хаха, ок</button>
+    </div>
+  </div>
+
   <main class="app">
     <section class="screen" id="home" data-screen="home">
-      <aside class="welcome-banner" role="note">
-        <p class="welcome-banner-text">Всем привет от папы Ариадны! Учитесь хорошо — успехов в учёбе )</p>
-      </aside>
       <div class="mascot-stage" id="homeStage">
         <div class="mascot bounce-soft" id="homeMascot" aria-hidden="true"></div>
       </div>
@@ -123,7 +141,7 @@
       <div class="ach-card">
         <div class="card-head">
           <h2>Ачивки</h2>
-          <span class="count-pill" id="homeAchCount">0/23</span>
+          <span class="count-pill" id="homeAchCount">0/24</span>
         </div>
         <div class="bar overall-bar"><div id="homeAchFill"></div></div>
         <div class="ach-grid" id="achGrid"></div>
@@ -228,7 +246,7 @@
       <div class="overall-card">
         <div class="card-head">
           <strong>Прогресс</strong>
-          <span class="count-pill" id="galleryCount">0/23</span>
+          <span class="count-pill" id="galleryCount">0/24</span>
         </div>
         <div class="bar overall-bar"><div id="galleryFill"></div></div>
       </div>

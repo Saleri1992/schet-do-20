@@ -336,11 +336,14 @@ const HATS = {
 const TOYS = {
   bow: { id: "bow", name: "Бантик", price: 80, icon: "🎀", svg: true },
   glasses: { id: "glasses", name: "Умные очки", price: 100, icon: "👓", svg: true },
+  shades: { id: "shades", name: "Чёрные очки", price: 280, icon: "🕶️", svg: true },
   clover: { id: "clover", name: "Клевер", price: 60, icon: "🍀" },
   duck: { id: "duck", name: "Уточка", price: 90, icon: "🦆" },
   wand: { id: "wand", name: "Палочка", price: 160, icon: "🪄", custom: true },
   crystal: { id: "crystal", name: "Кристалл", price: 140, icon: "💎" },
   rainbow: { id: "rainbow", name: "Радуга", price: 200, icon: "🌈" },
+  mathbook: { id: "mathbook", name: "Книга по математике", price: 1200, icon: "📘", custom: true },
+  fiveplus: { id: "fiveplus", name: "5+", price: 1500, icon: "5️⃣", custom: true },
 };
 
 const FX = {
@@ -384,7 +387,7 @@ const FX = {
     name: "Золотой шторм",
     price: 360,
     icon: "👑",
-    desc: "Золотой ливень и мега-салют. Самое дорогое чудо!",
+    desc: "Золотой ливень и мега-салют",
   },
 };
 
@@ -415,6 +418,18 @@ function bestGradeOn(s, level, extra = () => true) {
   return marks.length ? Math.max(...marks) : 0;
 }
 
+function levelPerfected(s, level) {
+  return s.runs.some((r) => {
+    if ((r.level || 1) !== level || r.correct !== 10) return false;
+    if (level >= 4 && r.timedOut) return false;
+    return true;
+  });
+}
+
+function perfectedLevelsCount(s) {
+  return [1, 2, 3, 4, 5].filter((l) => levelPerfected(s, l)).length;
+}
+
 const ACHIEVEMENTS = [
   { id: "first_step", icon: "👣", name: "Первый шаг", desc: "Заверши любой прогон", check: (s) => s.runs.length >= 1, progress: (s) => ({ current: s.runs.length, target: 1 }) },
   { id: "coins_10", icon: "🪙", name: "Копилка", desc: "Собери 10 монет", check: (s) => s.coins >= 10, progress: (s) => ({ current: s.coins, target: 10 }) },
@@ -432,6 +447,7 @@ const ACHIEVEMENTS = [
   { id: "exam_pass", icon: "📗", name: "Сдал", desc: "Оценка 3+ на реальном харде", check: (s) => s.runs.some((r) => r.level === 5 && r.grade >= 3 && !r.failed), progress: (s) => ({ current: bestGradeOn(s, 5), target: 3 }) },
   { id: "exam_four", icon: "📘", name: "Хорошист", desc: "Оценка 4+ на реальном харде", check: (s) => s.runs.some((r) => r.level === 5 && r.grade >= 4), progress: (s) => ({ current: bestGradeOn(s, 5), target: 4 }) },
   { id: "exam_five", icon: "🏅", name: "Отличник школы", desc: "Оценка 5 на реальном харде вовремя", check: (s) => s.runs.some((r) => r.level === 5 && r.grade === 5 && !r.timedOut), progress: (s) => ({ current: bestGradeOn(s, 5, (r) => !r.timedOut), target: 5 }) },
+  { id: "six_seven", icon: "67", name: "6 7", desc: "Пасхалка: 10/10 на всех 5 уровнях — Six Seven!", gold: true, check: (s) => perfectedLevelsCount(s) >= 5, progress: (s) => ({ current: perfectedLevelsCount(s), target: 5 }) },
   { id: "five_runs", icon: "🎯", name: "Тренировка", desc: "5 прогонов", check: (s) => s.runs.length >= 5, progress: (s) => ({ current: s.runs.length, target: 5 }) },
   { id: "stars_25", icon: "✨", name: "Звёздный", desc: "25 звёзд", check: (s) => s.stars >= 25, progress: (s) => ({ current: s.stars, target: 25 }) },
   { id: "coop_party", icon: "🤝", name: "Класс в сборе", desc: "Кооп: 5 разных ников в общем топе", coop: true, check: () => coopStats.players >= 5, progress: () => ({ current: coopStats.players, target: 5 }) },
@@ -565,6 +581,10 @@ const els = {
   shopCoins: document.getElementById("shopCoins"),
   shopList: document.getElementById("shopList"),
   fxLayer: document.getElementById("fxLayer"),
+  welcomeModal: document.getElementById("welcomeModal"),
+  welcomeOkBtn: document.getElementById("welcomeOkBtn"),
+  sixSevenModal: document.getElementById("sixSevenModal"),
+  sixSevenOkBtn: document.getElementById("sixSevenOkBtn"),
 };
 
 let state = loadState();
@@ -963,7 +983,8 @@ const MASCOT_TIPS = [
   { id: "exam_care", when: (c) => c && c.level === 5 && c.mistakes > 0, text: "На контрольной каждая ошибка дорога. Давай ещё разок внимательнее." },
 ];
 
-let speechState = { runKey: "", tip: "", showHome: false };
+let speechState = { runKey: "", tip: "", showHome: false, until: 0 };
+let speechHideTimer = 0;
 
 function lastRunSpeechKey(ctx) {
   if (!ctx) return "none";
@@ -985,13 +1006,26 @@ function ensureSpeechTip() {
   speechState = {
     runKey: key,
     tip: pick.text,
-    showHome: Math.random() < 0.7,
+    showHome: Math.random() < 0.72,
+    until: Date.now() + 5200,
   };
   return speechState;
 }
 
 function speechBubbleHtml(text) {
   return `<div class="mascot-bubble" role="status"><span class="mascot-bubble-text">${escapeHtml(text)}</span></div>`;
+}
+
+function scheduleSpeechHide(until) {
+  clearTimeout(speechHideTimer);
+  const left = Math.max(0, until - Date.now());
+  speechHideTimer = setTimeout(() => {
+    document.querySelectorAll(".mascot-bubble").forEach((n) => n.classList.add("fade-out"));
+    setTimeout(() => {
+      document.querySelectorAll(".mascot-bubble").forEach((n) => n.remove());
+      document.querySelectorAll(".mascot-stage").forEach((s) => s.classList.remove("has-speech"));
+    }, 360);
+  }, left);
 }
 
 function mouthPath(mood, form) {
@@ -1050,8 +1084,19 @@ function mascotMarkup(size, mood = "neutral", look = null) {
   const bow = toys.includes("bow")
     ? `<ellipse cx="38" cy="34" rx="11" ry="7" fill="#ff5d7a"/><ellipse cx="52" cy="34" rx="11" ry="7" fill="#ff5d7a"/><circle cx="45" cy="36" r="4" fill="#fff"/>`
     : "";
-  const glasses = toys.includes("glasses")
+  const glasses = toys.includes("glasses") && !toys.includes("shades")
     ? `<g fill="none" stroke="#3D3A4A" stroke-width="3"><circle cx="62" cy="82" r="13"/><circle cx="98" cy="82" r="13"/><path d="M75 82 H85"/></g>`
+    : "";
+  const shades = toys.includes("shades")
+    ? `<g>
+        <path d="M48 78 H70" stroke="#111" stroke-width="3" stroke-linecap="round"/>
+        <path d="M90 78 H112" stroke="#111" stroke-width="3" stroke-linecap="round"/>
+        <path d="M70 80 H90" stroke="#111" stroke-width="3"/>
+        <ellipse cx="59" cy="84" rx="14" ry="10" fill="#111" opacity=".92"/>
+        <ellipse cx="101" cy="84" rx="14" ry="10" fill="#111" opacity=".92"/>
+        <ellipse cx="54" cy="81" rx="4" ry="2.5" fill="#fff" opacity=".18"/>
+        <ellipse cx="96" cy="81" rx="4" ry="2.5" fill="#fff" opacity=".18"/>
+      </g>`
     : "";
 
   let body = "";
@@ -1105,9 +1150,15 @@ function mascotMarkup(size, mood = "neutral", look = null) {
       <circle cx="65" cy="79" r="3" fill="#fff"/>
       <circle cx="101" cy="79" r="3" fill="#fff"/>
       ${glasses}
+      ${shades}
       <ellipse cx="80" cy="102" rx="10" ry="7" fill="#F07167"/>
       <path d="${mouth}" fill="none" stroke="#3D3A4A" stroke-width="4" stroke-linecap="round"/>
     `;
+  }
+
+  // очки/тёмные очки и для зверьков
+  if ((form === "cat" || form === "hedgehog") && (glasses || shades)) {
+    body += glasses + shades;
   }
 
   return `<svg viewBox="0 -12 160 172" width="${size}" height="${size}">
@@ -1150,6 +1201,10 @@ function toyNode(id) {
     `;
     return t;
   }
+  if (id === "mathbook" || id === "fiveplus") {
+    t.setAttribute("aria-hidden", "true");
+    return t;
+  }
   t.textContent = TOYS[id].icon;
   return t;
 }
@@ -1169,22 +1224,26 @@ function paintStage(stageId, mascotEl, size, mood, speechText = "") {
   if (moodKey === "sad") {
     stage.insertAdjacentHTML("beforeend", stormOverlayHtml());
   }
-  if (speechText) {
-    stage.insertAdjacentHTML("beforeend", speechBubbleHtml(speechText));
-  }
   (state.shop.toysOn || []).forEach((id) => {
     if (!TOYS[id] || TOYS[id].svg) return;
     stage.appendChild(toyNode(id));
   });
+  if (speechText) {
+    stage.insertAdjacentHTML("beforeend", speechBubbleHtml(speechText));
+  }
 }
 
 function paintMascots() {
   const mood = lastRunMood();
   const speech = ensureSpeechTip();
-  paintStage("homeStage", els.homeMascot, 140, mood, speech.showHome ? speech.tip : "");
+  const live = Date.now() < speech.until;
+  const homeTalk = live && speech.showHome ? speech.tip : "";
+  const resultTalk = live ? speech.tip : "";
+  paintStage("homeStage", els.homeMascot, 140, mood, homeTalk);
   paintStage("gameStage", els.gameMascot, 88, mood === "sad" ? "neutral" : mood, "");
-  paintStage("resultStage", els.resultMascot, 120, mood, speech.tip);
+  paintStage("resultStage", els.resultMascot, 120, mood, resultTalk);
   paintStage("shopStage", els.shopMascot, 120, mood === "sad" ? "neutral" : mood, "");
+  if (homeTalk || resultTalk) scheduleSpeechHide(speech.until);
 }
 
 function achProgress(a) {
@@ -1199,6 +1258,12 @@ function achProgress(a) {
     pct,
     unlocked,
   };
+}
+
+function achIconHtml(a, sizeClass = "") {
+  if (a.gold || a.icon === "67") return `<span class="ico-67 ${sizeClass}">6 7</span>`;
+  if (a.icon === "🪙") return '<span class="coin sm"></span>';
+  return a.icon;
 }
 
 function unlockedCount() {
@@ -1297,8 +1362,8 @@ function renderHome() {
   els.homeAchFill.style.width = `${Math.round((done / total) * 100)}%`;
   els.achGrid.innerHTML = ACHIEVEMENTS.map((a) => {
     const p = achProgress(a);
-    return `<div class="ach ${p.unlocked ? "unlocked" : "locked"}${a.coop ? " coop" : ""}" data-open="gallery" title="${a.desc}">
-      <span class="ico">${a.icon === "🪙" ? '<span class="coin sm"></span>' : a.icon}</span>
+    return `<div class="ach ${p.unlocked ? "unlocked" : "locked"}${a.coop ? " coop" : ""}${a.gold ? " gold-meme" : ""}" data-open="gallery" data-ach="${a.id}" title="${a.desc}">
+      <span class="ico">${achIconHtml(a)}</span>
       <span class="ttl">${a.coop ? "🤝 " : ""}${a.name}</span>
       <div class="mini-bar"><i style="width:${p.pct}%"></i></div>
     </div>`;
@@ -1324,10 +1389,10 @@ function renderGallery() {
   els.galleryList.innerHTML = ACHIEVEMENTS.map((a) => {
     const p = achProgress(a);
     const status = p.unlocked ? `<span class="done-tag">получено</span>` : `<span>${p.current} / ${p.target}</span>`;
-    return `<article class="gallery-item ${p.unlocked ? "unlocked" : "locked"}${a.coop ? " coop" : ""}">
-      <div class="g-ico">${a.icon === "🪙" ? '<span class="coin md"></span>' : a.icon}</div>
+    return `<article class="gallery-item ${p.unlocked ? "unlocked" : "locked"}${a.coop ? " coop" : ""}${a.gold ? " gold-meme" : ""}" data-ach="${a.id}">
+      <div class="g-ico">${achIconHtml(a)}</div>
       <div>
-        <div class="g-name">${a.name}${a.coop ? ' <span class="coop-tag">кооп</span>' : ""}</div>
+        <div class="g-name">${a.name}${a.coop ? ' <span class="coop-tag">кооп</span>' : ""}${a.gold ? ' <span class="coop-tag">пасхалка</span>' : ""}</div>
         <div class="g-desc">${a.desc}</div>
       </div>
       <div class="g-bar">
@@ -1616,6 +1681,9 @@ function finishRun({ timedOut = false } = {}) {
     });
   }
   showToasts(toasts);
+  if (fresh.some((a) => a.id === "six_seven")) {
+    setTimeout(() => showSixSevenEgg(), 700);
+  }
   showScreen("result");
   renderHome();
   submitOnlineScore({
@@ -2235,10 +2303,24 @@ function renderShop() {
     const on = state.shop.toysOn.includes(t.id);
     const action = owned ? (on ? "off-toy" : "equip-toy") : "buy-toy";
     const label = on ? "Снять" : owned ? "Надеть" : "Купить";
-    const ico = t.custom
-      ? `<span class="toy-shop-ico ${t.id}"><span class="wand-shaft"></span><span class="wand-star"></span></span>`
-      : t.icon;
-    return shopCard(ico, t.name, on ? "На персонаже" : "Безделушка", t.price, owned || state.coins >= t.price, action, t.id, label, on);
+    let ico = t.icon;
+    if (t.id === "wand") {
+      ico = `<span class="toy-shop-ico wand"><span class="wand-shaft"></span><span class="wand-star"></span></span>`;
+    } else if (t.id === "mathbook" || t.id === "fiveplus" || t.id === "shades") {
+      ico = `<span class="toy-shop-ico ${t.id}"></span>`;
+    }
+    const rarity = t.price >= 1200 ? " · самое дорогое" : t.price >= 250 ? " · редко" : "";
+    return shopCard(
+      ico,
+      t.name,
+      `${on ? "На персонаже" : "Безделушка"}${rarity}`,
+      t.price,
+      owned || state.coins >= t.price,
+      action,
+      t.id,
+      label,
+      on
+    );
   }).join("");
 }
 
@@ -2287,12 +2369,12 @@ function shopAction(act, id) {
     if (!item || state.coins < item.price) return notEnough();
     state.coins -= item.price;
     if (!state.shop.toys.includes(id)) state.shop.toys.push(id);
-    if (state.shop.toysOn.length < 3 && !state.shop.toysOn.includes(id)) state.shop.toysOn.push(id);
+    if (state.shop.toysOn.length < 4 && !state.shop.toysOn.includes(id)) state.shop.toysOn.push(id);
     pingBuy(item.icon, item.name);
   } else if (act === "equip-toy") {
     if (state.shop.toysOn.includes(id)) return;
-    if (state.shop.toysOn.length >= 3) {
-      showToasts([{ plain: true, icon: "🎒", name: "Много штучек", desc: "Сними одну — можно надеть до 3 штук." }]);
+    if (state.shop.toysOn.length >= 4) {
+      showToasts([{ plain: true, icon: "🎒", name: "Много штучек", desc: "Сними одну, чтобы надеть новую (макс. 4)." }]);
       return;
     }
     state.shop.toysOn.push(id);
@@ -2488,3 +2570,70 @@ setInterval(() => {
   if (pendingScoreCount() > 0) syncScoreQueue({ quiet: true });
 }, 45000);
 setInterval(() => refreshCoopStats(), 120000);
+
+const WELCOME_KEY = "schet-do-20-welcome-v1";
+
+function showWelcomePopup() {
+  if (!els.welcomeModal) return;
+  try {
+    if (sessionStorage.getItem(WELCOME_KEY) === "1") return;
+  } catch {
+    /* ignore */
+  }
+  els.welcomeModal.classList.remove("hidden");
+}
+
+function hideWelcomePopup() {
+  if (!els.welcomeModal) return;
+  els.welcomeModal.classList.add("hidden");
+  try {
+    sessionStorage.setItem(WELCOME_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+}
+
+function showSixSevenEgg() {
+  if (!els.sixSevenModal) return;
+  els.sixSevenModal.classList.remove("hidden");
+  spawnConfetti(true);
+  spawnVictoryFx(true, true);
+}
+
+function hideSixSevenEgg() {
+  if (!els.sixSevenModal) return;
+  els.sixSevenModal.classList.add("hidden");
+}
+
+if (els.welcomeOkBtn) els.welcomeOkBtn.addEventListener("click", hideWelcomePopup);
+if (els.welcomeModal) {
+  els.welcomeModal.addEventListener("click", (e) => {
+    if (e.target === els.welcomeModal) hideWelcomePopup();
+  });
+}
+if (els.sixSevenOkBtn) els.sixSevenOkBtn.addEventListener("click", hideSixSevenEgg);
+if (els.sixSevenModal) {
+  els.sixSevenModal.addEventListener("click", (e) => {
+    if (e.target === els.sixSevenModal) hideSixSevenEgg();
+  });
+}
+
+document.addEventListener("click", (e) => {
+  const ach = e.target.closest("[data-ach='six_seven']");
+  if (!ach) return;
+  if (state.achievements.includes("six_seven") || perfectedLevelsCount(state) >= 5) {
+    showSixSevenEgg();
+  }
+});
+
+showWelcomePopup();
+
+// если уже открыта пасхалка раньше — подтянуть ачивку
+if (perfectedLevelsCount(state) >= 5) {
+  const eggFresh = unlockAchievements().filter((a) => a.id === "six_seven");
+  if (eggFresh.length) {
+    saveState();
+    renderHome();
+    setTimeout(() => showSixSevenEgg(), 500);
+  }
+}
