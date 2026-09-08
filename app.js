@@ -56,7 +56,7 @@ const LEVELS = {
     limit: HARD_LIMIT_MS,
     school: true,
     balloons: ["📕", "✏️", "📕"],
-    subtitle: "Минута как на харде, но со школьной оценкой: 1 ошибка — 4, 2 — 3, 3+ — 2 и провал.",
+    subtitle: "Минута + школьная оценка. Буст «Читер» прощает ошибки (до 4).",
   },
 };
 
@@ -149,9 +149,12 @@ const FX = {
 };
 
 const BOOSTS = [
-  { id: "slow", icon: "🐌", name: "Улитка-время", desc: "На харде и реальном харде таймер ползёт в 2 раза медленнее. Один забег.", price: 8 },
-  { id: "extra", icon: "⏳", name: "+15 секунд", desc: "Добавляет 15 секунд к харду / реальному харду. Один забег.", price: 10 },
+  { id: "slow", icon: "🐌", name: "Улитка-время", desc: "На харде и реальном харде таймер ползёт в 2 раза медленнее. Один забег.", price: 80 },
+  { id: "extra", icon: "⏳", name: "+15 секунд", desc: "Добавляет 15 секунд к харду / реальному харду. Один забег.", price: 100 },
+  { id: "cheat", icon: "🕵️", name: "Читер", desc: "Только реальный хард: 1 ошибка не считается для оценки. Можно до 4 за забег. Один заряд = одна ошибка.", price: 120 },
 ];
+
+const CHEAT_MAX_PER_RUN = 4;
 
 function bestOn(s, level, extra = () => true) {
   const scores = s.runs.filter((r) => (r.level || 1) === level && extra(r)).map((r) => r.correct);
@@ -324,6 +327,7 @@ function emptyShop() {
     fx: "classic",
     slow: 0,
     extra: 0,
+    cheat: 0,
   };
 }
 
@@ -347,6 +351,7 @@ function normalizeShop(raw) {
     fx: fxOwned.includes(fx) ? fx : "classic",
     slow: Number(raw.slow) || 0,
     extra: Number(raw.extra) || 0,
+    cheat: Number(raw.cheat) || 0,
   };
 }
 
@@ -415,12 +420,39 @@ function maxOpenLevel() {
   return max;
 }
 
-function schoolGrade(correct) {
-  const mistakes = TOTAL - correct;
-  if (mistakes <= 0) return { mark: 5, failed: false, title: "Отлично!", text: "Оценка 5 — ни одной ошибки!" };
-  if (mistakes === 1) return { mark: 4, failed: false, title: "Хорошо!", text: "Оценка 4 — одна ошибка." };
-  if (mistakes === 2) return { mark: 3, failed: false, title: "Удовлетворительно", text: "Оценка 3 — две ошибки." };
-  return { mark: 2, failed: true, title: "Провалено", text: `Оценка 2 — ошибок: ${mistakes}. Надо пересдать!` };
+function schoolGrade(correct, forgive = 0) {
+  const rawMistakes = TOTAL - correct;
+  const forgiven = Math.min(Math.max(0, forgive), CHEAT_MAX_PER_RUN);
+  const mistakes = Math.max(0, rawMistakes - forgiven);
+  const note = forgiven
+    ? ` (ошибок ${rawMistakes}, прощено бустом: ${Math.min(forgiven, rawMistakes)})`
+    : "";
+  if (mistakes <= 0) {
+    return {
+      mark: 5,
+      failed: false,
+      title: "Отлично!",
+      text: forgiven && rawMistakes > 0
+        ? `Оценка 5 — читер спас от ${Math.min(forgiven, rawMistakes)} ошиб${Math.min(forgiven, rawMistakes) === 1 ? "ки" : "ок"}!`
+        : "Оценка 5 — ни одной ошибки!",
+      forgiven,
+      rawMistakes,
+    };
+  }
+  if (mistakes === 1) {
+    return { mark: 4, failed: false, title: "Хорошо!", text: `Оценка 4 — одна ошибка.${note}`, forgiven, rawMistakes };
+  }
+  if (mistakes === 2) {
+    return { mark: 3, failed: false, title: "Удовлетворительно", text: `Оценка 3 — две ошибки.${note}`, forgiven, rawMistakes };
+  }
+  return {
+    mark: 2,
+    failed: true,
+    title: "Провалено",
+    text: `Оценка 2 — ошибок для оценки: ${mistakes}.${note} Надо пересдать!`,
+    forgiven,
+    rawMistakes,
+  };
 }
 
 function xpInfo() {
@@ -714,7 +746,7 @@ function historyItemHtml(r, detailed) {
   const lvl = LEVELS[r.level] || LEVELS[1];
   const extra = r.timedOut ? " · время вышло" : "";
   const gradeBit = r.grade != null
-    ? ` · <span class="hist-grade g${r.grade}${r.failed ? " fail" : ""}">${r.failed ? "2 провал" : r.grade}</span>`
+    ? ` · <span class="hist-grade g${r.grade}${r.failed ? " fail" : ""}">${r.failed ? "2 провал" : r.grade}${r.forgive ? ` · читер×${r.forgive}` : ""}</span>`
     : "";
   const coins = detailed && r.coins != null
     ? ` · <span class="coin sm"></span> +${r.coins}`
@@ -868,6 +900,7 @@ function startGame() {
     timeScale: 1,
     slowOn: false,
     extraOn: false,
+    forgive: 0,
   };
   document.body.classList.remove("slow-mo");
   els.gameLevel.textContent = cfg.name;
@@ -1014,7 +1047,7 @@ function finishRun({ timedOut = false } = {}) {
   const ms = Date.now() - run.startedAt;
   const correct = run.answers.filter((a) => a.ok).length;
   const cfg = LEVELS[run.level] || LEVELS[1];
-  const grade = cfg.school ? schoolGrade(correct) : null;
+  const grade = cfg.school ? schoolGrade(correct, run.forgive || 0) : null;
   const openBefore = maxOpenLevel();
   const rankBefore = rankIndexOf(state.stars);
   const gainedStars = grade?.failed ? Math.max(0, Math.floor(correct / 2)) : correct;
@@ -1035,6 +1068,7 @@ function finishRun({ timedOut = false } = {}) {
     coins: gainedCoins,
     grade: grade ? grade.mark : undefined,
     failed: grade ? grade.failed : undefined,
+    forgive: grade && grade.forgiven ? grade.forgiven : undefined,
     answers: run.answers.map((a) => ({
       a: a.a,
       op: a.op,
@@ -1584,10 +1618,18 @@ function renderBoostBar() {
   }
   const slowN = state.shop.slow;
   const extraN = state.shop.extra;
-  els.boostBar.innerHTML = `
+  const cheatN = state.shop.cheat;
+  const cheatUsed = run.forgive || 0;
+  const cheatLeft = CHEAT_MAX_PER_RUN - cheatUsed;
+  const canCheat = run.level === 5 && cheatN > 0 && cheatLeft > 0;
+  let html = `
     <button type="button" class="boost-btn ${run.slowOn ? "on" : ""}" data-boost="slow" ${run.slowOn || slowN < 1 ? "disabled" : ""}>🐌 Замедлить${slowN ? ` ×${slowN}` : ""}</button>
     <button type="button" class="boost-btn ${run.extraOn ? "on" : ""}" data-boost="extra" ${run.extraOn || extraN < 1 ? "disabled" : ""}>⏳ +15 сек${extraN ? ` ×${extraN}` : ""}</button>
   `;
+  if (run.level === 5) {
+    html += `<button type="button" class="boost-btn ${cheatUsed ? "on" : ""}" data-boost="cheat" ${canCheat ? "" : "disabled"}>🕵️ Читер${cheatUsed ? ` +${cheatUsed}` : ""}${cheatN ? ` ×${cheatN}` : ""}</button>`;
+  }
+  els.boostBar.innerHTML = html;
 }
 
 function useBoost(id) {
@@ -1607,6 +1649,17 @@ function useBoost(id) {
     state.shop.extra -= 1;
     saveState();
     showToasts([{ plain: true, icon: "⏳", name: "+15 секунд", desc: "Ещё чуть-чуть времени!" }]);
+  }
+  if (id === "cheat" && run.level === 5 && state.shop.cheat > 0 && (run.forgive || 0) < CHEAT_MAX_PER_RUN) {
+    run.forgive = (run.forgive || 0) + 1;
+    state.shop.cheat -= 1;
+    saveState();
+    showToasts([{
+      plain: true,
+      icon: "🕵️",
+      name: `Читер +${run.forgive}`,
+      desc: `Ещё ${run.forgive} ошибк${run.forgive === 1 ? "а не считается" : "и не считаются"} для оценки.`,
+    }]);
   }
   renderBoostBar();
   renderHome();
