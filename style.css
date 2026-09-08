@@ -215,7 +215,8 @@ h1 {
   top: 2px;
   z-index: 4;
   max-width: min(240px, 78vw);
-  transform: translateX(-42%);
+  --bx: -42%;
+  transform: translateX(var(--bx));
   padding: 10px 12px;
   border-radius: 16px 16px 16px 6px;
   background: #fffdf8;
@@ -247,7 +248,7 @@ h1 {
 .mascot-stage.has-storm .mascot-bubble {
   top: auto;
   bottom: 4px;
-  transform: translateX(-8%);
+  --bx: -8%;
   border-radius: 16px 16px 6px 16px;
 }
 .mascot-stage.has-storm .mascot-bubble::after {
@@ -2166,8 +2167,8 @@ body.fw-perfect .fw-canvas {
 }
 
 @keyframes bubble-pop {
-  0% { opacity: 0; transform: translateX(-42%) scale(.72); }
-  100% { opacity: 1; transform: translateX(-42%) scale(1); }
+  0% { opacity: 0; transform: translateX(var(--bx, -42%)) scale(.72); }
+  100% { opacity: 1; transform: translateX(var(--bx, -42%)) scale(1); }
 }
 
 @keyframes sad-sway {
