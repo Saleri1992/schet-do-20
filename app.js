@@ -901,6 +901,44 @@ function applyTheme(level) {
   paintMascots();
 }
 
+function lastRunMood() {
+  const last = state.runs && state.runs[0];
+  if (!last) return "happy";
+  const mistakes = Math.max(0, (last.total || TOTAL) - (last.correct || 0));
+  if (mistakes > 5) return "sad";
+  if (mistakes >= 3) return "neutral";
+  return "happy";
+}
+
+function mouthPath(mood, form) {
+  if (form === "hedgehog") {
+    if (mood === "happy") return "M64 118 Q80 134 96 118";
+    if (mood === "sad") return "M64 128 Q80 112 96 128";
+    return "M66 122 H94";
+  }
+  if (mood === "happy") return "M62 116 Q80 136 98 116";
+  if (mood === "sad") return "M62 128 Q80 110 98 128";
+  return "M64 120 H96";
+}
+
+function eyeExtras(mood) {
+  if (mood === "sad") {
+    return `
+      <path d="M52 70 Q58 66 64 70" fill="none" stroke="#3D3A4A" stroke-width="3" stroke-linecap="round"/>
+      <path d="M96 70 Q102 66 108 70" fill="none" stroke="#3D3A4A" stroke-width="3" stroke-linecap="round"/>
+      <ellipse cx="70" cy="96" rx="3" ry="5" fill="#7EB6FF" opacity=".85"/>
+      <ellipse cx="108" cy="96" rx="3" ry="5" fill="#7EB6FF" opacity=".7"/>
+    `;
+  }
+  if (mood === "happy") {
+    return `
+      <path d="M52 72 Q58 68 64 72" fill="none" stroke="#3D3A4A" stroke-width="2.5" stroke-linecap="round" opacity=".35"/>
+      <path d="M96 72 Q102 68 108 72" fill="none" stroke="#3D3A4A" stroke-width="2.5" stroke-linecap="round" opacity=".35"/>
+    `;
+  }
+  return "";
+}
+
 function hatSVG(id) {
   if (id === "party") {
     return `<polygon points="80,-6 56,36 104,36" fill="#ff5d7a"/><circle cx="80" cy="-6" r="7" fill="#ffd166"/>`;
@@ -917,12 +955,14 @@ function hatSVG(id) {
   return "";
 }
 
-function mascotMarkup(size, smile, look = null) {
+function mascotMarkup(size, mood = "neutral", look = null) {
   const shop = look || state.shop || emptyShop();
   const skin = SKINS[shop.skin] || SKINS.honey;
   const form = skin.form || "blob";
   const toys = look ? [] : (shop.toysOn || []);
-  const mouth = smile ? "M62 116 Q80 136 98 116" : "M68 116 Q80 128 92 116";
+  const moodKey = mood === true ? "happy" : mood === false ? "neutral" : mood;
+  const mouth = mouthPath(moodKey, form);
+  const brows = eyeExtras(moodKey);
   const bow = toys.includes("bow")
     ? `<ellipse cx="38" cy="34" rx="11" ry="7" fill="#ff5d7a"/><ellipse cx="52" cy="34" rx="11" ry="7" fill="#ff5d7a"/><circle cx="45" cy="36" r="4" fill="#fff"/>`
     : "";
@@ -938,6 +978,7 @@ function mascotMarkup(size, smile, look = null) {
       <path d="M40 30 L48 18 L52 34 Z" fill="${skin.inner}"/>
       <path d="M120 30 L112 18 L108 34 Z" fill="${skin.inner}"/>
       <circle cx="80" cy="86" r="52" fill="${skin.body}"/>
+      ${brows}
       <ellipse cx="62" cy="82" rx="7" ry="11" fill="#3D3A4A"/>
       <ellipse cx="98" cy="82" rx="7" ry="11" fill="#3D3A4A"/>
       <circle cx="64" cy="78" r="2.5" fill="#fff"/>
@@ -958,12 +999,13 @@ function mascotMarkup(size, smile, look = null) {
       <circle cx="112" cy="70" r="14" fill="${skin.body}"/>
       <circle cx="48" cy="70" r="6" fill="${skin.inner}"/>
       <circle cx="112" cy="70" r="6" fill="${skin.inner}"/>
+      ${brows}
       <ellipse cx="62" cy="88" rx="7" ry="9" fill="#3D3A4A"/>
       <ellipse cx="98" cy="88" rx="7" ry="9" fill="#3D3A4A"/>
       <circle cx="64" cy="85" r="2.5" fill="#fff"/>
       <circle cx="100" cy="85" r="2.5" fill="#fff"/>
       <ellipse cx="80" cy="104" rx="9" ry="6" fill="#F07167"/>
-      <path d="${smile ? "M64 118 Q80 132 96 118" : "M68 118 Q80 126 92 118"}" fill="none" stroke="#3D3A4A" stroke-width="4" stroke-linecap="round"/>
+      <path d="${mouth}" fill="none" stroke="#3D3A4A" stroke-width="4" stroke-linecap="round"/>
     `;
   } else {
     body = `
@@ -973,6 +1015,7 @@ function mascotMarkup(size, smile, look = null) {
       <circle cx="48" cy="42" r="8" fill="${skin.inner}"/>
       <circle cx="112" cy="42" r="8" fill="${skin.inner}"/>
       ${bow}
+      ${brows}
       <ellipse cx="62" cy="82" rx="8" ry="10" fill="#3D3A4A"/>
       <ellipse cx="98" cy="82" rx="8" ry="10" fill="#3D3A4A"/>
       <circle cx="65" cy="79" r="3" fill="#fff"/>
@@ -992,7 +1035,21 @@ function mascotMarkup(size, smile, look = null) {
 
 function boardAvatarHtml(nick, skinId, hatId) {
   const look = { skin: SKINS[skinId] ? skinId : "honey", hat: HATS[hatId] ? hatId : "none", toysOn: [] };
-  return `<span class="board-avatar" title="${escapeHtml(nick)}">${mascotMarkup(40, false, look)}</span>`;
+  return `<span class="board-avatar" title="${escapeHtml(nick)}">${mascotMarkup(40, "neutral", look)}</span>`;
+}
+
+function stormOverlayHtml() {
+  return `<div class="mood-storm" aria-hidden="true">
+    <span class="storm-cloud c-a"></span>
+    <span class="storm-cloud c-b"></span>
+    <span class="storm-bolt b1"></span>
+    <span class="storm-bolt b2"></span>
+    <span class="storm-two t1">2</span>
+    <span class="storm-two t2">2</span>
+    <span class="storm-two t3">2</span>
+    <span class="storm-two t4">2</span>
+    <span class="storm-rain"></span>
+  </div>`;
 }
 
 function toyNode(id) {
@@ -1013,12 +1070,20 @@ function toyNode(id) {
   return t;
 }
 
-function paintStage(stageId, mascotEl, size, smile) {
+function paintStage(stageId, mascotEl, size, mood) {
   if (!mascotEl) return;
-  mascotEl.innerHTML = mascotMarkup(size, smile);
+  const moodKey = mood === true ? "happy" : mood === false ? "neutral" : mood;
+  mascotEl.innerHTML = mascotMarkup(size, moodKey);
+  mascotEl.classList.toggle("mood-sad", moodKey === "sad");
+  mascotEl.classList.toggle("mood-happy", moodKey === "happy");
+  mascotEl.classList.toggle("mood-neutral", moodKey === "neutral");
   const stage = document.getElementById(stageId);
   if (!stage) return;
-  stage.querySelectorAll(".toy").forEach((n) => n.remove());
+  stage.querySelectorAll(".toy, .mood-storm").forEach((n) => n.remove());
+  stage.classList.toggle("has-storm", moodKey === "sad");
+  if (moodKey === "sad") {
+    stage.insertAdjacentHTML("beforeend", stormOverlayHtml());
+  }
   (state.shop.toysOn || []).forEach((id) => {
     if (!TOYS[id] || TOYS[id].svg) return;
     stage.appendChild(toyNode(id));
@@ -1026,10 +1091,11 @@ function paintStage(stageId, mascotEl, size, smile) {
 }
 
 function paintMascots() {
-  paintStage("homeStage", els.homeMascot, 140, false);
-  paintStage("gameStage", els.gameMascot, 88, false);
-  paintStage("resultStage", els.resultMascot, 120, true);
-  paintStage("shopStage", els.shopMascot, 120, false);
+  const mood = lastRunMood();
+  paintStage("homeStage", els.homeMascot, 140, mood);
+  paintStage("gameStage", els.gameMascot, 88, mood === "sad" ? "neutral" : mood);
+  paintStage("resultStage", els.resultMascot, 120, mood);
+  paintStage("shopStage", els.shopMascot, 120, mood === "sad" ? "neutral" : mood);
 }
 
 function achProgress(a) {

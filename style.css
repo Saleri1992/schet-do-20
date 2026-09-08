@@ -202,6 +202,92 @@ h1 {
 
 .mascot-stage.tiny { min-height: 96px; }
 .mascot-stage.shop-preview { min-height: 130px; }
+.mascot-stage.has-storm { min-height: 170px; }
+
+.mascot.mood-sad { animation: sad-sway 2.8s ease-in-out infinite; }
+.mascot.mood-happy.bounce-soft { animation: bounce 2.2s ease-in-out infinite; }
+
+.mood-storm {
+  position: absolute;
+  left: 50%;
+  top: -4px;
+  width: 140px;
+  height: 110px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 3;
+  overflow: visible;
+}
+
+.storm-cloud {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  width: 78px;
+  height: 28px;
+  margin-left: -39px;
+  border-radius: 40px;
+  background: linear-gradient(180deg, #6b7a90, #3d4a5c);
+  box-shadow: 0 4px 10px rgba(0,0,0,.25);
+  animation: storm-bob 2.4s ease-in-out infinite;
+}
+.storm-cloud::before,
+.storm-cloud::after {
+  content: "";
+  position: absolute;
+  background: inherit;
+  border-radius: 50%;
+}
+.storm-cloud::before { width: 34px; height: 34px; top: -16px; left: 12px; }
+.storm-cloud::after { width: 42px; height: 42px; top: -20px; left: 34px; }
+.storm-cloud.c-b {
+  width: 58px;
+  margin-left: -10px;
+  top: 2px;
+  opacity: .85;
+  animation-delay: -.6s;
+}
+
+.storm-bolt {
+  position: absolute;
+  width: 14px;
+  height: 28px;
+  background: linear-gradient(180deg, #fff6c2, #ffd24a 40%, #ff9f1c);
+  clip-path: polygon(40% 0%, 70% 0%, 45% 40%, 75% 40%, 20% 100%, 35% 48%, 10% 48%);
+  filter: drop-shadow(0 0 6px #ffd24a);
+  opacity: 0;
+  animation: bolt-flash 1.8s ease-in-out infinite;
+}
+.storm-bolt.b1 { left: 48px; top: 36px; }
+.storm-bolt.b2 { left: 78px; top: 42px; animation-delay: .9s; transform: scaleX(-1); }
+
+.storm-two {
+  position: absolute;
+  top: 40px;
+  font-weight: 900;
+  font-size: 18px;
+  color: #c44536;
+  text-shadow: 0 1px 0 #fff, 0 0 6px rgba(196, 69, 54, .45);
+  animation: grade-fall 2.4s linear infinite;
+  opacity: 0;
+}
+.storm-two.t1 { left: 28px; animation-delay: 0s; }
+.storm-two.t2 { left: 58px; animation-delay: .5s; font-size: 22px; }
+.storm-two.t3 { left: 88px; animation-delay: 1s; }
+.storm-two.t4 { left: 70px; animation-delay: 1.5s; font-size: 16px; }
+
+.storm-rain {
+  position: absolute;
+  inset: 36px 20px 0;
+  background: repeating-linear-gradient(
+    -20deg,
+    transparent 0 8px,
+    rgba(120, 160, 220, .35) 8px 10px
+  );
+  opacity: .45;
+  animation: rain-slide .5s linear infinite;
+  mask-image: linear-gradient(180deg, transparent, #000 30%, transparent 95%);
+}
 
 .toy {
   position: absolute;
@@ -2028,6 +2114,34 @@ body.fw-perfect .fw-canvas {
 @keyframes bounce {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
+}
+
+@keyframes sad-sway {
+  0%, 100% { transform: translateY(2px) rotate(-2deg); }
+  50% { transform: translateY(6px) rotate(2deg); }
+}
+
+@keyframes storm-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(3px); }
+}
+
+@keyframes bolt-flash {
+  0%, 55%, 100% { opacity: 0; }
+  60%, 68% { opacity: 1; }
+  72% { opacity: .2; }
+  76% { opacity: 1; }
+}
+
+@keyframes grade-fall {
+  0% { transform: translateY(0) rotate(-8deg); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translateY(78px) rotate(12deg); opacity: 0; }
+}
+
+@keyframes rain-slide {
+  from { background-position: 0 0; }
+  to { background-position: 12px 18px; }
 }
 
 @keyframes hop {
