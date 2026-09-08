@@ -425,6 +425,25 @@ body.slow-mo .timer {
   flex-shrink: 0;
 }
 
+.sync-hint {
+  margin: 10px 0 0;
+  font-size: 13px;
+  font-weight: 800;
+  color: #9a4b00;
+  line-height: 1.35;
+}
+
+.sync-now {
+  width: 100%;
+  margin-top: 8px;
+  font-size: 16px !important;
+}
+
+body[data-theme="hard"] .sync-hint,
+body[data-theme="exam"] .sync-hint {
+  color: #ffd166;
+}
+
 .board-status {
   text-align: center;
   font-weight: 800;

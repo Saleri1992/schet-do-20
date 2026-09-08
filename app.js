@@ -1,5 +1,6 @@
 const STORAGE_KEY = "schet-do-20";
 const NICK_KEY = "schet-do-20-nick";
+const SCORE_QUEUE_KEY = "schet-do-20-score-queue";
 const DATA_VERSION = 3;
 const TOTAL = 10;
 const HARD_LIMIT_MS = 60 * 1000;
@@ -33,17 +34,171 @@ async function fetchScores(levelFilter) {
 }
 
 async function insertScore(row) {
+  const payload = {
+    nick: row.nick,
+    level: Number(row.level),
+    correct: Number(row.correct),
+    ms: Math.max(0, Math.round(row.ms)),
+    grade: row.grade == null ? null : Number(row.grade),
+    timed_out: Boolean(row.timed_out),
+  };
   const res = await fetch(`${SUPABASE_URL}/rest/v1/scores`, {
     method: "POST",
     headers: supabaseHeaders({
       "Content-Type": "application/json",
       Prefer: "return=minimal",
     }),
-    body: JSON.stringify(row),
+    body: JSON.stringify(payload),
   });
   if (!res.ok) {
     const text = await res.text();
     throw new Error(text || `HTTP ${res.status}`);
+  }
+}
+
+function loadScoreQueue() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(SCORE_QUEUE_KEY) || "[]");
+    return Array.isArray(raw) ? raw : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveScoreQueue(queue) {
+  try {
+    localStorage.setItem(SCORE_QUEUE_KEY, JSON.stringify(queue.slice(-80)));
+  } catch {
+    /* ignore quota */
+  }
+}
+
+function scoreQueueId(row) {
+  return row.id || `${row.nick}|${row.level}|${row.correct}|${row.ms}|${row.local_at || ""}`;
+}
+
+function enqueueScore(row) {
+  const queue = loadScoreQueue();
+  const id = scoreQueueId(row);
+  if (queue.some((item) => scoreQueueId(item) === id)) return queue.length;
+  queue.push({
+    id,
+    nick: row.nick,
+    level: Number(row.level),
+    correct: Number(row.correct),
+    ms: Math.max(0, Math.round(row.ms)),
+    grade: row.grade == null ? null : Number(row.grade),
+    timed_out: Boolean(row.timed_out),
+    local_at: row.local_at || new Date().toISOString(),
+    tries: 0,
+  });
+  saveScoreQueue(queue);
+  return queue.length;
+}
+
+function markRunSynced(localId) {
+  if (!localId || !state.runs) return;
+  let changed = false;
+  state.runs.forEach((r) => {
+    const rid = r.startedAt || r.date;
+    if (rid === localId && !r.synced) {
+      r.synced = true;
+      changed = true;
+    }
+  });
+  if (changed) saveState();
+}
+
+function queueLocalUnsyncedRuns() {
+  const nick = normalizeNick(playerNick);
+  if (!isNickOk(nick)) return 0;
+  let added = 0;
+  (state.runs || []).forEach((r) => {
+    if (r.synced || !r.correct || r.correct < 1) return;
+    const before = loadScoreQueue().length;
+    enqueueScore({
+      id: `run:${r.startedAt || r.date || `${r.level}-${r.ms}-${r.correct}`}`,
+      nick,
+      level: r.level || 1,
+      correct: r.correct,
+      ms: r.ms || 0,
+      grade: r.grade == null ? null : r.grade,
+      timed_out: Boolean(r.timedOut),
+      local_at: r.date || r.startedAt || new Date().toISOString(),
+    });
+    if (loadScoreQueue().length > before) added += 1;
+  });
+  return added;
+}
+
+let syncInFlight = null;
+
+async function syncScoreQueue({ quiet = true } = {}) {
+  if (syncInFlight) return syncInFlight;
+  queueLocalUnsyncedRuns();
+  const queue = loadScoreQueue();
+  if (!queue.length) {
+    updateSyncHint();
+    return { sent: 0, left: 0 };
+  }
+
+  syncInFlight = (async () => {
+    let sent = 0;
+    const left = [];
+    for (const item of queue) {
+      try {
+        await insertScore(item);
+        sent += 1;
+        if (String(item.id).startsWith("run:")) {
+          markRunSynced(String(item.id).slice(4));
+        }
+      } catch (err) {
+        item.tries = (item.tries || 0) + 1;
+        left.push(item);
+        console.warn("score sync item", err);
+      }
+    }
+    saveScoreQueue(left);
+    if (!quiet) {
+      if (sent > 0) {
+        showToasts([{ plain: true, icon: "🏆", name: "Топ обновлён", desc: `Отправлено результатов: ${sent}` }]);
+      } else if (left.length) {
+        showToasts([{ plain: true, icon: "☁️", name: "Сеть слабая", desc: `В очереди ещё ${left.length}. Попробуем снова.` }]);
+      } else {
+        showToasts([{ plain: true, icon: "☁️", name: "Очередь пуста", desc: "Все результаты уже в топе или ещё не сыграны." }]);
+      }
+    }
+    updateSyncHint();
+    return { sent, left: left.length };
+  })();
+
+  try {
+    return await syncInFlight;
+  } finally {
+    syncInFlight = null;
+  }
+}
+
+function pendingScoreCount() {
+  return loadScoreQueue().length;
+}
+
+function updateSyncHint() {
+  const n = pendingScoreCount();
+  if (els.syncHint) {
+    if (n > 0) {
+      els.syncHint.textContent = `В очереди на топ: ${n}. Отправим при нормальном интернете.`;
+      els.syncHint.classList.remove("hidden");
+    } else {
+      els.syncHint.textContent = "";
+      els.syncHint.classList.add("hidden");
+    }
+  }
+  if (els.syncNowBtn) {
+    els.syncNowBtn.classList.toggle("hidden", n < 1);
+  }
+  if (els.openBoardBtn) {
+    els.openBoardBtn.textContent = n > 0 ? `Лидеры (${n})` : "Лидеры";
   }
 }
 
@@ -288,6 +443,8 @@ const els = {
   nickReady: document.getElementById("nickReady"),
   nickDisplay: document.getElementById("nickDisplay"),
   nickChangeBtn: document.getElementById("nickChangeBtn"),
+  syncHint: document.getElementById("syncHint"),
+  syncNowBtn: document.getElementById("syncNowBtn"),
   boardStatus: document.getElementById("boardStatus"),
   boardList: document.getElementById("boardList"),
   boardRefreshBtn: document.getElementById("boardRefreshBtn"),
@@ -822,6 +979,7 @@ function renderHome() {
   if (!isLevelOpen(selectedLevel)) selectedLevel = maxOpenLevel();
   applyTheme(selectedLevel);
   renderNickCard();
+  updateSyncHint();
   els.totalStars.textContent = String(state.stars);
   els.totalCoins.textContent = String(state.coins);
   const rank = rankFor(state.stars);
@@ -1180,6 +1338,7 @@ function finishRun({ timedOut = false } = {}) {
     ms,
     grade: grade ? grade.mark : null,
     timedOut,
+    localId: run.startedIso,
   });
 }
 
@@ -1213,21 +1372,30 @@ function submitOnlineScore(payload) {
   const nick = ensureNickFromInput() || playerNick;
   if (!isNickOk(nick)) return;
   if (payload.correct < 1) return;
-  insertScore({
+  const localId = payload.localId || `${Date.now()}`;
+  enqueueScore({
+    id: `run:${localId}`,
     nick,
     level: Number(payload.level),
     correct: Number(payload.correct),
     ms: Math.max(0, Math.round(payload.ms)),
     grade: payload.grade == null ? null : Number(payload.grade),
     timed_out: Boolean(payload.timedOut),
-  })
-    .then(() => {
+    local_at: new Date().toISOString(),
+  });
+  updateSyncHint();
+  syncScoreQueue({ quiet: true }).then(({ sent, left }) => {
+    if (sent > 0 && left === 0) {
       showToasts([{ plain: true, icon: "🏆", name: "В топе!", desc: `«${nick}» · ${LEVELS[payload.level]?.name || ""} ${payload.correct}/10` }]);
-    })
-    .catch((error) => {
-      console.warn("score upload", error);
-      showToasts([{ plain: true, icon: "☁️", name: "Топ не обновился", desc: error.message || "Проверь интернет или таблицу scores." }]);
-    });
+    } else if (left > 0) {
+      showToasts([{
+        plain: true,
+        icon: "📦",
+        name: "Сохранено локально",
+        desc: "Сеть слабая — результат уйдёт в топ, когда появится интернет.",
+      }]);
+    }
+  });
 }
 
 function scoreRankKey(row) {
@@ -1260,20 +1428,26 @@ function bestScoresByNickAndLevel(rows) {
 
 async function renderBoard() {
   if (!els.boardList || !els.boardStatus) return;
-  els.boardStatus.textContent = "Загрузка…";
+  els.boardStatus.textContent = "Синхронизация…";
   els.boardList.innerHTML = "";
+  await syncScoreQueue({ quiet: true });
+  els.boardStatus.textContent = "Загрузка…";
   try {
     const rows = await fetchScores(boardFilter);
     const list = Array.isArray(rows) ? rows : [];
     const top = boardFilter === "all" ? bestScoresByNickAndLevel(list) : bestScoresByNick(list);
+    const pending = pendingScoreCount();
     if (!top.length) {
       const lvlName = boardFilter === "all" ? "" : ` на «${LEVELS[Number(boardFilter)].name}»`;
-      els.boardStatus.textContent = `Пока пусто${lvlName}. Сыграй этот режим с ником — и появишься здесь!`;
+      els.boardStatus.textContent = pending
+        ? `Пока пусто${lvlName}. В очереди ${pending} — ждём сеть.`
+        : `Пока пусто${lvlName}. Сыграй этот режим с ником — и появишься здесь!`;
+      updateSyncHint();
       return;
     }
     els.boardStatus.textContent = boardFilter === "all"
-      ? `Лучшие по режимам · ${top.length}`
-      : `Топ · ${LEVELS[Number(boardFilter)].name} · ${top.length}`;
+      ? `Лучшие по режимам · ${top.length}${pending ? ` · очередь ${pending}` : ""}`
+      : `Топ · ${LEVELS[Number(boardFilter)].name} · ${top.length}${pending ? ` · очередь ${pending}` : ""}`;
     els.boardList.innerHTML = top.map((row, i) => {
       const lvl = LEVELS[row.level] || LEVELS[1];
       const place = i + 1;
@@ -1305,11 +1479,13 @@ async function renderBoard() {
     }).join("");
   } catch (err) {
     console.warn("board", err);
+    const pending = pendingScoreCount();
     const msg = String(err && err.message ? err.message : err);
     els.boardStatus.textContent = msg.includes("Failed to fetch") || msg.includes("NetworkError")
-      ? "Нет сети или блокировка. Проверь интернет и обнови страницу."
-      : "Не удалось загрузить топ. Нажми «Обновить» или проверь таблицу scores в Supabase.";
+      ? `Нет сети. Локально в очереди: ${pending}. Открой снова при нормальном интернете.`
+      : `Не удалось загрузить топ. В очереди: ${pending}. Нажми «Обновить».`;
   }
+  updateSyncHint();
 }
 
 function escapeHtml(text) {
@@ -1910,7 +2086,14 @@ els.openBoardBtn.addEventListener("click", () => {
   showScreen("board");
   renderBoard();
 });
-els.boardRefreshBtn.addEventListener("click", () => renderBoard());
+els.boardRefreshBtn.addEventListener("click", () => {
+  syncScoreQueue({ quiet: false }).finally(() => renderBoard());
+});
+if (els.syncNowBtn) {
+  els.syncNowBtn.addEventListener("click", () => {
+    syncScoreQueue({ quiet: false }).then(() => renderHome());
+  });
+}
 els.nickSaveBtn.addEventListener("click", () => {
   const nick = saveNick(els.nickInput.value);
   if (!isNickOk(nick)) {
@@ -1986,4 +2169,20 @@ window.addEventListener("resize", () => {
   if (fw.canvas.classList.contains("on")) fwResize();
 });
 
+window.addEventListener("online", () => {
+  syncScoreQueue({ quiet: true }).then(({ sent }) => {
+    if (sent > 0) renderHome();
+  });
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") syncScoreQueue({ quiet: true });
+});
+
 renderHome();
+queueLocalUnsyncedRuns();
+updateSyncHint();
+syncScoreQueue({ quiet: true });
+setInterval(() => {
+  if (pendingScoreCount() > 0) syncScoreQueue({ quiet: true });
+}, 45000);
