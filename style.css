@@ -442,7 +442,7 @@ body.slow-mo .timer {
 
 .board-item {
   display: grid;
-  grid-template-columns: 42px 1fr;
+  grid-template-columns: 52px 1fr;
   gap: 10px;
   align-items: center;
   background: var(--card);
@@ -456,22 +456,132 @@ body.slow-mo .timer {
   outline: 3px solid var(--coral);
 }
 
+.board-item.podium.p1 {
+  background: linear-gradient(135deg, #fff8d6, var(--card) 55%);
+  box-shadow: var(--shadow), 0 0 0 2px rgba(255, 210, 74, 0.45);
+}
+.board-item.podium.p2 {
+  background: linear-gradient(135deg, #eef3f8, var(--card) 55%);
+}
+.board-item.podium.p3 {
+  background: linear-gradient(135deg, #ffe4cc, var(--card) 55%);
+}
+
 .board-place {
-  width: 42px;
-  height: 42px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   display: grid;
   place-items: center;
   font-weight: 900;
   font-size: 18px;
   background: var(--track);
+  position: relative;
 }
 
-.board-item:nth-child(1) .board-place { background: linear-gradient(135deg, #ffe9a0, #ffd24a); color: #6a4a00; }
-.board-item:nth-child(2) .board-place { background: linear-gradient(135deg, #eef3f8, #b8c6d4); color: #334; }
-.board-item:nth-child(3) .board-place { background: linear-gradient(135deg, #ffd2b0, #e0894a); color: #5a2a00; }
+.board-item:nth-child(1) .board-place {
+  background: radial-gradient(circle at 30% 28%, #fff6c2, #ffd24a 50%, #c48a00);
+  color: #5a3a00;
+  box-shadow: 0 3px 0 #8a5a00, 0 0 12px rgba(255, 210, 74, 0.55);
+}
+.board-item:nth-child(2) .board-place {
+  background: radial-gradient(circle at 30% 28%, #fff, #d7e3ef 45%, #8aa0b4);
+  color: #243447;
+  box-shadow: 0 3px 0 #5a6a7a;
+}
+.board-item:nth-child(3) .board-place {
+  background: radial-gradient(circle at 30% 28%, #ffe0c0, #e0894a 48%, #8a4a18);
+  color: #4a2200;
+  box-shadow: 0 3px 0 #5a2a08;
+}
 
-.board-nick { font-size: 18px; display: block; }
+.board-num {
+  position: relative;
+  z-index: 1;
+  font-size: 15px;
+  line-height: 1;
+  margin-top: 10px;
+}
+
+.board-medal {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 18px;
+  height: 14px;
+}
+
+.board-medal.crown {
+  width: 22px;
+  height: 16px;
+  background: linear-gradient(180deg, #fff6c2, #ffb703);
+  clip-path: polygon(0 100%, 0 45%, 18% 70%, 35% 20%, 50% 55%, 65% 20%, 82% 70%, 100% 45%, 100% 100%);
+  filter: drop-shadow(0 1px 0 #8a5a00);
+}
+
+.board-medal.silver {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, #c5d4e0 55%, #7a90a4);
+  box-shadow: inset 0 0 0 2px #e8f0f8;
+}
+.board-medal.silver::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  background: #5a7088;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+
+.board-medal.bronze {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffe0c0, #c56a28 55%, #8a4010);
+  box-shadow: inset 0 0 0 2px #ffd2a8;
+}
+.board-medal.bronze::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  background: #6a3010;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+
+.board-nick {
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.board-crown-mini {
+  width: 16px;
+  height: 12px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #fff6c2, #ffb703);
+  clip-path: polygon(0 100%, 0 45%, 18% 70%, 35% 20%, 50% 55%, 65% 20%, 82% 70%, 100% 45%, 100% 100%);
+  filter: drop-shadow(0 0 3px rgba(255, 183, 3, 0.8));
+}
+
+.board-star-mini {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+.board-star-mini.silver { background: linear-gradient(135deg, #fff, #8aa0b4); }
+.board-star-mini.bronze { background: linear-gradient(135deg, #ffe0c0, #c56a28); }
 .board-meta {
   display: block;
   margin-top: 4px;

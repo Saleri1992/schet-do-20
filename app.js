@@ -77,30 +77,30 @@ const RANKS = [
 
 const SKINS = {
   honey: { id: "honey", name: "Медовый", price: 0, body: "#FFD166", inner: "#F07167" },
-  sky: { id: "sky", name: "Небесный", price: 12, body: "#7EB6FF", inner: "#4ECDC4" },
-  berry: { id: "berry", name: "Ягодка", price: 12, body: "#FF8FAB", inner: "#C084FC" },
-  mint: { id: "mint", name: "Мятный", price: 15, body: "#6BCB77", inner: "#2D8A4A" },
-  night: { id: "night", name: "Ночной", price: 18, body: "#6D5A8A", inner: "#C084FC" },
-  lava: { id: "lava", name: "Лавовый", price: 22, body: "#FF7A59", inner: "#FFD166" },
-  ice: { id: "ice", name: "Ледышка", price: 20, body: "#B8F0FF", inner: "#3D8A9A" },
+  sky: { id: "sky", name: "Небесный", price: 120, body: "#7EB6FF", inner: "#4ECDC4" },
+  berry: { id: "berry", name: "Ягодка", price: 120, body: "#FF8FAB", inner: "#C084FC" },
+  mint: { id: "mint", name: "Мятный", price: 150, body: "#6BCB77", inner: "#2D8A4A" },
+  night: { id: "night", name: "Ночной", price: 180, body: "#6D5A8A", inner: "#C084FC" },
+  lava: { id: "lava", name: "Лавовый", price: 220, body: "#FF7A59", inner: "#FFD166" },
+  ice: { id: "ice", name: "Ледышка", price: 200, body: "#B8F0FF", inner: "#3D8A9A" },
 };
 
 const HATS = {
   none: { id: "none", name: "Без шляпы", price: 0, icon: "🙂" },
-  party: { id: "party", name: "Праздник", price: 10, icon: "🎉" },
-  crown: { id: "crown", name: "Корона", price: 25, icon: "👑" },
-  wizard: { id: "wizard", name: "Волшебник", price: 18, icon: "🧙" },
-  hero: { id: "hero", name: "Шлем", price: 16, icon: "🛡️" },
+  party: { id: "party", name: "Праздник", price: 100, icon: "🎉" },
+  crown: { id: "crown", name: "Корона", price: 250, icon: "👑" },
+  wizard: { id: "wizard", name: "Волшебник", price: 180, icon: "🧙" },
+  hero: { id: "hero", name: "Шлем", price: 160, icon: "🛡️" },
 };
 
 const TOYS = {
-  bow: { id: "bow", name: "Бантик", price: 8, icon: "🎀", svg: true },
-  glasses: { id: "glasses", name: "Умные очки", price: 10, icon: "👓", svg: true },
-  clover: { id: "clover", name: "Клевер", price: 6, icon: "🍀" },
-  duck: { id: "duck", name: "Уточка", price: 9, icon: "🦆" },
-  wand: { id: "wand", name: "Палочка", price: 16, icon: "🪄", custom: true },
-  crystal: { id: "crystal", name: "Кристалл", price: 14, icon: "💎" },
-  rainbow: { id: "rainbow", name: "Радуга", price: 20, icon: "🌈" },
+  bow: { id: "bow", name: "Бантик", price: 80, icon: "🎀", svg: true },
+  glasses: { id: "glasses", name: "Умные очки", price: 100, icon: "👓", svg: true },
+  clover: { id: "clover", name: "Клевер", price: 60, icon: "🍀" },
+  duck: { id: "duck", name: "Уточка", price: 90, icon: "🦆" },
+  wand: { id: "wand", name: "Палочка", price: 160, icon: "🪄", custom: true },
+  crystal: { id: "crystal", name: "Кристалл", price: 140, icon: "💎" },
+  rainbow: { id: "rainbow", name: "Радуга", price: 200, icon: "🌈" },
 };
 
 const FX = {
@@ -114,7 +114,7 @@ const FX = {
   rainbow: {
     id: "rainbow",
     name: "Радужный дождь",
-    price: 80,
+    price: 800,
     icon: "🌈",
     desc: "Цветные ленты падают с неба при успехе",
   },
@@ -149,7 +149,7 @@ const FX = {
 };
 
 const BOOSTS = [
-  { id: "slow", icon: "🐌", name: "Улитка-время", desc: "На харде и реальном харде таймер ползёт в 2 раза медленнее. Один забег.", price: 80 },
+  { id: "slow", icon: "🐌", name: "Улитка-время", desc: "На харде и реальном харде таймер ползёт в 2 раза медленнее. Один забег.", price: 800 },
   { id: "extra", icon: "⏳", name: "+15 секунд", desc: "Добавляет 15 секунд к харду / реальному харду. Один забег.", price: 100 },
   { id: "cheat", icon: "🕵️", name: "Читер", desc: "Только реальный хард: 1 ошибка не считается для оценки. Можно до 4 за забег. Один заряд = одна ошибка.", price: 120 },
 ];
@@ -1258,13 +1258,29 @@ async function renderBoard() {
       : `Топ · ${LEVELS[Number(boardFilter)].name} · ${top.length}`;
     els.boardList.innerHTML = top.map((row, i) => {
       const lvl = LEVELS[row.level] || LEVELS[1];
+      const place = i + 1;
       const me = row.nick === playerNick ? " me" : "";
+      const podium = place <= 3 ? ` podium p${place}` : "";
       const grade = row.grade != null ? ` · оценка ${row.grade}` : "";
       const timeOut = row.timed_out ? " · время" : "";
-      return `<li class="board-item${me}">
-        <span class="board-place">${i + 1}</span>
+      const placeInner = place === 1
+        ? `<span class="board-medal crown" aria-hidden="true"></span><span class="board-num">1</span>`
+        : place === 2
+          ? `<span class="board-medal silver" aria-hidden="true"></span><span class="board-num">2</span>`
+          : place === 3
+            ? `<span class="board-medal bronze" aria-hidden="true"></span><span class="board-num">3</span>`
+            : String(place);
+      const nickBadge = place === 1
+        ? `<span class="board-crown-mini" aria-hidden="true"></span>`
+        : place === 2
+          ? `<span class="board-star-mini silver" aria-hidden="true"></span>`
+          : place === 3
+            ? `<span class="board-star-mini bronze" aria-hidden="true"></span>`
+            : "";
+      return `<li class="board-item${me}${podium}">
+        <span class="board-place">${placeInner}</span>
         <div class="board-main">
-          <strong class="board-nick">${escapeHtml(row.nick)}</strong>
+          <strong class="board-nick">${nickBadge}${escapeHtml(row.nick)}</strong>
           <span class="board-meta"><span class="hist-level l${row.level}">${lvl.name}</span> ${row.correct}/10 · ${formatTime(row.ms)}${grade}${timeOut}</span>
         </div>
       </li>`;
