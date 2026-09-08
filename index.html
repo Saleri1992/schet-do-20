@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Счёт до 20</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body data-theme="easy">
+  <div class="sky">
+    <div class="cloud c1"></div>
+    <div class="cloud c2"></div>
+    <div class="cloud c3"></div>
+    <div class="balloon b1" id="balloon1">🎈</div>
+    <div class="balloon b2" id="balloon2">⭐</div>
+    <div class="balloon b3" id="balloon3">🎈</div>
+  </div>
+  <div class="fly-layer" id="flyLayer" aria-hidden="true"></div>
+  <div class="fx-layer" id="fxLayer" aria-hidden="true"></div>
+  <canvas class="fw-canvas" id="fireworks" aria-hidden="true"></canvas>
+  <div class="toast-stack" id="toastStack"></div>
+
+  <main class="app">
+    <section class="screen" id="home" data-screen="home">
+      <div class="mascot-stage" id="homeStage">
+        <div class="mascot bounce-soft" id="homeMascot" aria-hidden="true"></div>
+      </div>
+      <h1>Счёт до 20</h1>
+      <p class="subtitle" id="homeSubtitle">10 весёлых примеров. Можно ошибаться — в конце узнаем результат!</p>
+
+      <div class="wallet" id="homeReward">
+        <div class="wallet-item stars">
+          <div class="star-pile" aria-hidden="true">
+            <span class="star-chip back"></span>
+            <span class="star-chip mid"></span>
+            <span class="star-chip front"></span>
+            <span class="sparkle s1">✦</span>
+            <span class="sparkle s2">✧</span>
+          </div>
+          <span class="star-count" id="totalStars">0</span>
+        </div>
+        <div class="wallet-item coins" id="coinBag">
+          <div class="coin-pile" aria-hidden="true">
+            <span class="coin back"></span>
+            <span class="coin mid"></span>
+            <span class="coin front"></span>
+            <span class="sparkle s1">✦</span>
+            <span class="sparkle s2">✧</span>
+          </div>
+          <span class="coin-count" id="totalCoins">0</span>
+        </div>
+        <div class="rank-row" id="rankRow"></div>
+        <div class="rank" id="rankName">Новичок</div>
+        <div class="xp-wrap">
+          <div class="xp-label" id="xpLabel">Опыт</div>
+          <div class="bar"><div id="xpFill"></div></div>
+        </div>
+        <div class="unlock-hint" id="unlockHint"></div>
+      </div>
+
+      <div class="levels" id="levels">
+        <button type="button" class="level-card easy selected" data-level="1">
+          <span class="lvl-medal m1"></span>
+          <span class="lvl-name">Лёгкий</span>
+          <span class="lvl-desc">Простые + и − до 20</span>
+          <span class="lvl-need"></span>
+        </button>
+        <button type="button" class="level-card medium" data-level="2">
+          <span class="lvl-medal m2"></span>
+          <span class="lvl-name">Средний</span>
+          <span class="lvl-desc">Двузначные суммы и вычитание из 10–20</span>
+          <span class="lvl-need"></span>
+        </button>
+        <button type="button" class="level-card sharp" data-level="3">
+          <span class="lvl-medal m3"></span>
+          <span class="lvl-name">Сложный</span>
+          <span class="lvl-desc">7+8 и 15−8, плюс 3 примера как на среднем</span>
+          <span class="lvl-need"></span>
+        </button>
+        <button type="button" class="level-card hard" data-level="4">
+          <span class="lvl-medal m4"></span>
+          <span class="lvl-name">Хард</span>
+          <span class="lvl-desc">Как сложный, но только 1 минута</span>
+          <span class="lvl-need"></span>
+        </button>
+        <button type="button" class="level-card exam" data-level="5">
+          <span class="lvl-medal m5"></span>
+          <span class="lvl-name">Реальный хард</span>
+          <span class="lvl-desc">1 минута + школьная оценка: 1 ошибка — 4, 2 — 3, 3+ — 2</span>
+          <span class="lvl-need"></span>
+        </button>
+      </div>
+
+      <button class="btn primary big pulse" id="startBtn">Старт</button>
+      <button class="btn ghost-btn shop-open" id="openShopBtn" type="button">Магазин</button>
+
+      <div class="ach-card">
+        <div class="card-head">
+          <h2>Ачивки</h2>
+          <span class="count-pill" id="homeAchCount">0/18</span>
+        </div>
+        <div class="bar overall-bar"><div id="homeAchFill"></div></div>
+        <div class="ach-grid" id="achGrid"></div>
+        <button class="btn ghost-btn" id="openGalleryBtn" type="button">Галерея ачивок</button>
+      </div>
+
+      <div class="history-card" id="historyCard">
+        <div class="card-head">
+          <h2>Краткая история</h2>
+          <span class="count-pill" id="homeHistCount">0</span>
+        </div>
+        <ul id="historyList"></ul>
+        <button class="btn ghost-btn" id="openSessionsBtn" type="button">Все сессии</button>
+      </div>
+    </section>
+
+    <section class="screen hidden" id="game" data-screen="game">
+      <header class="game-top">
+        <div class="timer" id="timer">00:00</div>
+        <div class="progress-wrap">
+          <div class="progress-label">
+            <span class="level-chip" id="gameLevel">Лёгкий</span>
+            <span id="stepNow">1</span> / 10
+          </div>
+          <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        </div>
+      </header>
+
+      <div class="boost-bar" id="boostBar"></div>
+
+      <div class="mascot-stage tiny" id="gameStage">
+        <div class="mascot tiny bounce-soft" id="gameMascot" aria-hidden="true"></div>
+      </div>
+
+      <div class="problem-card" id="problemCard">
+        <div class="problem" id="problem">8 + 5 = ?</div>
+      </div>
+
+      <div class="answer-box" id="answerBox">
+        <span class="placeholder" id="placeholder">?</span>
+        <span id="answerText"></span>
+      </div>
+
+      <div class="pad">
+        <button class="key" data-key="1">1</button>
+        <button class="key" data-key="2">2</button>
+        <button class="key" data-key="3">3</button>
+        <button class="key" data-key="4">4</button>
+        <button class="key" data-key="5">5</button>
+        <button class="key" data-key="6">6</button>
+        <button class="key" data-key="7">7</button>
+        <button class="key" data-key="8">8</button>
+        <button class="key" data-key="9">9</button>
+        <button class="key ghost" data-key="back">⌫</button>
+        <button class="key" data-key="0">0</button>
+        <button class="key next" id="nextBtn">Далее</button>
+      </div>
+    </section>
+
+    <section class="screen hidden" id="result" data-screen="result">
+      <div class="confetti" id="confetti" aria-hidden="true"></div>
+      <div class="mascot-stage" id="resultStage">
+        <div class="mascot bounce-win" id="resultMascot" aria-hidden="true"></div>
+      </div>
+      <h1 id="resultTitle">Молодец!</h1>
+      <p class="reward-line" id="rewardLine">Ты получил 8 звёзд</p>
+      <div class="score-row">
+        <div class="score-pill">Верно: <strong id="correctCount">0</strong> / 10</div>
+        <div class="score-pill">Время: <strong id="resultTime">00:00</strong></div>
+      </div>
+      <div class="score-row hidden" id="gradeRow">
+        <div class="score-pill grade" id="gradePill">Оценка: <strong id="gradeMark">—</strong></div>
+      </div>
+      <div class="score-row">
+        <div class="score-pill silver">
+          <span class="star-chip md" aria-hidden="true"></span>
+          <span>+<strong id="starsGain">0</strong></span>
+        </div>
+        <div class="score-pill gold">
+          <span class="coin md" aria-hidden="true"></span>
+          <span>+<strong id="coinsGain">0</strong></span>
+        </div>
+      </div>
+      <div class="score-row">
+        <div class="score-pill" id="startTimePill">Старт: —</div>
+      </div>
+      <div class="star-burst" id="starBurst"></div>
+      <div class="new-achs" id="newAchs"></div>
+      <div id="reviewList"></div>
+      <div class="actions">
+        <button class="btn primary" id="againBtn">Ещё раз</button>
+        <button class="btn ghost-btn" id="homeBtn">На главную</button>
+      </div>
+    </section>
+
+    <section class="screen hidden" id="gallery" data-screen="gallery">
+      <header class="sub-head">
+        <button class="back-btn" type="button" data-back="home" aria-label="Назад">←</button>
+        <h1>Галерея</h1>
+      </header>
+      <p class="subtitle">Смотри, какие награды уже есть и сколько осталось до новых.</p>
+      <div class="overall-card">
+        <div class="card-head">
+          <strong>Прогресс</strong>
+          <span class="count-pill" id="galleryCount">0/18</span>
+        </div>
+        <div class="bar overall-bar"><div id="galleryFill"></div></div>
+      </div>
+      <div class="gallery-list" id="galleryList"></div>
+    </section>
+
+    <section class="screen hidden" id="sessions" data-screen="sessions">
+      <header class="sub-head">
+        <button class="back-btn" type="button" data-back="home" aria-label="Назад">←</button>
+        <h1>Все сессии</h1>
+      </header>
+      <div class="session-stats" id="sessionStats"></div>
+      <div class="filters" id="sessionFilters">
+        <button type="button" class="filter-btn selected" data-filter="all">Все</button>
+        <button type="button" class="filter-btn" data-filter="1">Лёгкий</button>
+        <button type="button" class="filter-btn" data-filter="2">Средний</button>
+        <button type="button" class="filter-btn" data-filter="3">Сложный</button>
+        <button type="button" class="filter-btn" data-filter="4">Хард</button>
+        <button type="button" class="filter-btn" data-filter="5">Реальный</button>
+      </div>
+      <ul class="session-list" id="sessionList"></ul>
+    </section>
+
+    <section class="screen hidden" id="shop" data-screen="shop">
+      <header class="sub-head">
+        <button class="back-btn" type="button" data-back="home" aria-label="Назад">←</button>
+        <h1>Магазин</h1>
+      </header>
+      <div class="shop-balance">
+        <span class="coin md"></span>
+        <strong id="shopCoins">0</strong>
+      </div>
+      <div class="mascot-stage shop-preview" id="shopStage">
+        <div class="mascot bounce-soft" id="shopMascot" aria-hidden="true"></div>
+      </div>
+      <div class="filters shop-tabs" id="shopTabs">
+        <button type="button" class="filter-btn selected" data-tab="boosts">Бусты</button>
+        <button type="button" class="filter-btn" data-tab="looks">Облик</button>
+        <button type="button" class="filter-btn" data-tab="toys">Штучки</button>
+        <button type="button" class="filter-btn" data-tab="fx">Чудеса</button>
+      </div>
+      <div class="shop-list" id="shopList"></div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
