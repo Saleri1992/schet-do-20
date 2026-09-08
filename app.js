@@ -245,6 +245,10 @@ const els = {
   nickInput: document.getElementById("nickInput"),
   nickSaveBtn: document.getElementById("nickSaveBtn"),
   nickHint: document.getElementById("nickHint"),
+  nickSetup: document.getElementById("nickSetup"),
+  nickReady: document.getElementById("nickReady"),
+  nickDisplay: document.getElementById("nickDisplay"),
+  nickChangeBtn: document.getElementById("nickChangeBtn"),
   boardStatus: document.getElementById("boardStatus"),
   boardList: document.getElementById("boardList"),
   boardRefreshBtn: document.getElementById("boardRefreshBtn"),
@@ -736,17 +740,20 @@ function historyItemHtml(r, detailed) {
   </li>`;
 }
 
+function renderNickCard(forceEdit = false) {
+  const ready = isNickOk(playerNick) && !forceEdit;
+  if (els.nickSetup) els.nickSetup.classList.toggle("hidden", ready);
+  if (els.nickReady) els.nickReady.classList.toggle("hidden", !ready);
+  if (els.nickDisplay) els.nickDisplay.textContent = playerNick;
+  if (els.nickInput && !ready && document.activeElement !== els.nickInput) {
+    els.nickInput.value = playerNick;
+  }
+}
+
 function renderHome() {
   if (!isLevelOpen(selectedLevel)) selectedLevel = maxOpenLevel();
   applyTheme(selectedLevel);
-  if (els.nickInput && document.activeElement !== els.nickInput) {
-    els.nickInput.value = playerNick;
-  }
-  if (els.nickHint) {
-    els.nickHint.textContent = isNickOk(playerNick)
-      ? `Играешь как «${playerNick}». Результаты уходят в общий топ.`
-      : "Ник нужен, чтобы попасть в общий рейтинг. Монеты и скины остаются только на этом устройстве.";
-  }
+  renderNickCard();
   els.totalStars.textContent = String(state.stars);
   els.totalCoins.textContent = String(state.coins);
   const rank = rankFor(state.stars);
@@ -841,6 +848,7 @@ function renderSessions() {
 function startGame() {
   stopFireworks();
   stopFxLayer();
+  ensureNickFromInput();
   if (!isLevelOpen(selectedLevel)) selectedLevel = maxOpenLevel();
   renderLevels();
   const cfg = LEVELS[selectedLevel];
@@ -1125,30 +1133,33 @@ function fwResize() {
   fw.canvas.height = window.innerHeight;
 }
 
+function ensureNickFromInput() {
+  if (isNickOk(playerNick)) return playerNick;
+  if (!els.nickInput) return "";
+  return saveNick(els.nickInput.value);
+}
+
 function submitOnlineScore(payload) {
   if (!sb) return;
-  const nick = normalizeNick(playerNick || (els.nickInput && els.nickInput.value) || "");
-  if (!isNickOk(nick)) {
-    showToasts([{ plain: true, icon: "🏷️", name: "Нет ника", desc: "Напиши ник на главной — и попадёшь в топ!" }]);
-    return;
-  }
+  const nick = ensureNickFromInput() || playerNick;
+  if (!isNickOk(nick)) return;
   if (payload.correct < 1) return;
   sb.from("scores")
     .insert({
       nick,
-      level: payload.level,
-      correct: payload.correct,
+      level: Number(payload.level),
+      correct: Number(payload.correct),
       ms: Math.max(0, Math.round(payload.ms)),
-      grade: payload.grade,
+      grade: payload.grade == null ? null : Number(payload.grade),
       timed_out: Boolean(payload.timedOut),
     })
     .then(({ error }) => {
       if (error) {
         console.warn("score upload", error);
-        showToasts([{ plain: true, icon: "☁️", name: "Топ не обновился", desc: "Проверь интернет или таблицу scores в Supabase." }]);
+        showToasts([{ plain: true, icon: "☁️", name: "Топ не обновился", desc: error.message || "Проверь интернет или таблицу scores." }]);
         return;
       }
-      showToasts([{ plain: true, icon: "🏆", name: "В топе!", desc: `«${nick}» — ${payload.correct}/10` }]);
+      showToasts([{ plain: true, icon: "🏆", name: "В топе!", desc: `«${nick}» · ${LEVELS[payload.level]?.name || ""} ${payload.correct}/10` }]);
     })
     .catch((err) => {
       console.warn("score upload", err);
@@ -1168,7 +1179,19 @@ function bestScoresByNick(rows) {
     const prev = map.get(nick);
     if (!prev || scoreRankKey(row) > scoreRankKey(prev)) map.set(nick, { ...row, nick });
   });
-  return [...map.values()].sort((a, b) => scoreRankKey(b) - scoreRankKey(a)).slice(0, 20);
+  return [...map.values()].sort((a, b) => scoreRankKey(b) - scoreRankKey(a)).slice(0, 30);
+}
+
+function bestScoresByNickAndLevel(rows) {
+  const map = new Map();
+  rows.forEach((row) => {
+    const nick = normalizeNick(row.nick);
+    if (!isNickOk(nick)) return;
+    const key = `${nick}::${row.level}`;
+    const prev = map.get(key);
+    if (!prev || scoreRankKey(row) > scoreRankKey(prev)) map.set(key, { ...row, nick });
+  });
+  return [...map.values()].sort((a, b) => scoreRankKey(b) - scoreRankKey(a)).slice(0, 40);
 }
 
 async function renderBoard() {
@@ -1185,16 +1208,20 @@ async function renderBoard() {
       .select("nick, level, correct, ms, grade, timed_out, created_at")
       .order("correct", { ascending: false })
       .order("ms", { ascending: true })
-      .limit(200);
+      .limit(500);
     if (boardFilter !== "all") query = query.eq("level", Number(boardFilter));
     const { data, error } = await query;
     if (error) throw error;
-    const top = bestScoresByNick(data || []);
+    const rows = data || [];
+    const top = boardFilter === "all" ? bestScoresByNickAndLevel(rows) : bestScoresByNick(rows);
     if (!top.length) {
-      els.boardStatus.textContent = "Пока пусто. Сыграй с ником — и станешь первым!";
+      const lvlName = boardFilter === "all" ? "" : ` на «${LEVELS[Number(boardFilter)].name}»`;
+      els.boardStatus.textContent = `Пока пусто${lvlName}. Сыграй этот режим с ником — и появишься здесь!`;
       return;
     }
-    els.boardStatus.textContent = `Топ-${top.length}${boardFilter === "all" ? "" : ` · ${LEVELS[Number(boardFilter)].name}`}`;
+    els.boardStatus.textContent = boardFilter === "all"
+      ? `Лучшие по режимам · ${top.length}`
+      : `Топ · ${LEVELS[Number(boardFilter)].name} · ${top.length}`;
     els.boardList.innerHTML = top.map((row, i) => {
       const lvl = LEVELS[row.level] || LEVELS[1];
       const me = row.nick === playerNick ? " me" : "";
@@ -1796,10 +1823,18 @@ els.nickSaveBtn.addEventListener("click", () => {
   const nick = saveNick(els.nickInput.value);
   if (!isNickOk(nick)) {
     showToasts([{ plain: true, icon: "🏷️", name: "Короткий ник", desc: "Нужно от 2 до 16 символов." }]);
-  } else {
-    showToasts([{ plain: true, icon: "✅", name: "Ник сохранён", desc: `Привет, ${nick}!` }]);
+    renderNickCard(true);
+    return;
   }
+  showToasts([{ plain: true, icon: "✅", name: "Ник сохранён", desc: `Привет, ${nick}! Больше спрашивать не будем.` }]);
   renderHome();
+});
+els.nickChangeBtn.addEventListener("click", () => {
+  renderNickCard(true);
+  if (els.nickInput) {
+    els.nickInput.value = playerNick;
+    els.nickInput.focus();
+  }
 });
 els.nickInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") els.nickSaveBtn.click();

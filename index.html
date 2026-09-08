@@ -101,12 +101,18 @@
       </div>
 
       <div class="nick-card" id="nickCard">
-        <label class="nick-label" for="nickInput">Твой ник для топа</label>
-        <div class="nick-row">
-          <input id="nickInput" class="nick-input" type="text" maxlength="16" placeholder="Например: Миша" autocomplete="nickname" />
-          <button type="button" class="btn ghost-btn nick-save" id="nickSaveBtn">Ок</button>
+        <div id="nickSetup">
+          <label class="nick-label" for="nickInput">Твой ник для топа (один раз)</label>
+          <div class="nick-row">
+            <input id="nickInput" class="nick-input" type="text" maxlength="16" placeholder="Например: Миша" autocomplete="nickname" />
+            <button type="button" class="btn ghost-btn nick-save" id="nickSaveBtn">Ок</button>
+          </div>
+          <p class="nick-hint" id="nickHint">Введи ник один раз — дальше спрашивать не будем. Монеты и скины остаются на этом устройстве.</p>
         </div>
-        <p class="nick-hint" id="nickHint">Ник нужен, чтобы попасть в общий рейтинг. Монеты и скины остаются только на этом устройстве.</p>
+        <div id="nickReady" class="nick-ready hidden">
+          <div class="nick-ready-text">В топе как <strong id="nickDisplay"></strong></div>
+          <button type="button" class="btn ghost-btn nick-change" id="nickChangeBtn">Сменить</button>
+        </div>
       </div>
 
       <div class="ach-card">
@@ -246,7 +252,7 @@
         <button class="back-btn" type="button" data-back="home" aria-label="Назад">←</button>
         <h1>Лидеры</h1>
       </header>
-      <p class="subtitle">Лучшие результаты одноклассников. Общий топ по никам.</p>
+      <p class="subtitle">Лучший результат каждого ника на выбранном режиме. Во вкладке «Все» — лучшие по каждому уровню отдельно.</p>
       <div class="filters" id="boardFilters">
         <button type="button" class="filter-btn selected" data-board="all">Все</button>
         <button type="button" class="filter-btn" data-board="1">Лёгкий</button>

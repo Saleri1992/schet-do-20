@@ -402,6 +402,29 @@ body.slow-mo .timer {
   line-height: 1.35;
 }
 
+.nick-ready {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.nick-ready.hidden,
+#nickSetup.hidden {
+  display: none !important;
+}
+
+.nick-ready-text {
+  font-weight: 800;
+  font-size: 15px;
+}
+
+.nick-change {
+  font-size: 14px !important;
+  padding: 6px 12px !important;
+  flex-shrink: 0;
+}
+
 .board-status {
   text-align: center;
   font-weight: 800;
