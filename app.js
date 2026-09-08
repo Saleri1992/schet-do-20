@@ -7,9 +7,55 @@ const HARD_LIMIT_MS = 60 * 1000;
 const SUPABASE_URL = "https://edetrdhgardsvhoomwto.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_MBvrcDFCQlIcHcWEk8RygQ_zwW2bJ4M";
 
-const sb = window.supabase
-  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-  : null;
+let sb = null;
+try {
+  if (window.supabase && typeof window.supabase.createClient === "function") {
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+} catch (err) {
+  console.warn("supabase init", err);
+  sb = null;
+}
+
+function supabaseHeaders(extra = {}) {
+  return {
+    apikey: SUPABASE_ANON_KEY,
+    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+    ...extra,
+  };
+}
+
+async function fetchScores(levelFilter) {
+  const params = new URLSearchParams({
+    select: "nick,level,correct,ms,grade,timed_out,created_at",
+    order: "correct.desc,ms.asc",
+    limit: "500",
+  });
+  if (levelFilter !== "all") params.set("level", `eq.${Number(levelFilter)}`);
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/scores?${params}`, {
+    headers: supabaseHeaders(),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+async function insertScore(row) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/scores`, {
+    method: "POST",
+    headers: supabaseHeaders({
+      "Content-Type": "application/json",
+      Prefer: "return=minimal",
+    }),
+    body: JSON.stringify(row),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `HTTP ${res.status}`);
+  }
+}
 
 const LEVELS = {
   1: {
@@ -1174,29 +1220,23 @@ function ensureNickFromInput() {
 }
 
 function submitOnlineScore(payload) {
-  if (!sb) return;
   const nick = ensureNickFromInput() || playerNick;
   if (!isNickOk(nick)) return;
   if (payload.correct < 1) return;
-  sb.from("scores")
-    .insert({
-      nick,
-      level: Number(payload.level),
-      correct: Number(payload.correct),
-      ms: Math.max(0, Math.round(payload.ms)),
-      grade: payload.grade == null ? null : Number(payload.grade),
-      timed_out: Boolean(payload.timedOut),
-    })
-    .then(({ error }) => {
-      if (error) {
-        console.warn("score upload", error);
-        showToasts([{ plain: true, icon: "☁️", name: "Топ не обновился", desc: error.message || "Проверь интернет или таблицу scores." }]);
-        return;
-      }
+  insertScore({
+    nick,
+    level: Number(payload.level),
+    correct: Number(payload.correct),
+    ms: Math.max(0, Math.round(payload.ms)),
+    grade: payload.grade == null ? null : Number(payload.grade),
+    timed_out: Boolean(payload.timedOut),
+  })
+    .then(() => {
       showToasts([{ plain: true, icon: "🏆", name: "В топе!", desc: `«${nick}» · ${LEVELS[payload.level]?.name || ""} ${payload.correct}/10` }]);
     })
-    .catch((err) => {
-      console.warn("score upload", err);
+    .catch((error) => {
+      console.warn("score upload", error);
+      showToasts([{ plain: true, icon: "☁️", name: "Топ не обновился", desc: error.message || "Проверь интернет или таблицу scores." }]);
     });
 }
 
@@ -1232,22 +1272,10 @@ async function renderBoard() {
   if (!els.boardList || !els.boardStatus) return;
   els.boardStatus.textContent = "Загрузка…";
   els.boardList.innerHTML = "";
-  if (!sb) {
-    els.boardStatus.textContent = "Онлайн-топ недоступен в этом браузере.";
-    return;
-  }
   try {
-    let query = sb
-      .from("scores")
-      .select("nick, level, correct, ms, grade, timed_out, created_at")
-      .order("correct", { ascending: false })
-      .order("ms", { ascending: true })
-      .limit(500);
-    if (boardFilter !== "all") query = query.eq("level", Number(boardFilter));
-    const { data, error } = await query;
-    if (error) throw error;
-    const rows = data || [];
-    const top = boardFilter === "all" ? bestScoresByNickAndLevel(rows) : bestScoresByNick(rows);
+    const rows = await fetchScores(boardFilter);
+    const list = Array.isArray(rows) ? rows : [];
+    const top = boardFilter === "all" ? bestScoresByNickAndLevel(list) : bestScoresByNick(list);
     if (!top.length) {
       const lvlName = boardFilter === "all" ? "" : ` на «${LEVELS[Number(boardFilter)].name}»`;
       els.boardStatus.textContent = `Пока пусто${lvlName}. Сыграй этот режим с ником — и появишься здесь!`;
@@ -1287,7 +1315,10 @@ async function renderBoard() {
     }).join("");
   } catch (err) {
     console.warn("board", err);
-    els.boardStatus.textContent = "Не удалось загрузить топ. Создай таблицу scores в Supabase (файл supabase-setup.sql).";
+    const msg = String(err && err.message ? err.message : err);
+    els.boardStatus.textContent = msg.includes("Failed to fetch") || msg.includes("NetworkError")
+      ? "Нет сети или блокировка. Проверь интернет и обнови страницу."
+      : "Не удалось загрузить топ. Нажми «Обновить» или проверь таблицу scores в Supabase.";
   }
 }
 

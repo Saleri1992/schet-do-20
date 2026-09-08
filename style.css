@@ -510,6 +510,7 @@ body.slow-mo .timer {
   transform: translateX(-50%);
   width: 18px;
   height: 14px;
+  display: block;
 }
 
 .board-medal.crown {
