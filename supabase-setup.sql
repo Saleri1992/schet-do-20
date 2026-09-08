@@ -1,4 +1,5 @@
 -- Вставьте в Supabase → SQL Editor → Run
+-- (можно запускать повторно)
 
 create table if not exists scores (
   id bigserial primary key,
@@ -10,6 +11,9 @@ create table if not exists scores (
   timed_out boolean default false,
   created_at timestamptz default now()
 );
+
+alter table scores add column if not exists skin text;
+alter table scores add column if not exists hat text;
 
 alter table scores enable row level security;
 

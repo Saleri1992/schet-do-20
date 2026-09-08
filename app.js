@@ -17,18 +17,25 @@ function supabaseHeaders(extra = {}) {
 }
 
 async function fetchScores(levelFilter) {
-  const params = new URLSearchParams({
-    select: "nick,level,correct,ms,grade,timed_out,created_at",
-    order: "correct.desc,ms.asc",
-    limit: "500",
-  });
-  if (levelFilter !== "all") params.set("level", `eq.${Number(levelFilter)}`);
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/scores?${params}`, {
+  const makeParams = (withLook) => {
+    const params = new URLSearchParams({
+      select: withLook
+        ? "nick,level,correct,ms,grade,timed_out,created_at,skin,hat"
+        : "nick,level,correct,ms,grade,timed_out,created_at",
+      order: "correct.desc,ms.asc",
+      limit: "500",
+    });
+    if (levelFilter !== "all") params.set("level", `eq.${Number(levelFilter)}`);
+    return params;
+  };
+  let res = await fetch(`${SUPABASE_URL}/rest/v1/scores?${makeParams(true)}`, {
     headers: supabaseHeaders(),
   });
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || `HTTP ${res.status}`);
+    res = await fetch(`${SUPABASE_URL}/rest/v1/scores?${makeParams(false)}`, {
+      headers: supabaseHeaders(),
+    });
+    if (!res.ok) throw new Error(await res.text() || `HTTP ${res.status}`);
   }
   return res.json();
 }
@@ -41,8 +48,10 @@ async function insertScore(row) {
     ms: Math.max(0, Math.round(row.ms)),
     grade: row.grade == null ? null : Number(row.grade),
     timed_out: Boolean(row.timed_out),
+    skin: row.skin || null,
+    hat: row.hat || null,
   };
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/scores`, {
+  let res = await fetch(`${SUPABASE_URL}/rest/v1/scores`, {
     method: "POST",
     headers: supabaseHeaders({
       "Content-Type": "application/json",
@@ -52,6 +61,20 @@ async function insertScore(row) {
   });
   if (!res.ok) {
     const text = await res.text();
+    if (/skin|hat|column/i.test(text)) {
+      delete payload.skin;
+      delete payload.hat;
+      res = await fetch(`${SUPABASE_URL}/rest/v1/scores`, {
+        method: "POST",
+        headers: supabaseHeaders({
+          "Content-Type": "application/json",
+          Prefer: "return=minimal",
+        }),
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(await res.text() || `HTTP ${res.status}`);
+      return;
+    }
     throw new Error(text || `HTTP ${res.status}`);
   }
 }
@@ -89,6 +112,8 @@ function enqueueScore(row) {
     ms: Math.max(0, Math.round(row.ms)),
     grade: row.grade == null ? null : Number(row.grade),
     timed_out: Boolean(row.timed_out),
+    skin: row.skin || null,
+    hat: row.hat || null,
     local_at: row.local_at || new Date().toISOString(),
     tries: 0,
   });
@@ -124,6 +149,8 @@ function queueLocalUnsyncedRuns() {
       ms: r.ms || 0,
       grade: r.grade == null ? null : r.grade,
       timed_out: Boolean(r.timedOut),
+      skin: (state.shop && state.shop.skin) || "honey",
+      hat: (state.shop && state.shop.hat) || "none",
       local_at: r.date || r.startedAt || new Date().toISOString(),
     });
     if (loadScoreQueue().length > before) added += 1;
@@ -267,13 +294,15 @@ const RANKS = [
 ];
 
 const SKINS = {
-  honey: { id: "honey", name: "Медовый", price: 0, body: "#FFD166", inner: "#F07167" },
-  sky: { id: "sky", name: "Небесный", price: 120, body: "#7EB6FF", inner: "#4ECDC4" },
-  berry: { id: "berry", name: "Ягодка", price: 120, body: "#FF8FAB", inner: "#C084FC" },
-  mint: { id: "mint", name: "Мятный", price: 150, body: "#6BCB77", inner: "#2D8A4A" },
-  night: { id: "night", name: "Ночной", price: 180, body: "#6D5A8A", inner: "#C084FC" },
-  lava: { id: "lava", name: "Лавовый", price: 220, body: "#FF7A59", inner: "#FFD166" },
-  ice: { id: "ice", name: "Ледышка", price: 200, body: "#B8F0FF", inner: "#3D8A9A" },
+  honey: { id: "honey", name: "Медовый", price: 0, body: "#FFD166", inner: "#F07167", form: "blob" },
+  sky: { id: "sky", name: "Небесный", price: 120, body: "#7EB6FF", inner: "#4ECDC4", form: "blob" },
+  berry: { id: "berry", name: "Ягодка", price: 120, body: "#FF8FAB", inner: "#C084FC", form: "blob" },
+  mint: { id: "mint", name: "Мятный", price: 150, body: "#6BCB77", inner: "#2D8A4A", form: "blob" },
+  night: { id: "night", name: "Ночной", price: 180, body: "#6D5A8A", inner: "#C084FC", form: "blob" },
+  lava: { id: "lava", name: "Лавовый", price: 220, body: "#FF7A59", inner: "#FFD166", form: "blob" },
+  ice: { id: "ice", name: "Ледышка", price: 200, body: "#B8F0FF", inner: "#3D8A9A", form: "blob" },
+  kitty: { id: "kitty", name: "Котик", price: 180, body: "#FFB4A2", inner: "#E76F51", form: "cat" },
+  hedgehog: { id: "hedgehog", name: "Ёжик", price: 190, body: "#C4A484", inner: "#8D6E63", form: "hedgehog" },
 };
 
 const HATS = {
@@ -347,9 +376,23 @@ const BOOSTS = [
 
 const CHEAT_MAX_PER_RUN = 4;
 
+let coopStats = {
+  players: 0,
+  runs: 0,
+  perfects: 0,
+  hardPlayers: 0,
+  sumCorrect: 0,
+  looks: {},
+};
+
 function bestOn(s, level, extra = () => true) {
   const scores = s.runs.filter((r) => (r.level || 1) === level && extra(r)).map((r) => r.correct);
   return scores.length ? Math.max(...scores) : 0;
+}
+
+function bestGradeOn(s, level, extra = () => true) {
+  const marks = s.runs.filter((r) => r.level === level && r.grade != null && extra(r)).map((r) => r.grade);
+  return marks.length ? Math.max(...marks) : 0;
 }
 
 const ACHIEVEMENTS = [
@@ -371,11 +414,51 @@ const ACHIEVEMENTS = [
   { id: "exam_five", icon: "🏅", name: "Отличник школы", desc: "Оценка 5 на реальном харде вовремя", check: (s) => s.runs.some((r) => r.level === 5 && r.grade === 5 && !r.timedOut), progress: (s) => ({ current: bestGradeOn(s, 5, (r) => !r.timedOut), target: 5 }) },
   { id: "five_runs", icon: "🎯", name: "Тренировка", desc: "5 прогонов", check: (s) => s.runs.length >= 5, progress: (s) => ({ current: s.runs.length, target: 5 }) },
   { id: "stars_25", icon: "✨", name: "Звёздный", desc: "25 звёзд", check: (s) => s.stars >= 25, progress: (s) => ({ current: s.stars, target: 25 }) },
+  { id: "coop_party", icon: "🤝", name: "Класс в сборе", desc: "Кооп: 5 разных ников в общем топе", coop: true, check: () => coopStats.players >= 5, progress: () => ({ current: coopStats.players, target: 5 }) },
+  { id: "coop_runs", icon: "🌍", name: "Общий зачёт", desc: "Кооп: всего 40 прогонов у всех", coop: true, check: () => coopStats.runs >= 40, progress: () => ({ current: coopStats.runs, target: 40 }) },
+  { id: "coop_perfects", icon: "🌟", name: "Россыпь десяток", desc: "Кооп: 25 идеальных 10/10 у всех", coop: true, check: () => coopStats.perfects >= 25, progress: () => ({ current: coopStats.perfects, target: 25 }) },
+  { id: "coop_hard", icon: "🔥", name: "Огненная банда", desc: "Кооп: 8 ников играли хард/реальный", coop: true, check: () => coopStats.hardPlayers >= 8, progress: () => ({ current: coopStats.hardPlayers, target: 8 }) },
+  { id: "coop_sum", icon: "🧮", name: "Сумма класса", desc: "Кооп: сумма верных ответов всех ≥ 300", coop: true, check: () => coopStats.sumCorrect >= 300, progress: () => ({ current: coopStats.sumCorrect, target: 300 }) },
 ];
 
-function bestGradeOn(s, level, extra = () => true) {
-  const marks = s.runs.filter((r) => r.level === level && r.grade != null && extra(r)).map((r) => r.grade);
-  return marks.length ? Math.max(...marks) : 0;
+async function refreshCoopStats() {
+  try {
+    const rows = await fetchScores("all");
+    const list = Array.isArray(rows) ? rows : [];
+    const nicks = new Set();
+    const hardNicks = new Set();
+    const looks = {};
+    let perfects = 0;
+    let sumCorrect = 0;
+    list.forEach((r) => {
+      const nick = normalizeNick(r.nick);
+      if (!isNickOk(nick)) return;
+      nicks.add(nick);
+      if (r.level >= 4) hardNicks.add(nick);
+      if (r.correct === 10) perfects += 1;
+      sumCorrect += Number(r.correct) || 0;
+      const prev = looks[nick];
+      if (!prev || new Date(r.created_at || 0) > new Date(prev.at || 0)) {
+        looks[nick] = { skin: r.skin || "honey", hat: r.hat || "none", at: r.created_at };
+      }
+    });
+    coopStats = {
+      players: nicks.size,
+      runs: list.length,
+      perfects,
+      hardPlayers: hardNicks.size,
+      sumCorrect,
+      looks,
+    };
+    const fresh = unlockAchievements();
+    if (fresh.length) {
+      saveState();
+      showToasts(fresh);
+      renderHome();
+    }
+  } catch (err) {
+    console.warn("coop stats", err);
+  }
 }
 
 const screens = {
@@ -834,10 +917,11 @@ function hatSVG(id) {
   return "";
 }
 
-function mascotMarkup(size, smile) {
-  const shop = state.shop || emptyShop();
+function mascotMarkup(size, smile, look = null) {
+  const shop = look || state.shop || emptyShop();
   const skin = SKINS[shop.skin] || SKINS.honey;
-  const toys = shop.toysOn || [];
+  const form = skin.form || "blob";
+  const toys = look ? [] : (shop.toysOn || []);
   const mouth = smile ? "M62 116 Q80 136 98 116" : "M68 116 Q80 128 92 116";
   const bow = toys.includes("bow")
     ? `<ellipse cx="38" cy="34" rx="11" ry="7" fill="#ff5d7a"/><ellipse cx="52" cy="34" rx="11" ry="7" fill="#ff5d7a"/><circle cx="45" cy="36" r="4" fill="#fff"/>`
@@ -845,23 +929,70 @@ function mascotMarkup(size, smile) {
   const glasses = toys.includes("glasses")
     ? `<g fill="none" stroke="#3D3A4A" stroke-width="3"><circle cx="62" cy="82" r="13"/><circle cx="98" cy="82" r="13"/><path d="M75 82 H85"/></g>`
     : "";
+
+  let body = "";
+  if (form === "cat") {
+    body = `
+      <path d="M32 48 L48 18 L58 52 Z" fill="${skin.body}"/>
+      <path d="M128 48 L112 18 L102 52 Z" fill="${skin.body}"/>
+      <path d="M40 30 L48 18 L52 34 Z" fill="${skin.inner}"/>
+      <path d="M120 30 L112 18 L108 34 Z" fill="${skin.inner}"/>
+      <circle cx="80" cy="86" r="52" fill="${skin.body}"/>
+      <ellipse cx="62" cy="82" rx="7" ry="11" fill="#3D3A4A"/>
+      <ellipse cx="98" cy="82" rx="7" ry="11" fill="#3D3A4A"/>
+      <circle cx="64" cy="78" r="2.5" fill="#fff"/>
+      <circle cx="100" cy="78" r="2.5" fill="#fff"/>
+      <ellipse cx="80" cy="100" rx="8" ry="5" fill="${skin.inner}"/>
+      <path d="M28 100 H52 M28 108 H50 M108 100 H132 M110 108 H132" stroke="#3D3A4A" stroke-width="2" stroke-linecap="round"/>
+      <path d="${mouth}" fill="none" stroke="#3D3A4A" stroke-width="4" stroke-linecap="round"/>
+    `;
+  } else if (form === "hedgehog") {
+    body = `
+      <path d="M40 70 L28 40 L50 58 Z" fill="${skin.inner}"/>
+      <path d="M55 52 L48 22 L68 48 Z" fill="${skin.inner}"/>
+      <path d="M80 46 L80 14 L92 46 Z" fill="${skin.inner}"/>
+      <path d="M105 52 L112 22 L92 48 Z" fill="${skin.inner}"/>
+      <path d="M120 70 L132 40 L110 58 Z" fill="${skin.inner}"/>
+      <ellipse cx="80" cy="90" rx="54" ry="48" fill="${skin.body}"/>
+      <circle cx="48" cy="70" r="14" fill="${skin.body}"/>
+      <circle cx="112" cy="70" r="14" fill="${skin.body}"/>
+      <circle cx="48" cy="70" r="6" fill="${skin.inner}"/>
+      <circle cx="112" cy="70" r="6" fill="${skin.inner}"/>
+      <ellipse cx="62" cy="88" rx="7" ry="9" fill="#3D3A4A"/>
+      <ellipse cx="98" cy="88" rx="7" ry="9" fill="#3D3A4A"/>
+      <circle cx="64" cy="85" r="2.5" fill="#fff"/>
+      <circle cx="100" cy="85" r="2.5" fill="#fff"/>
+      <ellipse cx="80" cy="104" rx="9" ry="6" fill="#F07167"/>
+      <path d="${smile ? "M64 118 Q80 132 96 118" : "M68 118 Q80 126 92 118"}" fill="none" stroke="#3D3A4A" stroke-width="4" stroke-linecap="round"/>
+    `;
+  } else {
+    body = `
+      <circle cx="80" cy="86" r="52" fill="${skin.body}"/>
+      <circle cx="48" cy="42" r="18" fill="${skin.body}"/>
+      <circle cx="112" cy="42" r="18" fill="${skin.body}"/>
+      <circle cx="48" cy="42" r="8" fill="${skin.inner}"/>
+      <circle cx="112" cy="42" r="8" fill="${skin.inner}"/>
+      ${bow}
+      <ellipse cx="62" cy="82" rx="8" ry="10" fill="#3D3A4A"/>
+      <ellipse cx="98" cy="82" rx="8" ry="10" fill="#3D3A4A"/>
+      <circle cx="65" cy="79" r="3" fill="#fff"/>
+      <circle cx="101" cy="79" r="3" fill="#fff"/>
+      ${glasses}
+      <ellipse cx="80" cy="102" rx="10" ry="7" fill="#F07167"/>
+      <path d="${mouth}" fill="none" stroke="#3D3A4A" stroke-width="4" stroke-linecap="round"/>
+    `;
+  }
+
   return `<svg viewBox="0 -12 160 172" width="${size}" height="${size}">
     ${hatSVG(shop.hat)}
     <ellipse cx="80" cy="145" rx="42" ry="8" fill="#000" opacity=".08"/>
-    <circle cx="80" cy="86" r="52" fill="${skin.body}"/>
-    <circle cx="48" cy="42" r="18" fill="${skin.body}"/>
-    <circle cx="112" cy="42" r="18" fill="${skin.body}"/>
-    <circle cx="48" cy="42" r="8" fill="${skin.inner}"/>
-    <circle cx="112" cy="42" r="8" fill="${skin.inner}"/>
-    ${bow}
-    <ellipse cx="62" cy="82" rx="8" ry="10" fill="#3D3A4A"/>
-    <ellipse cx="98" cy="82" rx="8" ry="10" fill="#3D3A4A"/>
-    <circle cx="65" cy="79" r="3" fill="#fff"/>
-    <circle cx="101" cy="79" r="3" fill="#fff"/>
-    ${glasses}
-    <ellipse cx="80" cy="102" rx="10" ry="7" fill="#F07167"/>
-    <path d="${mouth}" fill="none" stroke="#3D3A4A" stroke-width="4" stroke-linecap="round"/>
+    ${body}
   </svg>`;
+}
+
+function boardAvatarHtml(nick, skinId, hatId) {
+  const look = { skin: SKINS[skinId] ? skinId : "honey", hat: HATS[hatId] ? hatId : "none", toysOn: [] };
+  return `<span class="board-avatar" title="${escapeHtml(nick)}">${mascotMarkup(40, false, look)}</span>`;
 }
 
 function toyNode(id) {
@@ -1011,9 +1142,9 @@ function renderHome() {
   els.homeAchFill.style.width = `${Math.round((done / total) * 100)}%`;
   els.achGrid.innerHTML = ACHIEVEMENTS.map((a) => {
     const p = achProgress(a);
-    return `<div class="ach ${p.unlocked ? "unlocked" : "locked"}" data-open="gallery" title="${a.desc}">
+    return `<div class="ach ${p.unlocked ? "unlocked" : "locked"}${a.coop ? " coop" : ""}" data-open="gallery" title="${a.desc}">
       <span class="ico">${a.icon === "🪙" ? '<span class="coin sm"></span>' : a.icon}</span>
-      <span class="ttl">${a.name}</span>
+      <span class="ttl">${a.coop ? "🤝 " : ""}${a.name}</span>
       <div class="mini-bar"><i style="width:${p.pct}%"></i></div>
     </div>`;
   }).join("");
@@ -1038,10 +1169,10 @@ function renderGallery() {
   els.galleryList.innerHTML = ACHIEVEMENTS.map((a) => {
     const p = achProgress(a);
     const status = p.unlocked ? `<span class="done-tag">получено</span>` : `<span>${p.current} / ${p.target}</span>`;
-    return `<article class="gallery-item ${p.unlocked ? "unlocked" : "locked"}">
+    return `<article class="gallery-item ${p.unlocked ? "unlocked" : "locked"}${a.coop ? " coop" : ""}">
       <div class="g-ico">${a.icon === "🪙" ? '<span class="coin md"></span>' : a.icon}</div>
       <div>
-        <div class="g-name">${a.name}</div>
+        <div class="g-name">${a.name}${a.coop ? ' <span class="coop-tag">кооп</span>' : ""}</div>
         <div class="g-desc">${a.desc}</div>
       </div>
       <div class="g-bar">
@@ -1381,12 +1512,15 @@ function submitOnlineScore(payload) {
     ms: Math.max(0, Math.round(payload.ms)),
     grade: payload.grade == null ? null : Number(payload.grade),
     timed_out: Boolean(payload.timedOut),
+    skin: (state.shop && state.shop.skin) || "honey",
+    hat: (state.shop && state.shop.hat) || "none",
     local_at: new Date().toISOString(),
   });
   updateSyncHint();
   syncScoreQueue({ quiet: true }).then(({ sent, left }) => {
     if (sent > 0 && left === 0) {
       showToasts([{ plain: true, icon: "🏆", name: "В топе!", desc: `«${nick}» · ${LEVELS[payload.level]?.name || ""} ${payload.correct}/10` }]);
+      refreshCoopStats();
     } else if (left > 0) {
       showToasts([{
         plain: true,
@@ -1435,6 +1569,15 @@ async function renderBoard() {
   try {
     const rows = await fetchScores(boardFilter);
     const list = Array.isArray(rows) ? rows : [];
+    // обновить облики из свежих строк
+    list.forEach((r) => {
+      const nick = normalizeNick(r.nick);
+      if (!isNickOk(nick)) return;
+      const prev = coopStats.looks[nick];
+      if (!prev || new Date(r.created_at || 0) > new Date(prev.at || 0)) {
+        coopStats.looks[nick] = { skin: r.skin || "honey", hat: r.hat || "none", at: r.created_at };
+      }
+    });
     const top = boardFilter === "all" ? bestScoresByNickAndLevel(list) : bestScoresByNick(list);
     const pending = pendingScoreCount();
     if (!top.length) {
@@ -1455,6 +1598,7 @@ async function renderBoard() {
       const podium = place <= 3 ? ` podium p${place}` : "";
       const grade = row.grade != null ? ` · оценка ${row.grade}` : "";
       const timeOut = row.timed_out ? " · время" : "";
+      const look = coopStats.looks[row.nick] || { skin: row.skin || "honey", hat: row.hat || "none" };
       const placeInner = place === 1
         ? `<span class="board-medal crown" aria-hidden="true"></span><span class="board-num">1</span>`
         : place === 2
@@ -1471,12 +1615,14 @@ async function renderBoard() {
             : "";
       return `<li class="board-item${me}${podium}">
         <span class="board-place">${placeInner}</span>
+        ${boardAvatarHtml(row.nick, look.skin, look.hat)}
         <div class="board-main">
           <strong class="board-nick">${nickBadge}${escapeHtml(row.nick)}</strong>
           <span class="board-meta"><span class="hist-level l${row.level}">${lvl.name}</span> ${row.correct}/10 · ${formatTime(row.ms)}${grade}${timeOut}</span>
         </div>
       </li>`;
     }).join("");
+    refreshCoopStats();
   } catch (err) {
     console.warn("board", err);
     const pending = pendingScoreCount();
@@ -1895,8 +2041,9 @@ function renderShop() {
       const on = state.shop.skin === s.id;
       const action = owned ? (on ? "on" : "equip-skin") : "buy-skin";
       const label = on ? "Надет" : owned ? "Надеть" : "Купить";
-      const ico = `<span class="skin-dot" style="background:${s.body}"></span>`;
-      return shopCard(ico, s.name, owned ? "Цвет персонажа" : "Новый окрас", s.price, owned || state.coins >= s.price, action, s.id, label, on);
+      const formMark = s.form === "cat" ? "🐱" : s.form === "hedgehog" ? "🦔" : "";
+      const ico = `<span class="skin-dot" style="background:${s.body}">${formMark ? `<span class="skin-form">${formMark}</span>` : ""}</span>`;
+      return shopCard(ico, s.name, owned ? (s.form === "blob" ? "Цвет персонажа" : "Зверёк-облик") : "Новый окрас", s.price, owned || state.coins >= s.price, action, s.id, label, on);
     });
     const hats = Object.values(HATS).map((h) => {
       const owned = state.shop.hats.includes(h.id);
@@ -2183,6 +2330,8 @@ renderHome();
 queueLocalUnsyncedRuns();
 updateSyncHint();
 syncScoreQueue({ quiet: true });
+refreshCoopStats();
 setInterval(() => {
   if (pendingScoreCount() > 0) syncScoreQueue({ quiet: true });
 }, 45000);
+setInterval(() => refreshCoopStats(), 120000);
