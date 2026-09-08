@@ -203,9 +203,58 @@ h1 {
 .mascot-stage.tiny { min-height: 96px; }
 .mascot-stage.shop-preview { min-height: 130px; }
 .mascot-stage.has-storm { min-height: 170px; }
+.mascot-stage.has-speech { min-height: 188px; }
+.mascot-stage.has-storm.has-speech { min-height: 210px; }
 
 .mascot.mood-sad { animation: sad-sway 2.8s ease-in-out infinite; }
 .mascot.mood-happy.bounce-soft { animation: bounce 2.2s ease-in-out infinite; }
+
+.mascot-bubble {
+  position: absolute;
+  left: 50%;
+  top: 2px;
+  z-index: 4;
+  max-width: min(240px, 78vw);
+  transform: translateX(-42%);
+  padding: 10px 12px;
+  border-radius: 16px 16px 16px 6px;
+  background: #fffdf8;
+  border: 2px solid #3d3a4a;
+  box-shadow: 3px 4px 0 rgba(61, 58, 74, .12);
+  pointer-events: none;
+  animation: bubble-pop .45s cubic-bezier(.2, 1.2, .4, 1) both;
+}
+.mascot-bubble::after {
+  content: "";
+  position: absolute;
+  left: 22px;
+  bottom: -8px;
+  width: 14px;
+  height: 14px;
+  background: #fffdf8;
+  border-right: 2px solid #3d3a4a;
+  border-bottom: 2px solid #3d3a4a;
+  transform: rotate(45deg);
+}
+.mascot-bubble-text {
+  display: block;
+  font-size: 13px;
+  line-height: 1.35;
+  font-weight: 700;
+  color: #3d3a4a;
+  text-align: left;
+}
+.mascot-stage.has-storm .mascot-bubble {
+  top: auto;
+  bottom: 4px;
+  transform: translateX(-8%);
+  border-radius: 16px 16px 6px 16px;
+}
+.mascot-stage.has-storm .mascot-bubble::after {
+  left: auto;
+  right: 28px;
+  bottom: -8px;
+}
 
 .mood-storm {
   position: absolute;
@@ -2114,6 +2163,11 @@ body.fw-perfect .fw-canvas {
 @keyframes bounce {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
+}
+
+@keyframes bubble-pop {
+  0% { opacity: 0; transform: translateX(-42%) scale(.72); }
+  100% { opacity: 1; transform: translateX(-42%) scale(1); }
 }
 
 @keyframes sad-sway {

@@ -910,6 +910,70 @@ function lastRunMood() {
   return "happy";
 }
 
+function lastRunContext() {
+  const last = state.runs && state.runs[0];
+  if (!last) return null;
+  const mistakes = Math.max(0, (last.total || TOTAL) - (last.correct || 0));
+  return {
+    last,
+    mistakes,
+    correct: last.correct || 0,
+    level: last.level || 1,
+    timedOut: !!last.timedOut,
+    grade: last.grade == null ? null : Number(last.grade),
+    failed: !!last.failed,
+  };
+}
+
+const MASCOT_TIPS = [
+  { id: "start", when: (c) => !c, text: "Давай потренируемся вместе — я рядом!" },
+  { id: "storm_grade", when: (c) => c && c.mistakes > 5, text: "Если постараемся получше — сможем наконец получить хорошую оценку!" },
+  { id: "storm_calm", when: (c) => c && c.mistakes > 5, text: "Много ошибочек… Считай спокойнее — и следующий раз будет лучше." },
+  { id: "mid_push", when: (c) => c && c.mistakes >= 3 && c.mistakes <= 5, text: "Почти! Ещё чуть внимательности — и результат станет крутым." },
+  { id: "mid_retry", when: (c) => c && c.mistakes >= 3 && c.mistakes <= 5, text: "Не сдаёмся: один спокойный прогон — и уже заметно лучше." },
+  { id: "near_perfect", when: (c) => c && c.mistakes > 0 && c.mistakes < 3, text: "Уже здорово! Ещё чуть — и будет идеально." },
+  { id: "strong", when: (c) => c && c.correct >= 8 && c.mistakes <= 2, text: "Сильный результат! Ещё один такой — и уверенность вырастет." },
+  { id: "perfect", when: (c) => c && c.mistakes === 0, text: "Вау, без ошибок! Так держать!" },
+  { id: "perfect_next", when: (c) => c && c.mistakes === 0 && c.level < 5, text: "Десять из десяти — можно смело идти дальше!" },
+  { id: "fail_retry", when: (c) => c && c.failed, text: "Пятёрка далеко, но тройка уже рядом. Давай пересдадим?" },
+  { id: "grade3", when: (c) => c && c.grade === 3 && !c.failed, text: "Тройка есть! Если постараемся — дотянем до четвёрки." },
+  { id: "grade4", when: (c) => c && c.grade === 4, text: "Хорошист! Чистый прогон — и пятёрка наша." },
+  { id: "grade5", when: (c) => c && c.grade === 5, text: "Отличник! Я так рад за тебя!" },
+  { id: "timeout", when: (c) => c && c.timedOut, text: "Время поджимало — потренируем скорость без лишней спешки." },
+  { id: "exam_care", when: (c) => c && c.level === 5 && c.mistakes > 0, text: "На контрольной каждая ошибка дорога. Давай ещё разок внимательнее." },
+];
+
+let speechState = { runKey: "", tip: "", showHome: false };
+
+function lastRunSpeechKey(ctx) {
+  if (!ctx) return "none";
+  const r = ctx.last;
+  return `${r.date || ""}|${r.correct}|${r.level}|${r.ms}|${r.grade ?? ""}|${r.timedOut ? 1 : 0}`;
+}
+
+function matchingMascotTips(ctx) {
+  const matched = MASCOT_TIPS.filter((t) => t.when(ctx));
+  return matched.length ? matched : MASCOT_TIPS.filter((t) => t.id === "start");
+}
+
+function ensureSpeechTip() {
+  const ctx = lastRunContext();
+  const key = lastRunSpeechKey(ctx);
+  if (speechState.runKey === key && speechState.tip) return speechState;
+  const pool = matchingMascotTips(ctx);
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  speechState = {
+    runKey: key,
+    tip: pick.text,
+    showHome: Math.random() < 0.7,
+  };
+  return speechState;
+}
+
+function speechBubbleHtml(text) {
+  return `<div class="mascot-bubble" role="status"><span class="mascot-bubble-text">${escapeHtml(text)}</span></div>`;
+}
+
 function mouthPath(mood, form) {
   if (form === "hedgehog") {
     if (mood === "happy") return "M64 118 Q80 134 96 118";
@@ -1070,7 +1134,7 @@ function toyNode(id) {
   return t;
 }
 
-function paintStage(stageId, mascotEl, size, mood) {
+function paintStage(stageId, mascotEl, size, mood, speechText = "") {
   if (!mascotEl) return;
   const moodKey = mood === true ? "happy" : mood === false ? "neutral" : mood;
   mascotEl.innerHTML = mascotMarkup(size, moodKey);
@@ -1079,10 +1143,14 @@ function paintStage(stageId, mascotEl, size, mood) {
   mascotEl.classList.toggle("mood-neutral", moodKey === "neutral");
   const stage = document.getElementById(stageId);
   if (!stage) return;
-  stage.querySelectorAll(".toy, .mood-storm").forEach((n) => n.remove());
+  stage.querySelectorAll(".toy, .mood-storm, .mascot-bubble").forEach((n) => n.remove());
   stage.classList.toggle("has-storm", moodKey === "sad");
+  stage.classList.toggle("has-speech", !!speechText);
   if (moodKey === "sad") {
     stage.insertAdjacentHTML("beforeend", stormOverlayHtml());
+  }
+  if (speechText) {
+    stage.insertAdjacentHTML("beforeend", speechBubbleHtml(speechText));
   }
   (state.shop.toysOn || []).forEach((id) => {
     if (!TOYS[id] || TOYS[id].svg) return;
@@ -1092,10 +1160,11 @@ function paintStage(stageId, mascotEl, size, mood) {
 
 function paintMascots() {
   const mood = lastRunMood();
-  paintStage("homeStage", els.homeMascot, 140, mood);
-  paintStage("gameStage", els.gameMascot, 88, mood === "sad" ? "neutral" : mood);
-  paintStage("resultStage", els.resultMascot, 120, mood);
-  paintStage("shopStage", els.shopMascot, 120, mood === "sad" ? "neutral" : mood);
+  const speech = ensureSpeechTip();
+  paintStage("homeStage", els.homeMascot, 140, mood, speech.showHome ? speech.tip : "");
+  paintStage("gameStage", els.gameMascot, 88, mood === "sad" ? "neutral" : mood, "");
+  paintStage("resultStage", els.resultMascot, 120, mood, speech.tip);
+  paintStage("shopStage", els.shopMascot, 120, mood === "sad" ? "neutral" : mood, "");
 }
 
 function achProgress(a) {
