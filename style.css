@@ -534,6 +534,14 @@ body.slow-mo .timer {
   background: var(--coral);
   color: #fff;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+.shop-card .buy .coin {
+  vertical-align: middle;
+  margin-left: 2px;
 }
 .shop-card .buy.ghost {
   background: var(--hist);

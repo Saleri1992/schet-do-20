@@ -1677,14 +1677,16 @@ function renderShop() {
 }
 
 function shopCard(ico, name, desc, price, can, action, id, label, on) {
-  const priceHtml = action.startsWith("buy") ? `${price} 🪙` : "";
+  const priceHtml = action.startsWith("buy")
+    ? ` · ${price}&nbsp;<span class="coin sm" aria-hidden="true"></span>`
+    : "";
   const disabled = action === "on" ? "disabled" : "";
   const ghost = action !== "on" && !action.startsWith("buy") ? "ghost" : "";
   const poor = action.startsWith("buy") && !can ? " ghost" : "";
   return `<article class="shop-card">
     <div class="ico">${ico}</div>
     <div class="name">${name}</div>
-    <button type="button" class="buy ${ghost}${poor}" data-act="${action}" data-id="${id}" ${disabled}>${on && action === "on" ? "Надето" : `${label}${priceHtml ? " · " + priceHtml : ""}`}</button>
+    <button type="button" class="buy ${ghost}${poor}" data-act="${action}" data-id="${id}" ${disabled}>${on && action === "on" ? "Надето" : `${label}${priceHtml}`}</button>
     <div class="desc">${desc}</div>
   </article>`;
 }
