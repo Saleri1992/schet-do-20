@@ -7,16 +7,6 @@ const HARD_LIMIT_MS = 60 * 1000;
 const SUPABASE_URL = "https://edetrdhgardsvhoomwto.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_MBvrcDFCQlIcHcWEk8RygQ_zwW2bJ4M";
 
-let sb = null;
-try {
-  if (window.supabase && typeof window.supabase.createClient === "function") {
-    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  }
-} catch (err) {
-  console.warn("supabase init", err);
-  sb = null;
-}
-
 function supabaseHeaders(extra = {}) {
   return {
     apikey: SUPABASE_ANON_KEY,
