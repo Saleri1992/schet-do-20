@@ -95,7 +95,19 @@
       </div>
 
       <button class="btn primary big pulse" id="startBtn">Старт</button>
-      <button class="btn ghost-btn shop-open" id="openShopBtn" type="button">Магазин</button>
+      <div class="home-actions">
+        <button class="btn ghost-btn shop-open" id="openShopBtn" type="button">Магазин</button>
+        <button class="btn ghost-btn" id="openBoardBtn" type="button">Лидеры</button>
+      </div>
+
+      <div class="nick-card" id="nickCard">
+        <label class="nick-label" for="nickInput">Твой ник для топа</label>
+        <div class="nick-row">
+          <input id="nickInput" class="nick-input" type="text" maxlength="16" placeholder="Например: Миша" autocomplete="nickname" />
+          <button type="button" class="btn ghost-btn nick-save" id="nickSaveBtn">Ок</button>
+        </div>
+        <p class="nick-hint" id="nickHint">Ник нужен, чтобы попасть в общий рейтинг. Монеты и скины остаются только на этом устройстве.</p>
+      </div>
 
       <div class="ach-card">
         <div class="card-head">
@@ -229,6 +241,25 @@
       <ul class="session-list" id="sessionList"></ul>
     </section>
 
+    <section class="screen hidden" id="board" data-screen="board">
+      <header class="sub-head">
+        <button class="back-btn" type="button" data-back="home" aria-label="Назад">←</button>
+        <h1>Лидеры</h1>
+      </header>
+      <p class="subtitle">Лучшие результаты одноклассников. Общий топ по никам.</p>
+      <div class="filters" id="boardFilters">
+        <button type="button" class="filter-btn selected" data-board="all">Все</button>
+        <button type="button" class="filter-btn" data-board="1">Лёгкий</button>
+        <button type="button" class="filter-btn" data-board="2">Средний</button>
+        <button type="button" class="filter-btn" data-board="3">Сложный</button>
+        <button type="button" class="filter-btn" data-board="4">Хард</button>
+        <button type="button" class="filter-btn" data-board="5">Реальный</button>
+      </div>
+      <div class="board-status" id="boardStatus">Загрузка…</div>
+      <ol class="board-list" id="boardList"></ol>
+      <button type="button" class="btn ghost-btn" id="boardRefreshBtn">Обновить</button>
+    </section>
+
     <section class="screen hidden" id="shop" data-screen="shop">
       <header class="sub-head">
         <button class="back-btn" type="button" data-back="home" aria-label="Назад">←</button>
@@ -251,6 +282,7 @@
     </section>
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
 </body>
 </html>

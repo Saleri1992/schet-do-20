@@ -1,7 +1,15 @@
 const STORAGE_KEY = "schet-do-20";
+const NICK_KEY = "schet-do-20-nick";
 const DATA_VERSION = 3;
 const TOTAL = 10;
 const HARD_LIMIT_MS = 60 * 1000;
+
+const SUPABASE_URL = "https://edetrdhgardsvhoomwto.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_MBvrcDFCQlIcHcWEk8RygQ_zwW2bJ4M";
+
+const sb = window.supabase
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
 
 const LEVELS = {
   1: {
@@ -182,6 +190,7 @@ const screens = {
   result: document.getElementById("result"),
   gallery: document.getElementById("gallery"),
   sessions: document.getElementById("sessions"),
+  board: document.getElementById("board"),
   shop: document.getElementById("shop"),
 };
 
@@ -232,6 +241,13 @@ const els = {
   homeHistCount: document.getElementById("homeHistCount"),
   openGalleryBtn: document.getElementById("openGalleryBtn"),
   openSessionsBtn: document.getElementById("openSessionsBtn"),
+  openBoardBtn: document.getElementById("openBoardBtn"),
+  nickInput: document.getElementById("nickInput"),
+  nickSaveBtn: document.getElementById("nickSaveBtn"),
+  nickHint: document.getElementById("nickHint"),
+  boardStatus: document.getElementById("boardStatus"),
+  boardList: document.getElementById("boardList"),
+  boardRefreshBtn: document.getElementById("boardRefreshBtn"),
   galleryCount: document.getElementById("galleryCount"),
   galleryFill: document.getElementById("galleryFill"),
   galleryList: document.getElementById("galleryList"),
@@ -255,6 +271,38 @@ let run = null;
 let tickId = null;
 let sessionFilter = "all";
 let shopTab = "boosts";
+let boardFilter = "all";
+let playerNick = loadNick();
+
+function loadNick() {
+  try {
+    return normalizeNick(localStorage.getItem(NICK_KEY) || "");
+  } catch {
+    return "";
+  }
+}
+
+function saveNick(nick) {
+  playerNick = normalizeNick(nick);
+  try {
+    if (playerNick) localStorage.setItem(NICK_KEY, playerNick);
+    else localStorage.removeItem(NICK_KEY);
+  } catch {
+    /* ignore */
+  }
+  return playerNick;
+}
+
+function normalizeNick(raw) {
+  return String(raw || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 16);
+}
+
+function isNickOk(nick) {
+  return nick.length >= 2 && nick.length <= 16;
+}
 
 function rand(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -691,6 +739,14 @@ function historyItemHtml(r, detailed) {
 function renderHome() {
   if (!isLevelOpen(selectedLevel)) selectedLevel = maxOpenLevel();
   applyTheme(selectedLevel);
+  if (els.nickInput && document.activeElement !== els.nickInput) {
+    els.nickInput.value = playerNick;
+  }
+  if (els.nickHint) {
+    els.nickHint.textContent = isNickOk(playerNick)
+      ? `Играешь как «${playerNick}». Результаты уходят в общий топ.`
+      : "Ник нужен, чтобы попасть в общий рейтинг. Монеты и скины остаются только на этом устройстве.";
+  }
   els.totalStars.textContent = String(state.stars);
   els.totalCoins.textContent = String(state.coins);
   const rank = rankFor(state.stars);
@@ -1040,6 +1096,13 @@ function finishRun({ timedOut = false } = {}) {
   showToasts(toasts);
   showScreen("result");
   renderHome();
+  submitOnlineScore({
+    level: run.level,
+    correct,
+    ms,
+    grade: grade ? grade.mark : null,
+    timedOut,
+  });
 }
 
 const FW_COLORS = ["#ffd166", "#ff7a59", "#4ecdc4", "#6bcb77", "#c084fc", "#ff6b9d"];
@@ -1060,6 +1123,103 @@ const fw = {
 function fwResize() {
   fw.canvas.width = window.innerWidth;
   fw.canvas.height = window.innerHeight;
+}
+
+function submitOnlineScore(payload) {
+  if (!sb) return;
+  const nick = normalizeNick(playerNick || (els.nickInput && els.nickInput.value) || "");
+  if (!isNickOk(nick)) {
+    showToasts([{ plain: true, icon: "🏷️", name: "Нет ника", desc: "Напиши ник на главной — и попадёшь в топ!" }]);
+    return;
+  }
+  if (payload.correct < 1) return;
+  sb.from("scores")
+    .insert({
+      nick,
+      level: payload.level,
+      correct: payload.correct,
+      ms: Math.max(0, Math.round(payload.ms)),
+      grade: payload.grade,
+      timed_out: Boolean(payload.timedOut),
+    })
+    .then(({ error }) => {
+      if (error) {
+        console.warn("score upload", error);
+        showToasts([{ plain: true, icon: "☁️", name: "Топ не обновился", desc: "Проверь интернет или таблицу scores в Supabase." }]);
+        return;
+      }
+      showToasts([{ plain: true, icon: "🏆", name: "В топе!", desc: `«${nick}» — ${payload.correct}/10` }]);
+    })
+    .catch((err) => {
+      console.warn("score upload", err);
+    });
+}
+
+function scoreRankKey(row) {
+  const gradeBoost = row.grade != null ? row.grade * 100000 : 0;
+  return row.correct * 1e9 + gradeBoost - Math.min(row.ms || 0, 999999);
+}
+
+function bestScoresByNick(rows) {
+  const map = new Map();
+  rows.forEach((row) => {
+    const nick = normalizeNick(row.nick);
+    if (!isNickOk(nick)) return;
+    const prev = map.get(nick);
+    if (!prev || scoreRankKey(row) > scoreRankKey(prev)) map.set(nick, { ...row, nick });
+  });
+  return [...map.values()].sort((a, b) => scoreRankKey(b) - scoreRankKey(a)).slice(0, 20);
+}
+
+async function renderBoard() {
+  if (!els.boardList || !els.boardStatus) return;
+  els.boardStatus.textContent = "Загрузка…";
+  els.boardList.innerHTML = "";
+  if (!sb) {
+    els.boardStatus.textContent = "Онлайн-топ недоступен в этом браузере.";
+    return;
+  }
+  try {
+    let query = sb
+      .from("scores")
+      .select("nick, level, correct, ms, grade, timed_out, created_at")
+      .order("correct", { ascending: false })
+      .order("ms", { ascending: true })
+      .limit(200);
+    if (boardFilter !== "all") query = query.eq("level", Number(boardFilter));
+    const { data, error } = await query;
+    if (error) throw error;
+    const top = bestScoresByNick(data || []);
+    if (!top.length) {
+      els.boardStatus.textContent = "Пока пусто. Сыграй с ником — и станешь первым!";
+      return;
+    }
+    els.boardStatus.textContent = `Топ-${top.length}${boardFilter === "all" ? "" : ` · ${LEVELS[Number(boardFilter)].name}`}`;
+    els.boardList.innerHTML = top.map((row, i) => {
+      const lvl = LEVELS[row.level] || LEVELS[1];
+      const me = row.nick === playerNick ? " me" : "";
+      const grade = row.grade != null ? ` · оценка ${row.grade}` : "";
+      const timeOut = row.timed_out ? " · время" : "";
+      return `<li class="board-item${me}">
+        <span class="board-place">${i + 1}</span>
+        <div class="board-main">
+          <strong class="board-nick">${escapeHtml(row.nick)}</strong>
+          <span class="board-meta"><span class="hist-level l${row.level}">${lvl.name}</span> ${row.correct}/10 · ${formatTime(row.ms)}${grade}${timeOut}</span>
+        </div>
+      </li>`;
+    }).join("");
+  } catch (err) {
+    console.warn("board", err);
+    els.boardStatus.textContent = "Не удалось загрузить топ. Создай таблицу scores в Supabase (файл supabase-setup.sql).";
+  }
+}
+
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 function spawnFireworks(perfect) {
@@ -1627,6 +1787,23 @@ els.openSessionsBtn.addEventListener("click", () => {
   renderSessions();
   showScreen("sessions");
 });
+els.openBoardBtn.addEventListener("click", () => {
+  showScreen("board");
+  renderBoard();
+});
+els.boardRefreshBtn.addEventListener("click", () => renderBoard());
+els.nickSaveBtn.addEventListener("click", () => {
+  const nick = saveNick(els.nickInput.value);
+  if (!isNickOk(nick)) {
+    showToasts([{ plain: true, icon: "🏷️", name: "Короткий ник", desc: "Нужно от 2 до 16 символов." }]);
+  } else {
+    showToasts([{ plain: true, icon: "✅", name: "Ник сохранён", desc: `Привет, ${nick}!` }]);
+  }
+  renderHome();
+});
+els.nickInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") els.nickSaveBtn.click();
+});
 els.achGrid.addEventListener("click", () => {
   renderGallery();
   showScreen("gallery");
@@ -1643,10 +1820,20 @@ document.getElementById("sessionFilters").addEventListener("click", (e) => {
   const btn = e.target.closest(".filter-btn");
   if (!btn) return;
   sessionFilter = btn.dataset.filter;
-  document.querySelectorAll(".filter-btn").forEach((b) => {
+  document.querySelectorAll("#sessionFilters .filter-btn").forEach((b) => {
     b.classList.toggle("selected", b === btn);
   });
   renderSessions();
+});
+
+document.getElementById("boardFilters").addEventListener("click", (e) => {
+  const btn = e.target.closest(".filter-btn");
+  if (!btn) return;
+  boardFilter = btn.dataset.board;
+  document.querySelectorAll("#boardFilters .filter-btn").forEach((b) => {
+    b.classList.toggle("selected", b === btn);
+  });
+  renderBoard();
 });
 
 document.querySelectorAll(".key[data-key]").forEach((btn) => {

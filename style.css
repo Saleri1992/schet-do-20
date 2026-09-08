@@ -341,7 +341,126 @@ body.slow-mo .timer {
   color: #1d4f8c;
 }
 
-.shop-open { margin-top: 10px; font-size: 18px; }
+.shop-open { font-size: 18px; }
+
+.home-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.home-actions .btn {
+  width: 100%;
+  font-size: 18px;
+}
+
+.nick-card {
+  background: var(--card);
+  border-radius: 20px;
+  padding: 14px;
+  margin: 12px 0 4px;
+  box-shadow: var(--shadow);
+  text-align: left;
+}
+
+.nick-label {
+  display: block;
+  font-weight: 900;
+  font-size: 15px;
+  margin-bottom: 8px;
+}
+
+.nick-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.nick-input {
+  width: 100%;
+  border: 3px solid var(--track);
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 800;
+  background: #fff;
+  color: #3d3a4a;
+}
+
+.nick-save {
+  font-size: 16px !important;
+  padding: 8px 14px !important;
+}
+
+.nick-hint {
+  margin: 8px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.75;
+  line-height: 1.35;
+}
+
+.board-status {
+  text-align: center;
+  font-weight: 800;
+  margin: 8px 0 12px;
+  opacity: 0.85;
+}
+
+.board-list {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.board-item {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 10px;
+  align-items: center;
+  background: var(--card);
+  border-radius: 18px;
+  padding: 10px 12px;
+  box-shadow: var(--shadow);
+  text-align: left;
+}
+
+.board-item.me {
+  outline: 3px solid var(--coral);
+}
+
+.board-place {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  font-size: 18px;
+  background: var(--track);
+}
+
+.board-item:nth-child(1) .board-place { background: linear-gradient(135deg, #ffe9a0, #ffd24a); color: #6a4a00; }
+.board-item:nth-child(2) .board-place { background: linear-gradient(135deg, #eef3f8, #b8c6d4); color: #334; }
+.board-item:nth-child(3) .board-place { background: linear-gradient(135deg, #ffd2b0, #e0894a); color: #5a2a00; }
+
+.board-nick { font-size: 18px; display: block; }
+.board-meta {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+#boardRefreshBtn {
+  width: 100%;
+  font-size: 18px;
+}
 
 .shop-balance {
   display: flex;
