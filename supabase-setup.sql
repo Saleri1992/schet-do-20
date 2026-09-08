@@ -28,6 +28,10 @@ create policy "insert scores"
   on scores for insert
   with check (
     char_length(trim(nick)) between 2 and 16
-    and correct between 0 and 10
+    and correct = 10
+    and timed_out is not true
     and level between 1 and 5
   );
+
+-- Убрать старые неидеальные результаты из топа (по желанию)
+-- delete from scores where correct < 10 or timed_out is true;

@@ -22,7 +22,8 @@ async function fetchScores(levelFilter) {
       select: withLook
         ? "nick,level,correct,ms,grade,timed_out,created_at,skin,hat"
         : "nick,level,correct,ms,grade,timed_out,created_at",
-      order: "correct.desc,ms.asc",
+      correct: "eq.10",
+      order: "ms.asc,created_at.asc",
       limit: "500",
     });
     if (levelFilter !== "all") params.set("level", `eq.${Number(levelFilter)}`);
@@ -37,7 +38,16 @@ async function fetchScores(levelFilter) {
     });
     if (!res.ok) throw new Error(await res.text() || `HTTP ${res.status}`);
   }
-  return res.json();
+  const rows = await res.json();
+  return (Array.isArray(rows) ? rows : []).filter(isBoardScore);
+}
+
+/** В общий топ только идеальные 10/10 без срыва по времени. */
+function isBoardScore(row) {
+  if (!row) return false;
+  const correct = Number(row.correct);
+  const timedOut = row.timed_out === true || row.timedOut === true;
+  return correct === TOTAL && !timedOut;
 }
 
 async function insertScore(row) {
@@ -101,6 +111,7 @@ function scoreQueueId(row) {
 }
 
 function enqueueScore(row) {
+  if (!isBoardScore(row)) return loadScoreQueue().length;
   const queue = loadScoreQueue();
   const id = scoreQueueId(row);
   if (queue.some((item) => scoreQueueId(item) === id)) return queue.length;
@@ -111,7 +122,7 @@ function enqueueScore(row) {
     correct: Number(row.correct),
     ms: Math.max(0, Math.round(row.ms)),
     grade: row.grade == null ? null : Number(row.grade),
-    timed_out: Boolean(row.timed_out),
+    timed_out: false,
     skin: row.skin || null,
     hat: row.hat || null,
     local_at: row.local_at || new Date().toISOString(),
@@ -138,8 +149,14 @@ function queueLocalUnsyncedRuns() {
   const nick = normalizeNick(playerNick);
   if (!isNickOk(nick)) return 0;
   let added = 0;
+  let changed = false;
   (state.runs || []).forEach((r) => {
-    if (r.synced || !r.correct || r.correct < 1) return;
+    if (r.synced) return;
+    if (!isBoardScore({ correct: r.correct, timedOut: r.timedOut })) {
+      r.synced = true;
+      changed = true;
+      return;
+    }
     const before = loadScoreQueue().length;
     enqueueScore({
       id: `run:${r.startedAt || r.date || `${r.level}-${r.ms}-${r.correct}`}`,
@@ -148,13 +165,14 @@ function queueLocalUnsyncedRuns() {
       correct: r.correct,
       ms: r.ms || 0,
       grade: r.grade == null ? null : r.grade,
-      timed_out: Boolean(r.timedOut),
+      timed_out: false,
       skin: (state.shop && state.shop.skin) || "honey",
       hat: (state.shop && state.shop.hat) || "none",
       local_at: r.date || r.startedAt || new Date().toISOString(),
     });
     if (loadScoreQueue().length > before) added += 1;
   });
+  if (changed) saveState();
   return added;
 }
 
@@ -163,7 +181,9 @@ let syncInFlight = null;
 async function syncScoreQueue({ quiet = true } = {}) {
   if (syncInFlight) return syncInFlight;
   queueLocalUnsyncedRuns();
-  const queue = loadScoreQueue();
+  const pruned = loadScoreQueue().filter(isBoardScore);
+  saveScoreQueue(pruned);
+  const queue = pruned;
   if (!queue.length) {
     updateSyncHint();
     return { sent: 0, left: 0 };
@@ -188,11 +208,11 @@ async function syncScoreQueue({ quiet = true } = {}) {
     saveScoreQueue(left);
     if (!quiet) {
       if (sent > 0) {
-        showToasts([{ plain: true, icon: "🏆", name: "Топ обновлён", desc: `Отправлено результатов: ${sent}` }]);
+        showToasts([{ plain: true, icon: "🏆", name: "Топ обновлён", desc: `Отправлено идеальных: ${sent}` }]);
       } else if (left.length) {
         showToasts([{ plain: true, icon: "☁️", name: "Сеть слабая", desc: `В очереди ещё ${left.length}. Попробуем снова.` }]);
       } else {
-        showToasts([{ plain: true, icon: "☁️", name: "Очередь пуста", desc: "Все результаты уже в топе или ещё не сыграны." }]);
+        showToasts([{ plain: true, icon: "☁️", name: "Очередь пуста", desc: "В топ идут только 10/10 без срыва по времени." }]);
       }
     }
     updateSyncHint();
@@ -415,10 +435,10 @@ const ACHIEVEMENTS = [
   { id: "five_runs", icon: "🎯", name: "Тренировка", desc: "5 прогонов", check: (s) => s.runs.length >= 5, progress: (s) => ({ current: s.runs.length, target: 5 }) },
   { id: "stars_25", icon: "✨", name: "Звёздный", desc: "25 звёзд", check: (s) => s.stars >= 25, progress: (s) => ({ current: s.stars, target: 25 }) },
   { id: "coop_party", icon: "🤝", name: "Класс в сборе", desc: "Кооп: 5 разных ников в общем топе", coop: true, check: () => coopStats.players >= 5, progress: () => ({ current: coopStats.players, target: 5 }) },
-  { id: "coop_runs", icon: "🌍", name: "Общий зачёт", desc: "Кооп: всего 40 прогонов у всех", coop: true, check: () => coopStats.runs >= 40, progress: () => ({ current: coopStats.runs, target: 40 }) },
+  { id: "coop_runs", icon: "🌍", name: "Общий зачёт", desc: "Кооп: всего 40 идеальных 10/10 у всех", coop: true, check: () => coopStats.runs >= 40, progress: () => ({ current: coopStats.runs, target: 40 }) },
   { id: "coop_perfects", icon: "🌟", name: "Россыпь десяток", desc: "Кооп: 25 идеальных 10/10 у всех", coop: true, check: () => coopStats.perfects >= 25, progress: () => ({ current: coopStats.perfects, target: 25 }) },
-  { id: "coop_hard", icon: "🔥", name: "Огненная банда", desc: "Кооп: 8 ников играли хард/реальный", coop: true, check: () => coopStats.hardPlayers >= 8, progress: () => ({ current: coopStats.hardPlayers, target: 8 }) },
-  { id: "coop_sum", icon: "🧮", name: "Сумма класса", desc: "Кооп: сумма верных ответов всех ≥ 300", coop: true, check: () => coopStats.sumCorrect >= 300, progress: () => ({ current: coopStats.sumCorrect, target: 300 }) },
+  { id: "coop_hard", icon: "🔥", name: "Огненная банда", desc: "Кооп: 8 ников с 10/10 на хард/реальном", coop: true, check: () => coopStats.hardPlayers >= 8, progress: () => ({ current: coopStats.hardPlayers, target: 8 }) },
+  { id: "coop_sum", icon: "🧮", name: "Сумма класса", desc: "Кооп: сумма верных из идеальных прогонов ≥ 300", coop: true, check: () => coopStats.sumCorrect >= 300, progress: () => ({ current: coopStats.sumCorrect, target: 300 }) },
 ];
 
 async function refreshCoopStats() {
@@ -1637,7 +1657,7 @@ function ensureNickFromInput() {
 function submitOnlineScore(payload) {
   const nick = ensureNickFromInput() || playerNick;
   if (!isNickOk(nick)) return;
-  if (payload.correct < 1) return;
+  if (!isBoardScore({ correct: payload.correct, timedOut: payload.timedOut })) return;
   const localId = payload.localId || `${Date.now()}`;
   enqueueScore({
     id: `run:${localId}`,
@@ -1646,7 +1666,7 @@ function submitOnlineScore(payload) {
     correct: Number(payload.correct),
     ms: Math.max(0, Math.round(payload.ms)),
     grade: payload.grade == null ? null : Number(payload.grade),
-    timed_out: Boolean(payload.timedOut),
+    timed_out: false,
     skin: (state.shop && state.shop.skin) || "honey",
     hat: (state.shop && state.shop.hat) || "none",
     local_at: new Date().toISOString(),
@@ -1654,22 +1674,22 @@ function submitOnlineScore(payload) {
   updateSyncHint();
   syncScoreQueue({ quiet: true }).then(({ sent, left }) => {
     if (sent > 0 && left === 0) {
-      showToasts([{ plain: true, icon: "🏆", name: "В топе!", desc: `«${nick}» · ${LEVELS[payload.level]?.name || ""} ${payload.correct}/10` }]);
+      showToasts([{ plain: true, icon: "🏆", name: "В топе!", desc: `«${nick}» · ${LEVELS[payload.level]?.name || ""} · ${formatTime(payload.ms)}` }]);
       refreshCoopStats();
     } else if (left > 0) {
       showToasts([{
         plain: true,
         icon: "📦",
         name: "Сохранено локально",
-        desc: "Сеть слабая — результат уйдёт в топ, когда появится интернет.",
+        desc: "Сеть слабая — идеальный результат уйдёт в топ, когда появится интернет.",
       }]);
     }
   });
 }
 
 function scoreRankKey(row) {
-  const gradeBoost = row.grade != null ? row.grade * 100000 : 0;
-  return row.correct * 1e9 + gradeBoost - Math.min(row.ms || 0, 999999);
+  // Все записи в топе — 10/10: сравниваем только скорость (меньше ms — выше).
+  return -Math.min(Number(row.ms) || 0, 9999999);
 }
 
 function bestScoresByNick(rows) {
@@ -1703,7 +1723,7 @@ async function renderBoard() {
   els.boardStatus.textContent = "Загрузка…";
   try {
     const rows = await fetchScores(boardFilter);
-    const list = Array.isArray(rows) ? rows : [];
+    const list = (Array.isArray(rows) ? rows : []).filter(isBoardScore);
     // обновить облики из свежих строк
     list.forEach((r) => {
       const nick = normalizeNick(r.nick);
@@ -1718,21 +1738,19 @@ async function renderBoard() {
     if (!top.length) {
       const lvlName = boardFilter === "all" ? "" : ` на «${LEVELS[Number(boardFilter)].name}»`;
       els.boardStatus.textContent = pending
-        ? `Пока пусто${lvlName}. В очереди ${pending} — ждём сеть.`
-        : `Пока пусто${lvlName}. Сыграй этот режим с ником — и появишься здесь!`;
+        ? `Пока нет идеальных 10/10${lvlName}. В очереди ${pending} — ждём сеть.`
+        : `Пока нет идеальных 10/10${lvlName}. Пройди все примеры вовремя — и появишься здесь!`;
       updateSyncHint();
       return;
     }
     els.boardStatus.textContent = boardFilter === "all"
-      ? `Лучшие по режимам · ${top.length}${pending ? ` · очередь ${pending}` : ""}`
-      : `Топ · ${LEVELS[Number(boardFilter)].name} · ${top.length}${pending ? ` · очередь ${pending}` : ""}`;
+      ? `Гонка за время · только 10/10 · ${top.length}${pending ? ` · очередь ${pending}` : ""}`
+      : `Топ по времени · ${LEVELS[Number(boardFilter)].name} · 10/10 · ${top.length}${pending ? ` · очередь ${pending}` : ""}`;
     els.boardList.innerHTML = top.map((row, i) => {
       const lvl = LEVELS[row.level] || LEVELS[1];
       const place = i + 1;
       const me = row.nick === playerNick ? " me" : "";
       const podium = place <= 3 ? ` podium p${place}` : "";
-      const grade = row.grade != null ? ` · оценка ${row.grade}` : "";
-      const timeOut = row.timed_out ? " · время" : "";
       const look = coopStats.looks[row.nick] || { skin: row.skin || "honey", hat: row.hat || "none" };
       const placeInner = place === 1
         ? `<span class="board-medal crown" aria-hidden="true"></span><span class="board-num">1</span>`
@@ -1753,7 +1771,7 @@ async function renderBoard() {
         ${boardAvatarHtml(row.nick, look.skin, look.hat)}
         <div class="board-main">
           <strong class="board-nick">${nickBadge}${escapeHtml(row.nick)}</strong>
-          <span class="board-meta"><span class="hist-level l${row.level}">${lvl.name}</span> ${row.correct}/10 · ${formatTime(row.ms)}${grade}${timeOut}</span>
+          <span class="board-meta"><span class="hist-level l${row.level}">${lvl.name}</span> 10/10 · ${formatTime(row.ms)}</span>
         </div>
       </li>`;
     }).join("");
