@@ -70,15 +70,18 @@ async function fetchScores(levelFilter, modeFilter = "all") {
   return list;
 }
 
-/** В общий топ только идеальные 10/10 без срыва по времени. */
+/** В общий топ только идеальные 10/10 без срыва по времени. Режим «Меры» в Supabase не пишем. */
 function isBoardScore(row) {
   if (!row) return false;
+  const mode = row.mode || MODE_BASIC;
+  if (mode === MODE_UNITS) return false;
   const correct = Number(row.correct);
   const timedOut = row.timed_out === true || row.timedOut === true;
   return correct === TOTAL && !timedOut;
 }
 
 async function insertScore(row) {
+  if ((row.mode || MODE_BASIC) === MODE_UNITS) return;
   const payload = {
     nick: row.nick,
     level: Number(row.level),
@@ -141,6 +144,7 @@ function scoreQueueId(row) {
 }
 
 function enqueueScore(row) {
+  if ((row.mode || MODE_BASIC) === MODE_UNITS) return loadScoreQueue().length;
   if (!isBoardScore(row)) return loadScoreQueue().length;
   const queue = loadScoreQueue();
   const id = scoreQueueId(row);
@@ -183,7 +187,7 @@ function queueLocalUnsyncedRuns() {
   let changed = false;
   (state.runs || []).forEach((r) => {
     if (r.synced) return;
-    if (!isBoardScore({ correct: r.correct, timedOut: r.timedOut })) {
+    if ((r.mode || MODE_BASIC) === MODE_UNITS || !isBoardScore({ correct: r.correct, timedOut: r.timedOut, mode: r.mode })) {
       r.synced = true;
       changed = true;
       return;
@@ -817,7 +821,7 @@ let selectedMode = (() => {
     return MODE_BASIC;
   }
 })();
-boardMode = selectedMode;
+boardMode = selectedMode === MODE_CHAIN ? MODE_CHAIN : MODE_BASIC;
 let playerNick = loadNick();
 
 function loadNick() {
@@ -2553,6 +2557,7 @@ function finishRun({ timedOut = false } = {}) {
     ms,
     grade: grade ? grade.mark : null,
     timedOut,
+    mode: selectedMode,
     localId: run.startedIso,
   });
 }
@@ -2586,7 +2591,9 @@ function ensureNickFromInput() {
 function submitOnlineScore(payload) {
   const nick = ensureNickFromInput() || playerNick;
   if (!isNickOk(nick)) return;
-  if (!isBoardScore({ correct: payload.correct, timedOut: payload.timedOut })) return;
+  const mode = payload.mode || selectedMode || MODE_BASIC;
+  if (mode === MODE_UNITS) return;
+  if (!isBoardScore({ correct: payload.correct, timedOut: payload.timedOut, mode })) return;
   const localId = payload.localId || `${Date.now()}`;
   enqueueScore({
     id: `run:${localId}`,
@@ -2598,7 +2605,7 @@ function submitOnlineScore(payload) {
     timed_out: false,
     skin: (state.shop && state.shop.skin) || "honey",
     hat: (state.shop && state.shop.hat) || "none",
-    mode: selectedMode,
+    mode,
     local_at: new Date().toISOString(),
   });
   updateSyncHint();
