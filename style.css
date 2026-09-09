@@ -2167,6 +2167,11 @@ body[data-theme="exam"] .hist-level.l5 { background: #e8b84a; color: #1a2332; }
   font-size: 48px;
   font-weight: 900;
   letter-spacing: 2px;
+  text-align: center;
+  width: auto;
+  max-width: 100%;
+  margin: 0 auto;
+  transform-origin: center center;
 }
 
 .problem.units-cmp {
@@ -2175,7 +2180,11 @@ body[data-theme="exam"] .hist-level.l5 { background: #e8b84a; color: #1a2332; }
   letter-spacing: 0;
   white-space: pre-line;
   text-align: left;
-  width: 100%;
+  width: max-content;
+  max-width: calc(100% - 24px);
+  margin: 0 auto;
+  padding: 0 12px;
+  box-sizing: border-box;
 }
 
 .problem-card.pop .problem {
@@ -2656,9 +2665,9 @@ body.fw-perfect .fw-canvas {
 }
 
 @keyframes number-pop {
-  0% { transform: scale(0.4) rotate(-8deg); opacity: 0; }
-  70% { transform: scale(1.12) rotate(2deg); opacity: 1; }
-  100% { transform: scale(1) rotate(0); }
+  0% { transform: scale(0.55); opacity: 0; }
+  70% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); }
 }
 
 @keyframes pulse {

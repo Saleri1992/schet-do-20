@@ -2189,7 +2189,8 @@ function renderProblem() {
   els.stepNow.textContent = String(run.index + 1);
   els.progressFill.style.width = `${((run.index + 1) / TOTAL) * 100}%`;
   els.problem.textContent = item.text || `${item.a}  ${item.op}  ${item.b}  =  ?`;
-  els.problem.classList.toggle("units-cmp", Boolean(item.compare) || (item.text && item.text.includes("\n")));
+  // Только сравнение мер — многострочный блок; обычные примеры всегда по центру.
+  els.problem.classList.toggle("units-cmp", Boolean(item.compare));
   els.problemCard.classList.remove("pop");
   void els.problemCard.offsetWidth;
   els.problemCard.classList.add("pop");
