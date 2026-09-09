@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=5" />
+  <link rel="stylesheet" href="style.css?v=6" />
 </head>
 <body data-theme="easy">
   <div class="sky">
@@ -55,6 +55,7 @@
       <div class="filters mode-tabs" id="modeTabs">
         <button type="button" class="filter-btn selected" data-mode="basic">База</button>
         <button type="button" class="filter-btn" data-mode="chain">2 действия</button>
+        <button type="button" class="filter-btn" data-mode="units">Меры</button>
       </div>
 
       <div class="wallet" id="homeReward">
@@ -87,38 +88,7 @@
         <div class="unlock-hint" id="unlockHint"></div>
       </div>
 
-      <div class="levels" id="levels">
-        <button type="button" class="level-card easy selected" data-level="1">
-          <span class="lvl-medal m1"></span>
-          <span class="lvl-name">Лёгкий</span>
-          <span class="lvl-desc">Простые + и − до 20</span>
-          <span class="lvl-need"></span>
-        </button>
-        <button type="button" class="level-card medium" data-level="2">
-          <span class="lvl-medal m2"></span>
-          <span class="lvl-name">Средний</span>
-          <span class="lvl-desc">Двузначные суммы и вычитание из 10–20</span>
-          <span class="lvl-need"></span>
-        </button>
-        <button type="button" class="level-card sharp" data-level="3">
-          <span class="lvl-medal m3"></span>
-          <span class="lvl-name">Сложный</span>
-          <span class="lvl-desc">7+8 и 15−8, плюс 3 примера как на среднем</span>
-          <span class="lvl-need"></span>
-        </button>
-        <button type="button" class="level-card hard" data-level="4">
-          <span class="lvl-medal m4"></span>
-          <span class="lvl-name">Хард</span>
-          <span class="lvl-desc">Как сложный, но только 1 минута</span>
-          <span class="lvl-need"></span>
-        </button>
-        <button type="button" class="level-card exam" data-level="5">
-          <span class="lvl-medal m5"></span>
-          <span class="lvl-name">Реальный хард</span>
-          <span class="lvl-desc">1 минута + школьная оценка: 1 ошибка — 4, 2 — 3, 3+ — 2</span>
-          <span class="lvl-need"></span>
-        </button>
-      </div>
+      <div class="levels" id="levels"></div>
 
       <button class="btn primary big pulse" id="startBtn">Старт</button>
       <div class="home-actions">
@@ -271,6 +241,7 @@
         <button type="button" class="filter-btn" data-filter="3">Сложный</button>
         <button type="button" class="filter-btn" data-filter="4">Хард</button>
         <button type="button" class="filter-btn" data-filter="5">Реальный</button>
+        <button type="button" class="filter-btn" data-filter="6">Секрет</button>
       </div>
       <ul class="session-list" id="sessionList"></ul>
     </section>
@@ -284,14 +255,16 @@
       <div class="filters mode-tabs" id="boardModeFilters">
         <button type="button" class="filter-btn selected" data-board-mode="basic">База</button>
         <button type="button" class="filter-btn" data-board-mode="chain">2 действия</button>
+        <button type="button" class="filter-btn" data-board-mode="units">Меры</button>
       </div>
       <div class="filters" id="boardFilters">
         <button type="button" class="filter-btn selected" data-board="all">Все</button>
-        <button type="button" class="filter-btn" data-board="1">Лёгкий</button>
-        <button type="button" class="filter-btn" data-board="2">Средний</button>
-        <button type="button" class="filter-btn" data-board="3">Сложный</button>
-        <button type="button" class="filter-btn" data-board="4">Хард</button>
-        <button type="button" class="filter-btn" data-board="5">Реальный</button>
+        <button type="button" class="filter-btn" data-board="1">1</button>
+        <button type="button" class="filter-btn" data-board="2">2</button>
+        <button type="button" class="filter-btn" data-board="3">3</button>
+        <button type="button" class="filter-btn" data-board="4">4</button>
+        <button type="button" class="filter-btn" data-board="5">5</button>
+        <button type="button" class="filter-btn" data-board="6">Секрет</button>
       </div>
       <div class="board-status" id="boardStatus">Загрузка…</div>
       <ol class="board-list" id="boardList"></ol>
@@ -322,6 +295,31 @@
     </section>
   </main>
 
-  <script src="app.js?v=5"></script>
+  <div class="units-intro hidden" id="unitsIntro" aria-hidden="true">
+    <div class="units-intro-card">
+      <h2>Таблица мер</h2>
+      <p class="units-intro-lead">Посмотри 10 секунд — это время в зачёт не идёт.</p>
+      <div class="units-table">
+        <div>
+          <h3>Длина</h3>
+          <ul>
+            <li>1 м = 10 дм = 100 см = 1000 мм</li>
+            <li>1 дм = 10 см = 100 мм</li>
+            <li>1 см = 10 мм</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Объём</h3>
+          <ul>
+            <li>1 л = 1000 мл</li>
+          </ul>
+          <p class="units-note">Длину и объём в одном примере не смешиваем.</p>
+        </div>
+      </div>
+      <p class="units-countdown">Старт через <strong id="unitsCountdown">10</strong>…</p>
+    </div>
+  </div>
+
+  <script src="app.js?v=6"></script>
 </body>
 </html>

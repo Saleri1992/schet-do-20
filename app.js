@@ -1,11 +1,16 @@
 const STORAGE_KEY = "schet-do-20";
 const NICK_KEY = "schet-do-20-nick";
 const SCORE_QUEUE_KEY = "schet-do-20-score-queue";
-const DATA_VERSION = 5;
+const DATA_VERSION = 6;
 const TOTAL = 10;
 const HARD_LIMIT_MS = 60 * 1000;
+const SECRET_SPEED_MS = 40 * 1000;
+const UNITS_INTRO_MS = 10 * 1000;
 const MODE_BASIC = "basic";
 const MODE_CHAIN = "chain";
+const MODE_UNITS = "units";
+const SECRET_LEVEL = 6;
+const HOME_ACH_PREVIEW = 8;
 
 const SUPABASE_URL = "https://edetrdhgardsvhoomwto.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_MBvrcDFCQlIcHcWEk8RygQ_zwW2bJ4M";
@@ -31,6 +36,7 @@ async function fetchScores(levelFilter, modeFilter = "all") {
     if (levelFilter !== "all") params.set("level", `eq.${Number(levelFilter)}`);
     if (withMode && modeFilter === MODE_CHAIN) params.set("mode", `eq.${MODE_CHAIN}`);
     if (withMode && modeFilter === MODE_BASIC) params.set("or", "(mode.eq.basic,mode.is.null)");
+    if (withMode && modeFilter === MODE_UNITS) params.set("mode", `eq.${MODE_UNITS}`);
     return params;
   };
   let res = await fetch(`${SUPABASE_URL}/rest/v1/scores?${makeParams(true, true)}`, {
@@ -58,6 +64,7 @@ async function fetchScores(levelFilter, modeFilter = "all") {
   const rows = await res.json();
   const list = (Array.isArray(rows) ? rows : []).filter(isBoardScore);
   if (modeFilter === MODE_CHAIN) return list.filter((r) => r.mode === MODE_CHAIN);
+  if (modeFilter === MODE_UNITS) return list.filter((r) => r.mode === MODE_UNITS);
   if (modeFilter === MODE_BASIC) return list.filter((r) => !r.mode || r.mode === MODE_BASIC);
   return list;
 }
@@ -320,6 +327,39 @@ const LEVELS = {
     balloons: ["📕", "✏️", "📕"],
     subtitle: "Минута + школьная оценка. Буст «Читер» прощает ошибки (до 4).",
   },
+  6: {
+    id: 6,
+    name: "Секрет",
+    theme: "secret",
+    coin: 8,
+    limit: null,
+    secret: true,
+    balloons: ["🗝️", "✨", "🗝️"],
+    subtitle: "Секрет: числа до 30. Без таймера. Открывается за скорость во всех режимах.",
+  },
+};
+
+const UNIT_LEVELS = {
+  1: {
+    id: 1,
+    name: "Конвертация",
+    theme: "units",
+    coin: 3,
+    limit: null,
+    units: "convert",
+    balloons: ["📏", "🧪", "📏"],
+    subtitle: "Переведи в соседние единицы. Длину и объём не смешиваем.",
+  },
+  2: {
+    id: 2,
+    name: "Сравнение",
+    theme: "unitsCmp",
+    coin: 4,
+    limit: null,
+    units: "compare",
+    balloons: ["⚖️", "📏", "⚖️"],
+    subtitle: "Что больше? Ответ: 1, 2 или 0 если равно. Сначала таблица мер 10 сек.",
+  },
 };
 
 const MODE_META = {
@@ -327,27 +367,45 @@ const MODE_META = {
     id: MODE_BASIC,
     name: "База",
     unlockText: "Базовые уровни",
-    levelNames: ["Лёгкий", "Средний", "Сложный", "Хард", "Реальный хард"],
+    maxLevel: SECRET_LEVEL,
+    levelNames: ["Лёгкий", "Средний", "Сложный", "Хард", "Реальный хард", "Секрет"],
     levelDescs: [
       "Простые + и − до 20",
       "Двузначные суммы и вычитание из 10–20",
       "7+8 и 15−8, плюс 3 примера как на среднем",
       "Как сложный, но только 1 минута",
       "1 минута + школьная оценка: 1 ошибка — 4, 2 — 3, 3+ — 2",
+      "Секрет: +/− до 30, без таймера",
     ],
+    themes: ["easy", "medium", "sharp", "hard", "exam", "secret"],
   },
   [MODE_CHAIN]: {
     id: MODE_CHAIN,
     name: "2 действия",
     unlockText: "Цепочки в 2 действия",
-    levelNames: ["Лёгкий", "Средний", "Сложный", "Хард", "Реальный хард"],
+    maxLevel: SECRET_LEVEL,
+    levelNames: ["Лёгкий", "Средний", "Сложный", "Хард", "Реальный хард", "Секрет"],
     levelDescs: [
       "Примеры в 2 шага до 20. Тут можно и с нулём.",
       "2 шага: +/− без нулей и без отрицательных",
       "Больше смешанных вариантов +/− в 2 шага",
       "Как сложный, но на весь тест 1 минута",
       "Минута + школьная оценка в режиме 2 шага",
+      "Секрет: 2 шага до 30, без таймера",
     ],
+    themes: ["easy", "medium", "sharp", "hard", "exam", "secret"],
+  },
+  [MODE_UNITS]: {
+    id: MODE_UNITS,
+    name: "Меры",
+    unlockText: "Единицы измерения",
+    maxLevel: 2,
+    levelNames: ["Конвертация", "Сравнение"],
+    levelDescs: [
+      "см↔мм, дм↔см, дм↔м, см↔м, л↔мл — только ближайшие",
+      "Сравни длины или объёмы: 1 / 2 / 0=равно",
+    ],
+    themes: ["units", "unitsCmp"],
   },
 };
 
@@ -400,6 +458,7 @@ const TOYS = {
   starpin: { id: "starpin", name: "Звёздная булавка", price: 260, icon: "⭐" },
   rocket: { id: "rocket", name: "Мини-ракета", price: 340, icon: "🚀" },
   donut: { id: "donut", name: "Пончик", price: 180, icon: "🍩" },
+  secretKey: { id: "secretKey", name: "Ключ тайны", price: 0, icon: "🗝️", secret: true },
 };
 
 /* Артефакты персонажа: нужны и звание, и монеты (по одному на каждое звание). */
@@ -432,6 +491,7 @@ const SKIES = {
   meteorShowers: { id: "meteorShowers", name: "Метеоры", icon: "☄️", rank: "Герой", rankMin: 520, price: 0, desc: "Падающие звёзды-метеоры." },
   crystalSky: { id: "crystalSky", name: "Кристальное небо", icon: "💎", rank: "Легенда", rankMin: 660, price: 0, desc: "Кристаллы и искры в воздухе." },
   archmageSky: { id: "archmageSky", name: "Небо архимага", icon: "🪄", rank: "Архимаг", rankMin: 850, price: 0, desc: "Луна, звёзды, облака и магия сразу." },
+  secretNight: { id: "secretNight", name: "Тайная ночь", icon: "🗝️", rank: "Секрет", rankMin: 99999, price: 0, desc: "Награда за секретный уровень. Не купить." },
 };
 
 const FX = {
@@ -569,6 +629,13 @@ const ACHIEVEMENTS = [
   { id: "boost_extra_5", icon: "⏳", name: "Запас времени", desc: "Используй +15 сек 5 раз", check: (s) => (s.shop?.boostUsed?.extra || 0) >= 5, progress: (s) => ({ current: s.shop?.boostUsed?.extra || 0, target: 5 }) },
   { id: "boost_cheat_5", icon: "🕵️", name: "Хитрый план", desc: "Используй читер 5 раз", check: (s) => (s.shop?.boostUsed?.cheat || 0) >= 5, progress: (s) => ({ current: s.shop?.boostUsed?.cheat || 0, target: 5 }) },
   { id: "boost_any_10", icon: "⚡", name: "Буст-мастер", desc: "Используй любые бусты суммарно 10 раз", check: (s) => ((s.shop?.boostUsed?.slow || 0) + (s.shop?.boostUsed?.extra || 0) + (s.shop?.boostUsed?.cheat || 0)) >= 10, progress: (s) => ({ current: (s.shop?.boostUsed?.slow || 0) + (s.shop?.boostUsed?.extra || 0) + (s.shop?.boostUsed?.cheat || 0), target: 10 }) },
+  { id: "units_convert", icon: "📏", name: "Переводчик", desc: "10/10 на конвертации мер", check: (s) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_UNITS && (r.level || 1) === 1 && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_UNITS && (r.level || 1) === 1).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
+  { id: "units_compare", icon: "⚖️", name: "Весы", desc: "10/10 на сравнении мер", check: (s) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_UNITS && r.level === 2 && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_UNITS && r.level === 2).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
+  { id: "speed_gate", icon: "⏱️", name: "Спринтер режимов", desc: "Все обычные уровни Базы, 2 действий и Мер — 10/10 быстрее 40 сек", check: () => isSecretGateReady(), progress: () => ({ current: secretGateProgress().current, target: secretGateProgress().target }) },
+  { id: "secret_open", icon: "🔓", name: "Дверь приоткрыта", desc: "Открой секретный уровень", check: () => isSecretUnlocked(), progress: () => ({ current: isSecretUnlocked() ? 1 : 0, target: 1 }) },
+  { id: "secret_basic", icon: "🗝️", name: "Секрет базы", desc: "10/10 на секретном уровне Базы", check: (s) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_BASIC && r.level === SECRET_LEVEL && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_BASIC && r.level === SECRET_LEVEL).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
+  { id: "secret_chain", icon: "🔐", name: "Секрет цепочки", desc: "10/10 на секретном уровне 2 действий", check: (s) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_CHAIN && r.level === SECRET_LEVEL && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_CHAIN && r.level === SECRET_LEVEL).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
+  { id: "secret_both", icon: "🏆", name: "Хранитель тайн", desc: "Пройди оба секретных уровня на 10/10 — получи ключ и небо", gold: true, check: (s) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_BASIC && r.level === SECRET_LEVEL && r.correct === 10) && s.runs.some((r) => r.mode === MODE_CHAIN && r.level === SECRET_LEVEL && r.correct === 10), progress: (s) => ({ current: [MODE_BASIC, MODE_CHAIN].filter((m) => s.runs.some((r) => (r.mode || MODE_BASIC) === m && r.level === SECRET_LEVEL && r.correct === 10)).length, target: 2 }) },
 ];
 
 async function refreshCoopStats() {
@@ -711,6 +778,17 @@ let sessionFilter = "all";
 let shopTab = "boosts";
 let boardFilter = "all";
 let boardMode = MODE_BASIC;
+let selectedMode = (() => {
+  try {
+    const saved = localStorage.getItem(`${STORAGE_KEY}-mode`);
+    if (saved === MODE_CHAIN) return MODE_CHAIN;
+    if (saved === MODE_UNITS) return MODE_UNITS;
+    return MODE_BASIC;
+  } catch {
+    return MODE_BASIC;
+  }
+})();
+boardMode = selectedMode;
 let playerNick = loadNick();
 
 function loadNick() {
@@ -812,7 +890,7 @@ function loadState() {
     if (!raw) return empty;
     const data = JSON.parse(raw);
     const ver = Number(data.version);
-    if (ver !== 2 && ver !== 3 && ver !== 4 && ver !== DATA_VERSION) {
+    if (ver !== 2 && ver !== 3 && ver !== 4 && ver !== 5 && ver !== DATA_VERSION) {
       return { ...empty, lastLevel: 1 };
     }
     let runs = Array.isArray(data.runs) ? data.runs : [];
@@ -852,6 +930,67 @@ function rankIndexOf(stars) {
   return idx;
 }
 
+function levelCfg(level, mode = selectedMode) {
+  if (mode === MODE_UNITS) return UNIT_LEVELS[level] || UNIT_LEVELS[1];
+  return LEVELS[level] || LEVELS[1];
+}
+
+function modeLabelShort(mode) {
+  if (mode === MODE_CHAIN) return " · 2ш";
+  if (mode === MODE_UNITS) return " · меры";
+  return "";
+}
+
+function fastPerfect(modeId, levelId) {
+  return state.runs.some((r) =>
+    (r.mode || MODE_BASIC) === modeId
+    && (r.level || 1) === levelId
+    && r.correct === 10
+    && !r.timedOut
+    && (r.ms || 0) > 0
+    && (r.ms || 0) < SECRET_SPEED_MS
+  );
+}
+
+function secretGateNeeds() {
+  const need = [];
+  for (let l = 1; l <= 5; l += 1) {
+    need.push({ mode: MODE_BASIC, level: l });
+    need.push({ mode: MODE_CHAIN, level: l });
+  }
+  need.push({ mode: MODE_UNITS, level: 1 });
+  need.push({ mode: MODE_UNITS, level: 2 });
+  return need;
+}
+
+function secretGateProgress() {
+  const need = secretGateNeeds();
+  const current = need.filter((n) => fastPerfect(n.mode, n.level)).length;
+  return { current, target: need.length };
+}
+
+function isSecretGateReady() {
+  return secretGateNeeds().every((n) => fastPerfect(n.mode, n.level));
+}
+
+function isSecretUnlocked() {
+  return isSecretGateReady();
+}
+
+function grantSecretReward() {
+  let changed = false;
+  if (!state.shop.toys.includes("secretKey")) {
+    state.shop.toys.push("secretKey");
+    if (state.shop.toysOn.length < 4) state.shop.toysOn.push("secretKey");
+    changed = true;
+  }
+  if (!state.shop.skies.includes("secretNight")) {
+    state.shop.skies.push("secretNight");
+    changed = true;
+  }
+  return changed;
+}
+
 function hasPerfect(levelId) {
   return state.runs.some((r) =>
     (r.mode || MODE_BASIC) === selectedMode && (r.level || 1) === levelId && r.correct === 10
@@ -859,17 +998,27 @@ function hasPerfect(levelId) {
 }
 
 function isLevelOpen(id) {
+  const modeInfo = MODE_META[selectedMode] || MODE_META[MODE_BASIC];
+  const max = modeInfo.maxLevel || 5;
+  if (id < 1 || id > max) return false;
+  if (selectedMode === MODE_UNITS) {
+    if (id === 1) return modeProgress(MODE_BASIC, 3) || modeProgress(MODE_CHAIN, 3);
+    return hasPerfect(1);
+  }
+  if (id === SECRET_LEVEL) return isSecretUnlocked();
   if (id <= 1) return true;
   return hasPerfect(id - 1);
 }
 
 function maxOpenLevel() {
-  let max = 1;
-  for (let i = 2; i <= 5; i += 1) {
-    if (isLevelOpen(i)) max = i;
+  const modeInfo = MODE_META[selectedMode] || MODE_META[MODE_BASIC];
+  const max = modeInfo.maxLevel || 5;
+  let open = 1;
+  for (let i = 1; i <= max; i += 1) {
+    if (isLevelOpen(i)) open = i;
     else break;
   }
-  return max;
+  return open;
 }
 
 function modeProgress(modeId, levelId) {
@@ -925,21 +1074,35 @@ function xpInfo() {
 function renderLevels() {
   if (!isLevelOpen(selectedLevel)) selectedLevel = maxOpenLevel();
   const modeInfo = MODE_META[selectedMode] || MODE_META[MODE_BASIC];
-  document.querySelectorAll(".level-card").forEach((card) => {
-    const id = Number(card.dataset.level);
+  const root = document.getElementById("levels");
+  if (!root) return;
+  const max = modeInfo.maxLevel || 5;
+  root.innerHTML = Array.from({ length: max }, (_, i) => {
+    const id = i + 1;
     const open = isLevelOpen(id);
-    card.classList.toggle("locked", !open);
-    card.classList.toggle("selected", selectedLevel === id);
-    const need = card.querySelector(".lvl-need");
-    if (need) {
-      const prevName = modeInfo.levelNames[id - 2];
-      need.textContent = open || !prevName ? "" : `🔒 10/10 «${prevName}»`;
+    const cfg = levelCfg(id);
+    const theme = (modeInfo.themes && modeInfo.themes[i]) || cfg.theme || "easy";
+    const selected = selectedLevel === id ? " selected" : "";
+    const locked = open ? "" : " locked";
+    const secret = cfg.secret || id === SECRET_LEVEL ? " secret-level" : "";
+    const prevName = modeInfo.levelNames[id - 2];
+    let need = "";
+    if (!open) {
+      if (selectedMode === MODE_UNITS && id === 1) need = "🔒 Сначала 10/10 на «Сложный» (База или 2ш)";
+      else if (id === SECRET_LEVEL) need = "🔒 Все режимы 10/10 быстрее 40 сек";
+      else if (prevName) need = `🔒 10/10 «${prevName}»`;
     }
-    const nameEl = card.querySelector(".lvl-name");
-    const descEl = card.querySelector(".lvl-desc");
-    if (nameEl) nameEl.textContent = modeInfo.levelNames[id - 1] || LEVELS[id].name;
-    if (descEl) descEl.textContent = modeInfo.levelDescs[id - 1] || "";
-  });
+    const name = id === SECRET_LEVEL && !open ? "???" : (modeInfo.levelNames[i] || cfg.name);
+    const desc = id === SECRET_LEVEL && !open
+      ? "Секретный уровень. Условие: скорость во всех режимах."
+      : (modeInfo.levelDescs[i] || cfg.subtitle || "");
+    return `<button type="button" class="level-card ${theme}${selected}${locked}${secret}" data-level="${id}">
+      <span class="lvl-medal m${Math.min(id, 6)}"></span>
+      <span class="lvl-name">${name}</span>
+      <span class="lvl-desc">${desc}</span>
+      <span class="lvl-need">${need}</span>
+    </button>`;
+  }).join("");
   document.querySelectorAll("#modeTabs .filter-btn").forEach((btn) => {
     btn.classList.toggle("selected", btn.dataset.mode === selectedMode);
   });
@@ -979,6 +1142,163 @@ function generateEasy() {
   const a = rand(1, 20);
   const b = rand(0, a);
   return { a, b, op: "−", answer: a - b };
+}
+
+function generateSecretBasic() {
+  if (Math.random() < 0.5) {
+    const sum = rand(11, 30);
+    const a = rand(1, sum - 1);
+    return { a, b: sum - a, op: "+", answer: sum, text: `${a} + ${sum - a} = ?` };
+  }
+  const a = rand(11, 30);
+  const b = rand(1, Math.min(9, a));
+  return { a, b, op: "−", answer: a - b, text: `${a} − ${b} = ?` };
+}
+
+function generateSecretChain() {
+  let guard = 0;
+  while (guard < 220) {
+    const a = rand(1, 28);
+    const b = rand(1, 12);
+    const c = rand(1, 12);
+    const op1 = Math.random() < 0.5 ? "+" : "−";
+    const op2 = Math.random() < 0.5 ? "+" : "−";
+    const step1 = op1 === "+" ? a + b : a - b;
+    const result = op2 === "+" ? step1 + c : step1 - c;
+    const badEqualSub = (op1 === "−" && a === b) || (op2 === "−" && step1 === c);
+    if (step1 >= 0 && result >= 0 && step1 <= 30 && result <= 30 && !badEqualSub) {
+      return {
+        a, b, c, op1, op2,
+        text: `${a} ${op1} ${b} ${op2} ${c} = ?`,
+        answer: result,
+      };
+    }
+    guard += 1;
+  }
+  return { a: 20, b: 5, c: 3, op1: "+", op2: "−", text: "20 + 5 − 3 = ?", answer: 22 };
+}
+
+function generateLengthConvert() {
+  const kinds = [
+    () => { const n = rand(1, 9); return { text: `${n} см = ? мм`, answer: n * 10 }; },
+    () => { const n = rand(1, 9); return { text: `${n * 10} мм = ? см`, answer: n }; },
+    () => { const n = rand(1, 9); return { text: `${n} дм = ? см`, answer: n * 10 }; },
+    () => { const n = rand(1, 9); return { text: `${n * 10} см = ? дм`, answer: n }; },
+    () => { const n = rand(1, 9); return { text: `${n} м = ? дм`, answer: n * 10 }; },
+    () => { const n = rand(1, 9); return { text: `${n * 10} дм = ? м`, answer: n }; },
+    () => { const n = rand(1, 5); return { text: `${n} м = ? см`, answer: n * 100 }; },
+    () => { const n = rand(1, 5); return { text: `${n * 100} см = ? м`, answer: n }; },
+  ];
+  return kinds[rand(0, kinds.length - 1)]();
+}
+
+function generateVolumeConvert() {
+  const kinds = [
+    () => { const n = rand(1, 5); return { text: `${n} л = ? мл`, answer: n * 1000 }; },
+    () => { const n = rand(1, 5); return { text: `${n * 1000} мл = ? л`, answer: n }; },
+  ];
+  return kinds[rand(0, kinds.length - 1)]();
+}
+
+function toMm(parts) {
+  return (parts.m || 0) * 1000 + (parts.dm || 0) * 100 + (parts.cm || 0) * 10 + (parts.mm || 0);
+}
+
+function formatLengthParts(parts) {
+  const bits = [];
+  if (parts.m) bits.push(`${parts.m} м`);
+  if (parts.dm) bits.push(`${parts.dm} дм`);
+  if (parts.cm) bits.push(`${parts.cm} см`);
+  if (parts.mm) bits.push(`${parts.mm} мм`);
+  if (!bits.length) bits.push("0 мм");
+  return bits.join(" ");
+}
+
+function randomLengthParts() {
+  const roll = Math.random();
+  if (roll < 0.25) return { cm: rand(1, 9), mm: rand(0, 9) };
+  if (roll < 0.45) return { dm: rand(1, 5), cm: rand(0, 9) };
+  if (roll < 0.65) return { cm: rand(1, 19) };
+  if (roll < 0.8) return { dm: rand(1, 9) };
+  if (roll < 0.92) return { m: 1, cm: rand(0, 90) };
+  return { mm: rand(10, 99) };
+}
+
+function generateLengthCompare() {
+  let left = randomLengthParts();
+  let right = randomLengthParts();
+  let guard = 0;
+  while (guard < 40 && formatLengthParts(left) === formatLengthParts(right)) {
+    right = randomLengthParts();
+    guard += 1;
+  }
+  // classic textbook pairs
+  if (Math.random() < 0.35) {
+    const pairs = [
+      [{ cm: 1, mm: 7 }, { cm: 1 }],
+      [{ cm: 9 }, { dm: 1 }],
+      [{ dm: 1 }, { cm: 10 }],
+      [{ cm: 1, mm: 9 }, { cm: 2 }],
+      [{ m: 1 }, { cm: 90 }],
+      [{ dm: 2 }, { cm: 15 }],
+      [{ cm: 5, mm: 5 }, { cm: 5, mm: 5 }],
+    ];
+    const pick = pairs[rand(0, pairs.length - 1)];
+    left = pick[0];
+    right = pick[1];
+  }
+  const lv = toMm(left);
+  const rv = toMm(right);
+  const answer = lv === rv ? 0 : lv > rv ? 1 : 2;
+  const lText = formatLengthParts(left);
+  const rText = formatLengthParts(right);
+  return {
+    text: `Что больше?\n1) ${lText}\n2) ${rText}\n(0 = равно)`,
+    answer,
+    compare: true,
+  };
+}
+
+function generateVolumeCompare() {
+  const mk = () => (Math.random() < 0.55
+    ? { l: rand(1, 3), ml: rand(0, 9) * 100 }
+    : { ml: rand(1, 25) * 100 });
+  const fmt = (p) => {
+    const bits = [];
+    if (p.l) bits.push(`${p.l} л`);
+    if (p.ml) bits.push(`${p.ml} мл`);
+    return bits.join(" ") || "0 мл";
+  };
+  const val = (p) => (p.l || 0) * 1000 + (p.ml || 0);
+  let left = mk();
+  let right = mk();
+  if (Math.random() < 0.3) {
+    const pairs = [
+      [{ l: 1 }, { ml: 1000 }],
+      [{ l: 1 }, { ml: 900 }],
+      [{ ml: 1500 }, { l: 1, ml: 500 }],
+      [{ l: 2 }, { ml: 2000 }],
+    ];
+    const pick = pairs[rand(0, pairs.length - 1)];
+    left = pick[0];
+    right = pick[1];
+  }
+  const lv = val(left);
+  const rv = val(right);
+  const answer = lv === rv ? 0 : lv > rv ? 1 : 2;
+  return {
+    text: `Что больше?\n1) ${fmt(left)}\n2) ${fmt(right)}\n(0 = равно)`,
+    answer,
+    compare: true,
+  };
+}
+
+function generateUnitsConvert(kind) {
+  return kind === "volume" ? generateVolumeConvert() : generateLengthConvert();
+}
+
+function generateUnitsCompare(kind) {
+  return kind === "volume" ? generateVolumeCompare() : generateLengthCompare();
 }
 
 function generateMedium() {
@@ -1051,6 +1371,15 @@ function generateSharpFocus() {
 }
 
 function generateProblem(level) {
+  if (selectedMode === MODE_UNITS) {
+    const cfg = levelCfg(level);
+    const kind = Math.random() < 0.72 ? "length" : "volume";
+    if (cfg.units === "compare") return generateUnitsCompare(kind);
+    return generateUnitsConvert(kind);
+  }
+  if (level === SECRET_LEVEL) {
+    return selectedMode === MODE_CHAIN ? generateSecretChain() : generateSecretBasic();
+  }
   if (selectedMode === MODE_CHAIN) return generateChainProblem(level);
   if (level >= 3) return generateSharpFocus();
   if (level === 2) return generateMedium();
@@ -1093,6 +1422,42 @@ function generateSharpRun() {
 }
 
 function generateRun(level) {
+  if (selectedMode === MODE_UNITS) {
+    const cfg = levelCfg(level);
+    const kind = Math.random() < 0.7 ? "length" : "volume";
+    const items = [];
+    const seen = new Set();
+    let guard = 0;
+    while (items.length < TOTAL && guard < 160) {
+      const p = cfg.units === "compare" ? generateUnitsCompare(kind) : generateUnitsConvert(kind);
+      if (!seen.has(p.text)) {
+        seen.add(p.text);
+        items.push(p);
+      }
+      guard += 1;
+    }
+    while (items.length < TOTAL) {
+      items.push(cfg.units === "compare" ? generateUnitsCompare(kind) : generateUnitsConvert(kind));
+    }
+    return items;
+  }
+  if (level === SECRET_LEVEL) {
+    const items = [];
+    const seen = new Set();
+    const make = () => (selectedMode === MODE_CHAIN ? generateSecretChain() : generateSecretBasic());
+    let guard = 0;
+    while (items.length < TOTAL && guard < 160) {
+      const p = make();
+      const key = p.text || `${p.a}${p.op}${p.b}${p.c || ""}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        items.push(p);
+      }
+      guard += 1;
+    }
+    while (items.length < TOTAL) items.push(make());
+    return items;
+  }
   if (selectedMode === MODE_CHAIN) {
     const items = [];
     const seen = new Set();
@@ -1123,12 +1488,16 @@ function showScreen(name) {
 }
 
 function applyTheme(level) {
-  const cfg = LEVELS[level] || LEVELS[1];
+  const cfg = levelCfg(level);
   document.body.dataset.theme = cfg.theme;
   const modeInfo = MODE_META[selectedMode] || MODE_META[MODE_BASIC];
-  els.homeSubtitle.textContent = selectedMode === MODE_CHAIN
-    ? `Режим «${modeInfo.name}»: ${modeInfo.levelDescs[(level || 1) - 1] || cfg.subtitle}`
-    : cfg.subtitle;
+  if (selectedMode === MODE_UNITS) {
+    els.homeSubtitle.textContent = `Режим «Меры»: ${modeInfo.levelDescs[(level || 1) - 1] || cfg.subtitle}`;
+  } else if (selectedMode === MODE_CHAIN) {
+    els.homeSubtitle.textContent = `Режим «${modeInfo.name}»: ${modeInfo.levelDescs[(level || 1) - 1] || cfg.subtitle}`;
+  } else {
+    els.homeSubtitle.textContent = cfg.subtitle;
+  }
   [els.balloon1, els.balloon2, els.balloon3].forEach((node, i) => {
     node.textContent = cfg.balloons[i];
   });
@@ -1303,6 +1672,9 @@ function skyDecorHtml(id) {
   if (id === "archmageSky") {
     return `<span class="sky-moon m1"></span><span class="sky-aurora a1"></span>${clouds(3)}${stars(10)}<span class="sky-meteor me1"></span><span class="sky-crystal c1"></span>`;
   }
+  if (id === "secretNight") {
+    return `<span class="sky-moon m1"></span>${stars(16)}<span class="sky-meteor me1"></span><span class="sky-meteor me2"></span><span class="sky-nebula n1"></span>`;
+  }
   return "";
 }
 
@@ -1318,6 +1690,7 @@ function applySkyDecor() {
 function unlockSkiesByRank() {
   let changed = false;
   Object.values(SKIES).forEach((sky) => {
+    if (sky.rankMin >= 99999) return;
     if (state.stars >= sky.rankMin && !state.shop.skies.includes(sky.id)) {
       state.shop.skies.push(sky.id);
       changed = true;
@@ -1534,7 +1907,9 @@ function answersReviewHtml(answers) {
     const cls = a.ok ? "ok" : "bad";
     const kid = a.given == null || a.given === "" ? "—" : a.given;
     const mark = a.ok ? "верно" : `нужно ${a.answer}`;
-    const expr = a.text ? a.text.replace("?", kid) : `${a.a} ${a.op} ${a.b} = ${kid}`;
+    const expr = a.text
+      ? escapeHtml(a.text.replace("?", String(kid))).replace(/\n/g, "<br>")
+      : `${a.a} ${a.op} ${a.b} = ${kid}`;
     return `<li class="${cls}">
       <span class="n">${i + 1}.</span>
       <span class="ex">${expr}</span>
@@ -1544,7 +1919,10 @@ function answersReviewHtml(answers) {
 }
 
 function historyItemHtml(r, detailed) {
-  const lvl = LEVELS[r.level] || LEVELS[1];
+  const mode = r.mode || MODE_BASIC;
+  const lvl = levelCfg(r.level || 1, mode);
+  const modeInfo = MODE_META[mode] || MODE_META[MODE_BASIC];
+  const lvlName = modeInfo.levelNames[(r.level || 1) - 1] || lvl.name;
   const extra = r.timedOut ? " · время вышло" : "";
   const gradeBit = r.grade != null
     ? ` · <span class="hist-grade g${r.grade}${r.failed ? " fail" : ""}">${r.failed ? "2 провал" : r.grade}${r.forgive ? ` · читер×${r.forgive}` : ""}</span>`
@@ -1561,7 +1939,7 @@ function historyItemHtml(r, detailed) {
     <details class="hist-fold">
       <summary>
         <div class="hist-top">
-          <span><span class="hist-level l${r.level || 1}">${lvl.name}${(r.mode || MODE_BASIC) === MODE_CHAIN ? " · 2ш" : ""}</span>${r.correct}/10${gradeBit}</span>
+          <span><span class="hist-level l${Math.min(r.level || 1, 6)}">${lvlName}${modeLabelShort(mode)}</span>${r.correct}/10${gradeBit}</span>
           <span>${formatTime(r.ms)}${extra}</span>
         </div>
         <div class="hist-start">Старт: ${formatStamp(startIsoOf(r))}</div>
@@ -1603,7 +1981,15 @@ function renderHome() {
   els.xpLabel.textContent = xp.label;
   els.xpFill.style.width = `${xp.pct}%`;
   const modeInfo = MODE_META[selectedMode] || MODE_META[MODE_BASIC];
-  if (!isLevelOpen(2)) {
+  if (selectedMode === MODE_UNITS) {
+    if (!isLevelOpen(1)) {
+      els.unlockHint.textContent = "Меры откроются после 10/10 на «Сложный» (База или 2 действия).";
+    } else if (!isLevelOpen(2)) {
+      els.unlockHint.textContent = "10/10 на «Конвертация» откроет «Сравнение».";
+    } else {
+      els.unlockHint.textContent = "Оба уровня мер открыты. Перед стартом — таблица на 10 сек.";
+    }
+  } else if (!isLevelOpen(2)) {
     els.unlockHint.textContent = `10/10 на «${modeInfo.levelNames[0]}» откроет «${modeInfo.levelNames[1]}»`;
   } else if (!isLevelOpen(3)) {
     els.unlockHint.textContent = `10/10 на «${modeInfo.levelNames[1]}» откроет «${modeInfo.levelNames[2]}»`;
@@ -1611,8 +1997,11 @@ function renderHome() {
     els.unlockHint.textContent = `10/10 на «${modeInfo.levelNames[2]}» откроет «${modeInfo.levelNames[3]}»`;
   } else if (!isLevelOpen(5)) {
     els.unlockHint.textContent = `10/10 на «${modeInfo.levelNames[3]}» откроет «${modeInfo.levelNames[4]}»`;
+  } else if (!isLevelOpen(SECRET_LEVEL)) {
+    const gate = secretGateProgress();
+    els.unlockHint.textContent = `Секрет: пройди все режимы 10/10 быстрее 40 сек (${gate.current}/${gate.target}).`;
   } else {
-    els.unlockHint.textContent = `Все уровни «${modeInfo.unlockText}» открыты.`;
+    els.unlockHint.textContent = `Все уровни «${modeInfo.unlockText}» открыты — включая секрет!`;
   }
   renderLevels();
 
@@ -1620,14 +2009,22 @@ function renderHome() {
   const total = ACHIEVEMENTS.length;
   els.homeAchCount.textContent = `${done}/${total}`;
   els.homeAchFill.style.width = `${Math.round((done / total) * 100)}%`;
-  els.achGrid.innerHTML = ACHIEVEMENTS.map((a) => {
+  const unlockedAchs = ACHIEVEMENTS.filter((a) => achProgress(a).unlocked);
+  const lockedAchs = ACHIEVEMENTS.filter((a) => !achProgress(a).unlocked);
+  const preview = [
+    ...unlockedAchs.slice(0, Math.min(5, HOME_ACH_PREVIEW)),
+    ...lockedAchs.slice(0, Math.max(0, HOME_ACH_PREVIEW - Math.min(unlockedAchs.length, 5))),
+  ].slice(0, HOME_ACH_PREVIEW);
+  els.achGrid.innerHTML = preview.map((a) => {
     const p = achProgress(a);
     return `<div class="ach ${p.unlocked ? "unlocked" : "locked"}${a.coop ? " coop" : ""}${a.gold ? " gold-meme" : ""}" data-open="gallery" data-ach="${a.id}" title="${a.desc}">
       <span class="ico">${achIconHtml(a)}</span>
       <span class="ttl">${a.coop ? "🤝 " : ""}${a.name}</span>
       <div class="mini-bar"><i style="width:${p.pct}%"></i></div>
     </div>`;
-  }).join("");
+  }).join("") + (total > HOME_ACH_PREVIEW
+    ? `<div class="ach more-ach" data-open="gallery" title="Открыть галерею"><span class="ico">…</span><span class="ttl">Ещё ${total - preview.length}</span><div class="mini-bar"><i style="width:${Math.round((done / total) * 100)}%"></i></div></div>`
+    : "");
 
   els.homeHistCount.textContent = String(state.runs.length);
   if (!state.runs.length) {
@@ -1682,41 +2079,76 @@ function renderSessions() {
   els.sessionList.innerHTML = filtered.map((r) => historyItemHtml(r, true)).join("");
 }
 
-function startGame() {
-  stopFireworks();
-  stopFxLayer();
-  ensureNickFromInput();
-  if (!isLevelOpen(selectedLevel)) selectedLevel = maxOpenLevel();
-  renderLevels();
-  const cfg = LEVELS[selectedLevel];
-  const startedAt = Date.now();
-  run = {
-    items: generateRun(cfg.id),
-    index: 0,
-    input: "",
-    answers: [],
-    startedAt,
-    startedIso: new Date(startedAt).toISOString(),
-    level: cfg.id,
-    limit: cfg.limit,
-    done: false,
-    gameMs: 0,
-    lastTick: Date.now(),
-    timeScale: 1,
-    slowOn: false,
-    extraOn: false,
-    forgive: 0,
-  };
-  document.body.classList.remove("slow-mo");
-  const modeInfo = MODE_META[selectedMode] || MODE_META[MODE_BASIC];
-  els.gameLevel.textContent = `${modeInfo.levelNames[cfg.id - 1] || cfg.name}${selectedMode === MODE_CHAIN ? " · 2ш" : ""}`;
-  els.timer.classList.toggle("countdown", Boolean(cfg.limit));
-  els.timer.classList.remove("danger");
-  showScreen("game");
-  paintMascots();
-  renderBoostBar();
-  renderProblem();
-  startTimer();
+function showUnitsIntro() {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById("unitsIntro");
+    const countEl = document.getElementById("unitsCountdown");
+    if (!overlay || !countEl) {
+      resolve();
+      return;
+    }
+    let left = Math.round(UNITS_INTRO_MS / 1000);
+    countEl.textContent = String(left);
+    overlay.classList.remove("hidden");
+    overlay.setAttribute("aria-hidden", "false");
+    const tick = setInterval(() => {
+      left -= 1;
+      countEl.textContent = String(Math.max(0, left));
+      if (left <= 0) {
+        clearInterval(tick);
+        overlay.classList.add("hidden");
+        overlay.setAttribute("aria-hidden", "true");
+        resolve();
+      }
+    }, 1000);
+  });
+}
+
+async function startGame() {
+  if (startGame.busy) return;
+  startGame.busy = true;
+  try {
+    stopFireworks();
+    stopFxLayer();
+    ensureNickFromInput();
+    if (!isLevelOpen(selectedLevel)) selectedLevel = maxOpenLevel();
+    renderLevels();
+    const cfg = levelCfg(selectedLevel);
+    if (selectedMode === MODE_UNITS) {
+      showScreen("home");
+      await showUnitsIntro();
+    }
+    const startedAt = Date.now();
+    run = {
+      items: generateRun(cfg.id),
+      index: 0,
+      input: "",
+      answers: [],
+      startedAt,
+      startedIso: new Date(startedAt).toISOString(),
+      level: cfg.id,
+      limit: cfg.limit,
+      done: false,
+      gameMs: 0,
+      lastTick: Date.now(),
+      timeScale: 1,
+      slowOn: false,
+      extraOn: false,
+      forgive: 0,
+    };
+    document.body.classList.remove("slow-mo");
+    const modeInfo = MODE_META[selectedMode] || MODE_META[MODE_BASIC];
+    els.gameLevel.textContent = `${modeInfo.levelNames[cfg.id - 1] || cfg.name}${modeLabelShort(selectedMode)}`;
+    els.timer.classList.toggle("countdown", Boolean(cfg.limit));
+    els.timer.classList.remove("danger");
+    showScreen("game");
+    paintMascots();
+    renderBoostBar();
+    renderProblem();
+    startTimer();
+  } finally {
+    startGame.busy = false;
+  }
 }
 
 function gameElapsed() {
@@ -1737,7 +2169,7 @@ function startTimer() {
       els.timer.classList.toggle("danger", left <= 15000);
       if (left <= 0) finishRun({ timedOut: true });
     } else {
-      els.timer.textContent = formatTime(Date.now() - run.startedAt);
+      els.timer.textContent = formatTime(gameElapsed());
     }
   };
   update();
@@ -1757,6 +2189,7 @@ function renderProblem() {
   els.stepNow.textContent = String(run.index + 1);
   els.progressFill.style.width = `${((run.index + 1) / TOTAL) * 100}%`;
   els.problem.textContent = item.text || `${item.a}  ${item.op}  ${item.b}  =  ?`;
+  els.problem.classList.toggle("units-cmp", Boolean(item.compare) || (item.text && item.text.includes("\n")));
   els.problemCard.classList.remove("pop");
   void els.problemCard.offsetWidth;
   els.problemCard.classList.add("pop");
@@ -1776,7 +2209,7 @@ function pressKey(key) {
     drawAnswer();
     return;
   }
-  if (/^\d$/.test(key) && run.input.length < 3) {
+  if (/^\d$/.test(key) && run.input.length < 4) {
     run.input += key;
     drawAnswer();
   }
@@ -1820,12 +2253,14 @@ function encouragement(correct, timedOut, grade) {
 }
 
 function coinsFor(level, correct, timedOut, grade) {
-  const cfg = LEVELS[level];
+  const cfg = levelCfg(level);
   if (grade?.failed) return Math.max(0, correct);
-  let coins = correct * cfg.coin;
+  let coins = correct * (cfg.coin || 1);
   if (correct === 10) coins += 5;
   if ((level === 4 || level === 5) && !timedOut && correct >= 8) coins += 5;
   if (level === 5 && grade?.mark === 5 && !timedOut) coins += 5;
+  if (level === SECRET_LEVEL && correct === 10) coins += 20;
+  if (selectedMode === MODE_UNITS && correct === 10) coins += 5;
   return coins;
 }
 
@@ -1850,9 +2285,9 @@ function finishRun({ timedOut = false } = {}) {
     }
   }
 
-  const ms = Date.now() - run.startedAt;
+  const ms = Math.max(0, Math.round(run.gameMs || (Date.now() - run.startedAt)));
   const correct = run.answers.filter((a) => a.ok).length;
-  const cfg = LEVELS[run.level] || LEVELS[1];
+  const cfg = levelCfg(run.level);
   const grade = cfg.school ? schoolGrade(correct, run.forgive || 0) : null;
   const openBefore = maxOpenLevel();
   const rankBefore = rankIndexOf(state.stars);
@@ -1889,6 +2324,9 @@ function finishRun({ timedOut = false } = {}) {
       ok: a.ok,
     })),
   });
+  if (run.level === SECRET_LEVEL && correct === 10) {
+    grantSecretReward();
+  }
   const fresh = unlockAchievements();
   saveState();
 
@@ -1914,10 +2352,14 @@ function finishRun({ timedOut = false } = {}) {
     : `<span>🌱</span>`;
   const extraBanners = [];
   if (openAfter > openBefore) {
-    extraBanners.push(`<div class="ach-banner"><span class="lvl-medal m${openAfter}"></span><div>Новый уровень!<small>Открыт «${LEVELS[openAfter].name}»</small></div></div>`);
+    const opened = levelCfg(openAfter);
+    extraBanners.push(`<div class="ach-banner"><span class="lvl-medal m${Math.min(openAfter, 6)}"></span><div>Новый уровень!<small>Открыт «${opened.name}»</small></div></div>`);
   }
   if (rankAfter > rankBefore) {
     extraBanners.push(`<div class="ach-banner"><span class="rank-medal r${rankAfter} on">${RANKS[rankAfter].icon}</span><div>${RANKS[rankAfter].name}<small>Новый ранг за опыт</small></div></div>`);
+  }
+  if (run.level === SECRET_LEVEL && correct === 10) {
+    extraBanners.push(`<div class="ach-banner"><span class="ico">🗝️</span><div>Награда тайны<small>Ключ тайны + небо «Тайная ночь»</small></div></div>`);
   }
   els.newAchs.innerHTML = extraBanners.join("") + fresh
     .map((a) => `<div class="ach-banner"><span class="ico">${a.icon === "🪙" ? '<span class="coin md"></span>' : (a.icon === "67" ? '<span class="ico-67">6 7</span>' : a.icon)}</span><div>${a.name}<small>${a.desc}</small></div></div>`)
@@ -1933,7 +2375,7 @@ function finishRun({ timedOut = false } = {}) {
   paintMascots();
   const toasts = [...fresh];
   if (openAfter > openBefore) {
-    toasts.unshift({ icon: "🔓", name: `Открыт «${LEVELS[openAfter].name}»`, desc: "Можно играть новый уровень!" });
+    toasts.unshift({ icon: "🔓", name: `Открыт «${levelCfg(openAfter).name}»`, desc: "Можно играть новый уровень!" });
   }
   if (rankAfter > rankBefore) {
     toasts.unshift({ icon: "👑", name: RANKS[rankAfter].name, desc: "Новый ранг за звёзды-опыт" });
@@ -2009,7 +2451,7 @@ function submitOnlineScore(payload) {
   updateSyncHint();
   syncScoreQueue({ quiet: true }).then(({ sent, left }) => {
     if (sent > 0 && left === 0) {
-      showToasts([{ plain: true, icon: "🏆", name: "В топе!", desc: `«${nick}» · ${LEVELS[payload.level]?.name || ""} · ${formatTime(payload.ms)}` }]);
+      showToasts([{ plain: true, icon: "🏆", name: "В топе!", desc: `«${nick}» · ${levelCfg(payload.level, selectedMode).name || ""} · ${formatTime(payload.ms)}` }]);
       refreshCoopStats();
     } else if (left > 0) {
       showToasts([{
@@ -2074,21 +2516,21 @@ async function renderBoard() {
     const top = boardFilter === "all" ? bestScoresByNickAndLevel(list) : bestScoresByNick(list);
     const pending = pendingScoreCount();
     if (!top.length) {
-      const modeName = boardMode === MODE_CHAIN ? "2 действия" : "база";
-      const lvlName = boardFilter === "all" ? "" : ` на «${MODE_META[boardMode].levelNames[Number(boardFilter) - 1] || LEVELS[Number(boardFilter)].name}»`;
+      const modeName = MODE_META[boardMode]?.name || "база";
+      const lvlName = boardFilter === "all" ? "" : ` на «${MODE_META[boardMode].levelNames[Number(boardFilter) - 1] || levelCfg(Number(boardFilter), boardMode).name}»`;
       els.boardStatus.textContent = pending
         ? `Пока нет идеальных 10/10 (${modeName})${lvlName}. В очереди ${pending} — ждём сеть.`
         : `Пока нет идеальных 10/10 (${modeName})${lvlName}. Пройди все примеры вовремя — и появишься здесь!`;
       updateSyncHint();
       return;
     }
-    const modeTitle = boardMode === MODE_CHAIN ? "2 действия" : "база";
+    const modeTitle = MODE_META[boardMode]?.name || "база";
     els.boardStatus.textContent = boardFilter === "all"
       ? `Гонка за время · ${modeTitle} · только 10/10 · ${top.length}${pending ? ` · очередь ${pending}` : ""}`
-      : `Топ по времени · ${MODE_META[boardMode].levelNames[Number(boardFilter) - 1] || LEVELS[Number(boardFilter)].name} · ${modeTitle} · 10/10 · ${top.length}${pending ? ` · очередь ${pending}` : ""}`;
+      : `Топ по времени · ${MODE_META[boardMode].levelNames[Number(boardFilter) - 1] || levelCfg(Number(boardFilter), boardMode).name} · ${modeTitle} · 10/10 · ${top.length}${pending ? ` · очередь ${pending}` : ""}`;
     els.boardList.innerHTML = top.map((row, i) => {
-      const lvl = LEVELS[row.level] || LEVELS[1];
       const rowMode = row.mode || MODE_BASIC;
+      const lvl = levelCfg(row.level || 1, rowMode);
       const rowLvlName = MODE_META[rowMode]?.levelNames[(row.level || 1) - 1] || lvl.name;
       const place = i + 1;
       const me = row.nick === playerNick ? " me" : "";
@@ -2113,7 +2555,7 @@ async function renderBoard() {
         ${boardAvatarHtml(row.nick, look.skin, look.hat)}
         <div class="board-main">
           <strong class="board-nick">${nickBadge}${escapeHtml(row.nick)}</strong>
-          <span class="board-meta"><span class="hist-level l${row.level}">${rowLvlName}</span>${rowMode === MODE_CHAIN ? " · 2ш" : ""} · 10/10 · ${formatTime(row.ms)}</span>
+          <span class="board-meta"><span class="hist-level l${Math.min(row.level || 1, 6)}">${rowLvlName}</span>${modeLabelShort(rowMode)} · 10/10 · ${formatTime(row.ms)}</span>
         </div>
       </li>`;
     }).join("");
@@ -2466,7 +2908,7 @@ function notEnough() {
 }
 
 function renderBoostBar() {
-  if (!run || run.level < 4) {
+  if (!run || run.level < 4 || run.level >= SECRET_LEVEL || selectedMode === MODE_UNITS || !levelCfg(run.level).limit) {
     els.boostBar.innerHTML = "";
     return;
   }
@@ -2598,7 +3040,7 @@ function renderShop() {
   if (shopTab === "skies") {
     unlockSkiesByRank();
     const myRank = rankFor(state.stars);
-    els.shopList.innerHTML = Object.values(SKIES).map((sky) => {
+    els.shopList.innerHTML = Object.values(SKIES).filter((sky) => sky.rankMin < 99999 || state.shop.skies.includes(sky.id)).map((sky) => {
       const owned = state.shop.skies.includes(sky.id);
       const on = state.shop.sky === sky.id;
       const rankOpen = state.stars >= sky.rankMin;
@@ -2616,7 +3058,7 @@ function renderShop() {
     }).join("");
     return;
   }
-  els.shopList.innerHTML = Object.values(TOYS).map((t) => {
+  els.shopList.innerHTML = Object.values(TOYS).filter((t) => !t.secret || state.shop.toys.includes(t.id)).map((t) => {
     const owned = state.shop.toys.includes(t.id);
     const on = state.shop.toysOn.includes(t.id);
     const action = owned ? (on ? "off-toy" : "equip-toy") : "buy-toy";
@@ -2812,8 +3254,17 @@ document.getElementById("levels").addEventListener("click", (e) => {
     void card.offsetWidth;
     card.classList.add("shake");
     const meta = MODE_META[selectedMode] || MODE_META[MODE_BASIC];
-    const prevName = meta.levelNames[id - 2];
-    showToasts([{ plain: true, icon: "🔒", name: "Пока закрыто", desc: prevName ? `Сначала 10/10 на «${prevName}»` : "Ещё рано" }]);
+    let desc = "Ещё рано";
+    if (selectedMode === MODE_UNITS && id === 1) {
+      desc = "Сначала 10/10 на «Сложный» в Базе или 2 действиях";
+    } else if (id === SECRET_LEVEL) {
+      const gate = secretGateProgress();
+      desc = `Все режимы 10/10 быстрее 40 сек (${gate.current}/${gate.target})`;
+    } else {
+      const prevName = meta.levelNames[id - 2];
+      if (prevName) desc = `Сначала 10/10 на «${prevName}»`;
+    }
+    showToasts([{ plain: true, icon: "🔒", name: "Пока закрыто", desc }]);
     return;
   }
   selectedLevel = id;
@@ -2823,16 +3274,6 @@ document.getElementById("levels").addEventListener("click", (e) => {
   renderLevels();
 });
 
-let selectedMode = (() => {
-  try {
-    const saved = localStorage.getItem(`${STORAGE_KEY}-mode`);
-    return saved === MODE_CHAIN ? MODE_CHAIN : MODE_BASIC;
-  } catch {
-    return MODE_BASIC;
-  }
-})();
-boardMode = selectedMode;
-
 function saveMode() {
   try {
     localStorage.setItem(`${STORAGE_KEY}-mode`, selectedMode);
@@ -2841,10 +3282,16 @@ function saveMode() {
   }
 }
 
+function parseModeId(raw) {
+  if (raw === MODE_CHAIN) return MODE_CHAIN;
+  if (raw === MODE_UNITS) return MODE_UNITS;
+  return MODE_BASIC;
+}
+
 document.getElementById("modeTabs").addEventListener("click", (e) => {
   const btn = e.target.closest("[data-mode]");
   if (!btn) return;
-  const nextMode = btn.dataset.mode === MODE_CHAIN ? MODE_CHAIN : MODE_BASIC;
+  const nextMode = parseModeId(btn.dataset.mode);
   if (nextMode === selectedMode) return;
   selectedMode = nextMode;
   saveMode();
@@ -2857,7 +3304,7 @@ document.getElementById("modeTabs").addEventListener("click", (e) => {
 document.getElementById("boardModeFilters").addEventListener("click", (e) => {
   const btn = e.target.closest("[data-board-mode]");
   if (!btn) return;
-  boardMode = btn.dataset.boardMode === MODE_CHAIN ? MODE_CHAIN : MODE_BASIC;
+  boardMode = parseModeId(btn.dataset.boardMode);
   document.querySelectorAll("#boardModeFilters .filter-btn").forEach((b) => {
     b.classList.toggle("selected", b === btn);
   });
