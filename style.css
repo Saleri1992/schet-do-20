@@ -2832,6 +2832,21 @@ body.fw-perfect .fw-canvas {
   background: #e8ecff;
   color: #3d4ad0;
 }
+.shop-card .rank-need.warn {
+  background: #ffe0b8;
+  color: #9a4b00;
+}
+.shop-card .rank-need.ok {
+  background: #d8f6ea;
+  color: #1f6b4a;
+}
+.shop-card.skill-rules {
+  grid-template-columns: auto 1fr;
+}
+.shop-card.skill-rules .desc {
+  grid-column: 2 / -1;
+  line-height: 1.45;
+}
 .relic-ico {
   width: 36px;
   height: 36px;

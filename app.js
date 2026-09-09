@@ -3219,6 +3219,15 @@ function renderShop() {
   if (shopTab === "skills") {
     const myRank = rankFor(state.stars);
     const rankOk = state.stars >= ARCHMAGE_MIN;
+    const header = `<article class="shop-card skill-rules">
+      <div class="ico"><span class="relic-ico skill-ico">👑</span></div>
+      <div class="name">Правила скиллов</div>
+      <div class="desc">
+        1) Пройди нужный секретный уровень (10/10).<br>
+        2) Нужно звание <strong>Архимаг</strong> (от ${ARCHMAGE_MIN}⭐). Сейчас: <strong>${myRank.name}</strong> (${state.stars}⭐).<br>
+        3) Купи скилл за монеты и надень — кнопка появится в игре.
+      </div>
+    </article>`;
     const unequip = state.shop.skill !== "none"
       ? `<article class="shop-card">
           <div class="ico"><span class="relic-ico skill-ico">∅</span></div>
@@ -3227,7 +3236,7 @@ function renderShop() {
           <div class="desc">Убрать активный скилл с персонажа</div>
         </article>`
       : "";
-    els.shopList.innerHTML = unequip + Object.values(SKILLS).map((sk) => {
+    els.shopList.innerHTML = header + unequip + Object.values(SKILLS).map((sk) => {
       const gate = skillGateOpen(sk);
       const owned = state.shop.skills.includes(sk.id);
       const on = state.shop.skill === sk.id;
@@ -3235,20 +3244,19 @@ function renderShop() {
       const action = owned ? (on ? "on" : "equip-skill") : "buy-skill";
       const label = on ? "Надет" : owned ? "Надеть" : "Купить";
       const price = owned ? 0 : sk.price;
-      let need = "";
-      if (!gate) {
-        need = `<span class="rank-need">секрет: ${sk.secretMode === MODE_CHAIN ? "2 действия" : "База"}</span>`;
-      } else if (!rankOk) {
-        need = `<span class="rank-need">нужно: Архимаг</span>`;
-      } else {
-        need = `<span class="rank-need">Архимаг · ${myRank.name}</span>`;
-      }
-      const locked = !gate || (!owned && !rankOk);
+      const secretName = sk.secretMode === MODE_CHAIN ? "2 действия" : "База";
+      const needSecret = gate
+        ? `<span class="rank-need ok">секрет «${secretName}» ✓</span>`
+        : `<span class="rank-need">нужен секрет «${secretName}»</span>`;
+      const needRank = rankOk
+        ? `<span class="rank-need ok">Архимаг ✓</span>`
+        : `<span class="rank-need warn">нужно звание Архимаг (${ARCHMAGE_MIN}⭐)</span>`;
+      const locked = !owned && (!gate || !rankOk);
       return `<article class="shop-card ${locked ? "locked-rank" : ""}">
         <div class="ico"><span class="relic-ico skill-ico">${sk.icon}</span></div>
-        <div class="name">${sk.name}${need}</div>
+        <div class="name">${sk.name}${needSecret}${needRank}</div>
         <button type="button" class="buy ${(!canBuy && !owned) || locked ? "ghost" : ""}" data-act="${action}" data-id="${sk.id}" ${(!canBuy && !owned) || locked || action === "on" ? "disabled" : ""}>${label}${price ? ` · ${price}&nbsp;<span class="coin sm" aria-hidden="true"></span>` : ""}</button>
-        <div class="desc">${sk.desc}</div>
+        <div class="desc">${sk.desc}<br><strong>Требования:</strong> секрет «${secretName}» + звание Архимаг + ${sk.price} монет.</div>
       </article>`;
     }).join("");
     return;
