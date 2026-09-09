@@ -15,6 +15,11 @@ const HOME_ACH_PREVIEW = 8;
 
 const SUPABASE_URL = "https://edetrdhgardsvhoomwto.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_MBvrcDFCQlIcHcWEk8RygQ_zwW2bJ4M";
+const SCORES_CACHE_MS = 25000;
+const BOARD_FETCH_LIMIT = 120;
+
+let supabaseHasMode = null; // null = неизвестно, true/false после первой проверки
+let scoresCache = { key: "", at: 0, rows: [] };
 
 function supabaseHeaders(extra = {}) {
   return {
@@ -24,15 +29,16 @@ function supabaseHeaders(extra = {}) {
   };
 }
 
-async function fetchScores(levelFilter, modeFilter = "all") {
+async function fetchScores(levelFilter, modeFilter = "all", { limit = BOARD_FETCH_LIMIT } = {}) {
   const makeParams = (withLook, withMode = true) => {
     const params = new URLSearchParams({
       select: withLook
         ? `nick,level,correct,ms,grade,timed_out,created_at,skin,hat${withMode ? ",mode" : ""}`
         : `nick,level,correct,ms,grade,timed_out,created_at${withMode ? ",mode" : ""}`,
       correct: "eq.10",
+      timed_out: "eq.false",
       order: "ms.asc,created_at.asc",
-      limit: "500",
+      limit: String(limit),
     });
     if (levelFilter !== "all") params.set("level", `eq.${Number(levelFilter)}`);
     if (withMode && modeFilter === MODE_CHAIN) params.set("mode", `eq.${MODE_CHAIN}`);
@@ -40,28 +46,42 @@ async function fetchScores(levelFilter, modeFilter = "all") {
     if (withMode && modeFilter === MODE_UNITS) params.set("mode", `eq.${MODE_UNITS}`);
     return params;
   };
-  let res = await fetch(`${SUPABASE_URL}/rest/v1/scores?${makeParams(true, true)}`, {
-    headers: supabaseHeaders(),
-  });
+
+  const tryFetch = async (withLook, withMode) => {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/scores?${makeParams(withLook, withMode)}`, {
+      headers: supabaseHeaders(),
+    });
+    return res;
+  };
+
+  const wantMode = supabaseHasMode !== false;
+  let res = await tryFetch(true, wantMode);
   if (!res.ok) {
     const text = await res.text();
-    if (/mode|column/i.test(text)) {
-      res = await fetch(`${SUPABASE_URL}/rest/v1/scores?${makeParams(true, false)}`, {
-        headers: supabaseHeaders(),
-      });
+    if (wantMode && /mode|column/i.test(text)) {
+      supabaseHasMode = false;
+      res = await tryFetch(true, false);
       if (!res.ok) {
-        res = await fetch(`${SUPABASE_URL}/rest/v1/scores?${makeParams(false, false)}`, {
-          headers: supabaseHeaders(),
-        });
+        res = await tryFetch(false, false);
       }
       if (!res.ok) throw new Error(await res.text() || `HTTP ${res.status}`);
+    } else if (/skin|hat|column/i.test(text)) {
+      res = await tryFetch(false, wantMode && supabaseHasMode !== false);
+      if (!res.ok) {
+        const t2 = await res.text();
+        if (wantMode && /mode|column/i.test(t2)) {
+          supabaseHasMode = false;
+          res = await tryFetch(false, false);
+        }
+        if (!res.ok) throw new Error(await res.text() || `HTTP ${res.status}`);
+      }
     } else {
-      res = await fetch(`${SUPABASE_URL}/rest/v1/scores?${makeParams(false, true)}`, {
-        headers: supabaseHeaders(),
-      });
-      if (!res.ok) throw new Error(await res.text() || `HTTP ${res.status}`);
+      throw new Error(text || `HTTP ${res.status}`);
     }
+  } else if (wantMode) {
+    supabaseHasMode = true;
   }
+
   const rows = await res.json();
   const list = (Array.isArray(rows) ? rows : []).filter(isBoardScore);
   if (modeFilter === MODE_CHAIN) return list.filter((r) => r.mode === MODE_CHAIN);
@@ -70,18 +90,15 @@ async function fetchScores(levelFilter, modeFilter = "all") {
   return list;
 }
 
-/** В общий топ только идеальные 10/10 без срыва по времени. Режим «Меры» в Supabase не пишем. */
+/** В общий топ только идеальные 10/10 без срыва по времени. */
 function isBoardScore(row) {
   if (!row) return false;
-  const mode = row.mode || MODE_BASIC;
-  if (mode === MODE_UNITS) return false;
   const correct = Number(row.correct);
   const timedOut = row.timed_out === true || row.timedOut === true;
   return correct === TOTAL && !timedOut;
 }
 
 async function insertScore(row) {
-  if ((row.mode || MODE_BASIC) === MODE_UNITS) return;
   const payload = {
     nick: row.nick,
     level: Number(row.level),
@@ -144,7 +161,6 @@ function scoreQueueId(row) {
 }
 
 function enqueueScore(row) {
-  if ((row.mode || MODE_BASIC) === MODE_UNITS) return loadScoreQueue().length;
   if (!isBoardScore(row)) return loadScoreQueue().length;
   const queue = loadScoreQueue();
   const id = scoreQueueId(row);
@@ -187,7 +203,7 @@ function queueLocalUnsyncedRuns() {
   let changed = false;
   (state.runs || []).forEach((r) => {
     if (r.synced) return;
-    if ((r.mode || MODE_BASIC) === MODE_UNITS || !isBoardScore({ correct: r.correct, timedOut: r.timedOut, mode: r.mode })) {
+    if (!isBoardScore({ correct: r.correct, timedOut: r.timedOut, mode: r.mode })) {
       r.synced = true;
       changed = true;
       return;
@@ -673,7 +689,7 @@ const ACHIEVEMENTS = [
 
 async function refreshCoopStats() {
   try {
-    const rows = await fetchScores("all");
+    const rows = await fetchScores("all", "all", { limit: 200 });
     const list = Array.isArray(rows) ? rows : [];
     const nicks = new Set();
     const hardNicks = new Set();
@@ -2592,7 +2608,6 @@ function submitOnlineScore(payload) {
   const nick = ensureNickFromInput() || playerNick;
   if (!isNickOk(nick)) return;
   const mode = payload.mode || selectedMode || MODE_BASIC;
-  if (mode === MODE_UNITS) return;
   if (!isBoardScore({ correct: payload.correct, timedOut: payload.timedOut, mode })) return;
   const localId = payload.localId || `${Date.now()}`;
   enqueueScore({
@@ -2608,10 +2623,11 @@ function submitOnlineScore(payload) {
     mode,
     local_at: new Date().toISOString(),
   });
+  scoresCache = { key: "", at: 0, rows: [] };
   updateSyncHint();
   syncScoreQueue({ quiet: true }).then(({ sent, left }) => {
     if (sent > 0 && left === 0) {
-      showToasts([{ plain: true, icon: "🏆", name: "В топе!", desc: `«${nick}» · ${levelCfg(payload.level, selectedMode).name || ""} · ${formatTime(payload.ms)}` }]);
+      showToasts([{ plain: true, icon: "🏆", name: "В топе!", desc: `«${nick}» · ${levelCfg(payload.level, mode).name || ""} · ${formatTime(payload.ms)}` }]);
       refreshCoopStats();
     } else if (left > 0) {
       showToasts([{
@@ -2657,14 +2673,25 @@ async function renderBoard() {
   document.querySelectorAll("#boardModeFilters .filter-btn").forEach((b) => {
     b.classList.toggle("selected", b.dataset.boardMode === boardMode);
   });
-  els.boardStatus.textContent = "Синхронизация…";
-  els.boardList.innerHTML = "";
-  await syncScoreQueue({ quiet: true });
   els.boardStatus.textContent = "Загрузка…";
+  els.boardList.innerHTML = "";
+
+  // Синхронизацию не блокируем надолго — топ грузим сразу, очередь уходит в фоне.
+  const syncPromise = syncScoreQueue({ quiet: true });
+  await Promise.race([
+    syncPromise,
+    new Promise((resolve) => setTimeout(resolve, 600)),
+  ]);
+
+  const cacheKey = `${boardFilter}|${boardMode}`;
   try {
-    const rows = await fetchScores(boardFilter, boardMode);
-    const list = (Array.isArray(rows) ? rows : []).filter(isBoardScore);
-    // обновить облики из свежих строк
+    let list;
+    if (scoresCache.key === cacheKey && Date.now() - scoresCache.at < SCORES_CACHE_MS) {
+      list = scoresCache.rows;
+    } else {
+      list = await fetchScores(boardFilter, boardMode);
+      scoresCache = { key: cacheKey, at: Date.now(), rows: list };
+    }
     list.forEach((r) => {
       const nick = normalizeNick(r.nick);
       if (!isNickOk(nick)) return;
@@ -2719,7 +2746,8 @@ async function renderBoard() {
         </div>
       </li>`;
     }).join("");
-    refreshCoopStats();
+    // Кооп не дёргаем повторно при каждом открытии топа — он уже на таймере.
+    syncPromise.then(() => updateSyncHint());
   } catch (err) {
     console.warn("board", err);
     const pending = pendingScoreCount();
@@ -3596,6 +3624,7 @@ els.openBoardBtn.addEventListener("click", () => {
   renderBoard();
 });
 els.boardRefreshBtn.addEventListener("click", () => {
+  scoresCache = { key: "", at: 0, rows: [] };
   syncScoreQueue({ quiet: false }).finally(() => renderBoard());
 });
 if (els.syncNowBtn) {
