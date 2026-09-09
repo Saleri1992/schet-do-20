@@ -14,6 +14,7 @@ create table if not exists scores (
 
 alter table scores add column if not exists skin text;
 alter table scores add column if not exists hat text;
+alter table scores add column if not exists mode text;
 
 alter table scores enable row level security;
 
@@ -31,6 +32,7 @@ create policy "insert scores"
     and correct = 10
     and timed_out is not true
     and level between 1 and 5
+    and (mode is null or mode in ('basic','chain'))
   );
 
 -- Убрать старые неидеальные результаты из топа (по желанию)

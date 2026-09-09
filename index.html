@@ -280,6 +280,10 @@
         <h1>Лидеры</h1>
       </header>
       <p class="subtitle">В топе только идеальные 10/10 без срыва по времени. Соревнуемся за скорость — чужие ошибки здесь не показываем.</p>
+      <div class="filters mode-tabs" id="boardModeFilters">
+        <button type="button" class="filter-btn selected" data-board-mode="basic">База</button>
+        <button type="button" class="filter-btn" data-board-mode="chain">2 действия</button>
+      </div>
       <div class="filters" id="boardFilters">
         <button type="button" class="filter-btn selected" data-board="all">Все</button>
         <button type="button" class="filter-btn" data-board="1">Лёгкий</button>
@@ -309,6 +313,7 @@
         <button type="button" class="filter-btn selected" data-tab="boosts">Бусты</button>
         <button type="button" class="filter-btn" data-tab="looks">Облик</button>
         <button type="button" class="filter-btn" data-tab="toys">Штучки</button>
+        <button type="button" class="filter-btn" data-tab="relics">Артефакты</button>
         <button type="button" class="filter-btn" data-tab="fx">Чудеса</button>
       </div>
       <div class="shop-list" id="shopList"></div>

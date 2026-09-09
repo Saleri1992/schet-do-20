@@ -18,30 +18,48 @@ function supabaseHeaders(extra = {}) {
   };
 }
 
-async function fetchScores(levelFilter) {
-  const makeParams = (withLook) => {
+async function fetchScores(levelFilter, modeFilter = "all") {
+  const makeParams = (withLook, withMode = true) => {
     const params = new URLSearchParams({
       select: withLook
-        ? "nick,level,correct,ms,grade,timed_out,created_at,skin,hat"
-        : "nick,level,correct,ms,grade,timed_out,created_at",
+        ? `nick,level,correct,ms,grade,timed_out,created_at,skin,hat${withMode ? ",mode" : ""}`
+        : `nick,level,correct,ms,grade,timed_out,created_at${withMode ? ",mode" : ""}`,
       correct: "eq.10",
       order: "ms.asc,created_at.asc",
       limit: "500",
     });
     if (levelFilter !== "all") params.set("level", `eq.${Number(levelFilter)}`);
+    if (withMode && modeFilter === MODE_CHAIN) params.set("mode", `eq.${MODE_CHAIN}`);
+    if (withMode && modeFilter === MODE_BASIC) params.set("or", "(mode.eq.basic,mode.is.null)");
     return params;
   };
-  let res = await fetch(`${SUPABASE_URL}/rest/v1/scores?${makeParams(true)}`, {
+  let res = await fetch(`${SUPABASE_URL}/rest/v1/scores?${makeParams(true, true)}`, {
     headers: supabaseHeaders(),
   });
   if (!res.ok) {
-    res = await fetch(`${SUPABASE_URL}/rest/v1/scores?${makeParams(false)}`, {
-      headers: supabaseHeaders(),
-    });
-    if (!res.ok) throw new Error(await res.text() || `HTTP ${res.status}`);
+    const text = await res.text();
+    if (/mode|column/i.test(text)) {
+      res = await fetch(`${SUPABASE_URL}/rest/v1/scores?${makeParams(true, false)}`, {
+        headers: supabaseHeaders(),
+      });
+      if (!res.ok) {
+        res = await fetch(`${SUPABASE_URL}/rest/v1/scores?${makeParams(false, false)}`, {
+          headers: supabaseHeaders(),
+        });
+      }
+      if (!res.ok) throw new Error(await res.text() || `HTTP ${res.status}`);
+    } else {
+      res = await fetch(`${SUPABASE_URL}/rest/v1/scores?${makeParams(false, true)}`, {
+        headers: supabaseHeaders(),
+      });
+      if (!res.ok) throw new Error(await res.text() || `HTTP ${res.status}`);
+    }
   }
   const rows = await res.json();
-  return (Array.isArray(rows) ? rows : []).filter(isBoardScore);
+  const list = (Array.isArray(rows) ? rows : []).filter(isBoardScore);
+  if (modeFilter === MODE_CHAIN) return list.filter((r) => r.mode === MODE_CHAIN);
+  if (modeFilter === MODE_BASIC) return list.filter((r) => !r.mode || r.mode === MODE_BASIC);
+  return list;
 }
 
 /** В общий топ только идеальные 10/10 без срыва по времени. */
@@ -62,6 +80,7 @@ async function insertScore(row) {
     timed_out: Boolean(row.timed_out),
     skin: row.skin || null,
     hat: row.hat || null,
+    mode: row.mode || MODE_BASIC,
   };
   let res = await fetch(`${SUPABASE_URL}/rest/v1/scores`, {
     method: "POST",
@@ -73,9 +92,10 @@ async function insertScore(row) {
   });
   if (!res.ok) {
     const text = await res.text();
-    if (/skin|hat|column/i.test(text)) {
+    if (/skin|hat|mode|column/i.test(text)) {
       delete payload.skin;
       delete payload.hat;
+      delete payload.mode;
       res = await fetch(`${SUPABASE_URL}/rest/v1/scores`, {
         method: "POST",
         headers: supabaseHeaders({
@@ -109,7 +129,7 @@ function saveScoreQueue(queue) {
 }
 
 function scoreQueueId(row) {
-  return row.id || `${row.nick}|${row.level}|${row.correct}|${row.ms}|${row.local_at || ""}`;
+  return row.id || `${row.nick}|${row.mode || MODE_BASIC}|${row.level}|${row.correct}|${row.ms}|${row.local_at || ""}`;
 }
 
 function enqueueScore(row) {
@@ -127,6 +147,7 @@ function enqueueScore(row) {
     timed_out: false,
     skin: row.skin || null,
     hat: row.hat || null,
+    mode: row.mode || MODE_BASIC,
     local_at: row.local_at || new Date().toISOString(),
     tries: 0,
   });
@@ -170,6 +191,7 @@ function queueLocalUnsyncedRuns() {
       timed_out: false,
       skin: (state.shop && state.shop.skin) || "honey",
       hat: (state.shop && state.shop.hat) || "none",
+      mode: r.mode || MODE_BASIC,
       local_at: r.date || r.startedAt || new Date().toISOString(),
     });
     if (loadScoreQueue().length > before) added += 1;
@@ -380,6 +402,13 @@ const TOYS = {
   donut: { id: "donut", name: "Пончик", price: 180, icon: "🍩" },
 };
 
+const RELICS = {
+  speedAura: { id: "speedAura", name: "Аура скорости", icon: "💨", rank: "Считальщик", rankMin: 42, price: 240, desc: "Лёгкая аура чемпиона вокруг маскота." },
+  brainCrown: { id: "brainCrown", name: "Корона ума", icon: "🧠", rank: "Знаток", rankMin: 72, price: 420, desc: "Показывает, что ты думаешь быстро." },
+  cometTrail: { id: "cometTrail", name: "След кометы", icon: "☄️", rank: "Отличник", rankMin: 110, price: 640, desc: "Огненный след за победами." },
+  legendSeal: { id: "legendSeal", name: "Печать легенды", icon: "🏛️", rank: "Легенда", rankMin: 660, price: 0, desc: "Только за звание. Монеты не нужны." },
+};
+
 const FX = {
   classic: {
     id: "classic",
@@ -478,17 +507,20 @@ const ACHIEVEMENTS = [
   { id: "hard_time", icon: "⏱️", name: "Успел!", desc: "Хард до конца минуты", check: (s) => s.runs.some((r) => r.level === 4 && !r.timedOut), progress: (s) => ({ current: s.runs.filter((r) => r.level === 4 && !r.timedOut).length, target: 1 }) },
   { id: "hard_perfect", icon: "🏆", name: "Молния", desc: "10/10 на харде вовремя", check: (s) => s.runs.some((r) => r.level === 4 && r.correct === 10 && !r.timedOut), progress: (s) => ({ current: bestOn(s, 4, (r) => !r.timedOut), target: 10 }) },
   { id: "exam_go", icon: "📕", name: "К контрольной", desc: "Пройди реальный хард", check: (s) => s.runs.some((r) => r.level === 5), progress: (s) => ({ current: s.runs.filter((r) => r.level === 5).length, target: 1 }) },
-  { id: "exam_pass", icon: "📗", name: "Сдал", desc: "Оценка 3+ на реальном харде", check: (s) => s.runs.some((r) => r.level === 5 && r.grade >= 3 && !r.failed), progress: (s) => ({ current: bestGradeOn(s, 5), target: 3 }) },
-  { id: "exam_four", icon: "📘", name: "Хорошист", desc: "Оценка 4+ на реальном харде", check: (s) => s.runs.some((r) => r.level === 5 && r.grade >= 4), progress: (s) => ({ current: bestGradeOn(s, 5), target: 4 }) },
+  { id: "exam_pass", icon: "📗", name: "Сдал", desc: "Именно оценка 3 на реальном харде", check: (s) => s.runs.some((r) => r.level === 5 && r.grade === 3 && !r.failed), progress: (s) => ({ current: s.runs.some((r) => r.level === 5 && r.grade === 3 && !r.failed) ? 1 : 0, target: 1 }) },
+  { id: "exam_four", icon: "📘", name: "Хорошист", desc: "Именно оценка 4 на реальном харде", check: (s) => s.runs.some((r) => r.level === 5 && r.grade === 4), progress: (s) => ({ current: s.runs.some((r) => r.level === 5 && r.grade === 4) ? 1 : 0, target: 1 }) },
   { id: "exam_five", icon: "🏅", name: "Отличник школы", desc: "Оценка 5 на реальном харде вовремя", check: (s) => s.runs.some((r) => r.level === 5 && r.grade === 5 && !r.timedOut), progress: (s) => ({ current: bestGradeOn(s, 5, (r) => !r.timedOut), target: 5 }) },
   { id: "six_seven", icon: "67", name: "6 7", desc: "Пасхалка: 10/10 на всех 5 уровнях — Six Seven!", gold: true, check: (s) => perfectedLevelsCount(s) >= 5, progress: (s) => ({ current: perfectedLevelsCount(s), target: 5 }) },
   { id: "five_runs", icon: "🎯", name: "Тренировка", desc: "5 прогонов", check: (s) => s.runs.length >= 5, progress: (s) => ({ current: s.runs.length, target: 5 }) },
   { id: "stars_25", icon: "✨", name: "Звёздный", desc: "25 звёзд", check: (s) => s.stars >= 25, progress: (s) => ({ current: s.stars, target: 25 }) },
-  { id: "coop_party", icon: "🤝", name: "Класс в сборе", desc: "Кооп: 5 разных ников в общем топе", coop: true, check: () => coopStats.players >= 5, progress: () => ({ current: coopStats.players, target: 5 }) },
-  { id: "coop_runs", icon: "🌍", name: "Общий зачёт", desc: "Кооп: всего 40 идеальных 10/10 у всех", coop: true, check: () => coopStats.runs >= 40, progress: () => ({ current: coopStats.runs, target: 40 }) },
-  { id: "coop_perfects", icon: "🌟", name: "Россыпь десяток", desc: "Кооп: 25 идеальных 10/10 у всех", coop: true, check: () => coopStats.perfects >= 25, progress: () => ({ current: coopStats.perfects, target: 25 }) },
-  { id: "coop_hard", icon: "🔥", name: "Огненная банда", desc: "Кооп: 8 ников с 10/10 на хард/реальном", coop: true, check: () => coopStats.hardPlayers >= 8, progress: () => ({ current: coopStats.hardPlayers, target: 8 }) },
-  { id: "coop_sum", icon: "🧮", name: "Сумма класса", desc: "Кооп: сумма верных из идеальных прогонов ≥ 300", coop: true, check: () => coopStats.sumCorrect >= 300, progress: () => ({ current: coopStats.sumCorrect, target: 300 }) },
+  { id: "coop_party", icon: "🤝", name: "Класс в сборе", desc: "Кооп: 15 разных ников в общем топе", coop: true, check: () => coopStats.players >= 15, progress: () => ({ current: coopStats.players, target: 15 }) },
+  { id: "coop_runs", icon: "🌍", name: "Общий зачёт", desc: "Кооп: всего 120 идеальных 10/10 у всех", coop: true, check: () => coopStats.runs >= 120, progress: () => ({ current: coopStats.runs, target: 120 }) },
+  { id: "coop_perfects", icon: "🌟", name: "Россыпь десяток", desc: "Кооп: 75 идеальных 10/10 у всех", coop: true, check: () => coopStats.perfects >= 75, progress: () => ({ current: coopStats.perfects, target: 75 }) },
+  { id: "coop_hard", icon: "🔥", name: "Огненная банда", desc: "Кооп: 24 ников с 10/10 на хард/реальном", coop: true, check: () => coopStats.hardPlayers >= 24, progress: () => ({ current: coopStats.hardPlayers, target: 24 }) },
+  { id: "coop_sum", icon: "🧮", name: "Сумма класса", desc: "Кооп: сумма верных из идеальных прогонов ≥ 900", coop: true, check: () => coopStats.sumCorrect >= 900, progress: () => ({ current: coopStats.sumCorrect, target: 900 }) },
+  { id: "boost_slow_3", icon: "🐌", name: "Медленный гений", desc: "Используй «Улитку» 3 раза", check: (s) => (s.shop?.boostUsed?.slow || 0) >= 3, progress: (s) => ({ current: s.shop?.boostUsed?.slow || 0, target: 3 }) },
+  { id: "boost_extra_5", icon: "⏳", name: "Запас времени", desc: "Используй +15 сек 5 раз", check: (s) => (s.shop?.boostUsed?.extra || 0) >= 5, progress: (s) => ({ current: s.shop?.boostUsed?.extra || 0, target: 5 }) },
+  { id: "boost_cheat_5", icon: "🕵️", name: "Хитрый план", desc: "Используй читер 5 раз", check: (s) => (s.shop?.boostUsed?.cheat || 0) >= 5, progress: (s) => ({ current: s.shop?.boostUsed?.cheat || 0, target: 5 }) },
 ];
 
 async function refreshCoopStats() {
@@ -629,6 +661,7 @@ let tickId = null;
 let sessionFilter = "all";
 let shopTab = "boosts";
 let boardFilter = "all";
+let boardMode = MODE_BASIC;
 let playerNick = loadNick();
 
 function loadNick() {
@@ -671,13 +704,16 @@ function emptyShop() {
     hats: ["none"],
     toys: [],
     fxOwned: ["classic"],
+    relics: [],
     skin: "honey",
     hat: "none",
+    relic: "none",
     toysOn: [],
     fx: "classic",
     slow: 0,
     extra: 0,
     cheat: 0,
+    boostUsed: { slow: 0, extra: 0, cheat: 0 },
   };
 }
 
@@ -687,6 +723,7 @@ function normalizeShop(raw) {
   const skins = Array.isArray(raw.skins) ? raw.skins : base.skins;
   const hats = Array.isArray(raw.hats) ? raw.hats : base.hats;
   const toys = Array.isArray(raw.toys) ? raw.toys : base.toys;
+  const relics = Array.isArray(raw.relics) ? raw.relics.filter((id) => RELICS[id]) : [];
   let fxOwned = Array.isArray(raw.fxOwned) ? raw.fxOwned.filter((id) => FX[id]) : ["classic"];
   if (!fxOwned.includes("classic")) fxOwned = ["classic", ...fxOwned];
   const fx = FX[raw.fx] ? raw.fx : "classic";
@@ -694,14 +731,21 @@ function normalizeShop(raw) {
     skins: skins.includes("honey") ? skins : ["honey", ...skins],
     hats: hats.includes("none") ? hats : ["none", ...hats],
     toys,
+    relics,
     fxOwned,
     skin: SKINS[raw.skin] ? raw.skin : "honey",
     hat: HATS[raw.hat] ? raw.hat : "none",
+    relic: RELICS[raw.relic] ? raw.relic : "none",
     toysOn: Array.isArray(raw.toysOn) ? raw.toysOn.filter((id) => TOYS[id]) : [],
     fx: fxOwned.includes(fx) ? fx : "classic",
     slow: Number(raw.slow) || 0,
     extra: Number(raw.extra) || 0,
     cheat: Number(raw.cheat) || 0,
+    boostUsed: {
+      slow: Number(raw.boostUsed && raw.boostUsed.slow) || 0,
+      extra: Number(raw.boostUsed && raw.boostUsed.extra) || 0,
+      cheat: Number(raw.boostUsed && raw.boostUsed.cheat) || 0,
+    },
   };
 }
 
@@ -1170,6 +1214,14 @@ function hatSVG(id) {
   return "";
 }
 
+function relicSVG(id) {
+  if (id === "speedAura") return `<circle cx="80" cy="86" r="60" fill="none" stroke="#7eb6ff" stroke-width="3" opacity=".55" stroke-dasharray="6 7"/>`;
+  if (id === "brainCrown") return `<text x="80" y="4" text-anchor="middle" font-size="18">🧠</text>`;
+  if (id === "cometTrail") return `<path d="M124 44 Q144 34 152 22" fill="none" stroke="#ffd166" stroke-width="4" stroke-linecap="round" opacity=".8"/>`;
+  if (id === "legendSeal") return `<circle cx="126" cy="24" r="12" fill="#ffd24a"/><text x="126" y="28" text-anchor="middle" font-size="11" font-weight="900">L</text>`;
+  return "";
+}
+
 function mascotMarkup(size, mood = "neutral", look = null) {
   const shop = look || state.shop || emptyShop();
   const skin = SKINS[shop.skin] || SKINS.honey;
@@ -1261,6 +1313,7 @@ function mascotMarkup(size, mood = "neutral", look = null) {
   }
 
   return `<svg viewBox="0 -12 160 172" width="${size}" height="${size}">
+    ${relicSVG(shop.relic)}
     ${hatSVG(shop.hat)}
     <ellipse cx="80" cy="145" rx="42" ry="8" fill="#000" opacity=".08"/>
     ${body}
@@ -1844,6 +1897,7 @@ function submitOnlineScore(payload) {
     timed_out: false,
     skin: (state.shop && state.shop.skin) || "honey",
     hat: (state.shop && state.shop.hat) || "none",
+    mode: selectedMode,
     local_at: new Date().toISOString(),
   });
   updateSyncHint();
@@ -1892,12 +1946,15 @@ function bestScoresByNickAndLevel(rows) {
 
 async function renderBoard() {
   if (!els.boardList || !els.boardStatus) return;
+  document.querySelectorAll("#boardModeFilters .filter-btn").forEach((b) => {
+    b.classList.toggle("selected", b.dataset.boardMode === boardMode);
+  });
   els.boardStatus.textContent = "Синхронизация…";
   els.boardList.innerHTML = "";
   await syncScoreQueue({ quiet: true });
   els.boardStatus.textContent = "Загрузка…";
   try {
-    const rows = await fetchScores(boardFilter);
+    const rows = await fetchScores(boardFilter, boardMode);
     const list = (Array.isArray(rows) ? rows : []).filter(isBoardScore);
     // обновить облики из свежих строк
     list.forEach((r) => {
@@ -1911,18 +1968,22 @@ async function renderBoard() {
     const top = boardFilter === "all" ? bestScoresByNickAndLevel(list) : bestScoresByNick(list);
     const pending = pendingScoreCount();
     if (!top.length) {
-      const lvlName = boardFilter === "all" ? "" : ` на «${LEVELS[Number(boardFilter)].name}»`;
+      const modeName = boardMode === MODE_CHAIN ? "2 действия" : "база";
+      const lvlName = boardFilter === "all" ? "" : ` на «${MODE_META[boardMode].levelNames[Number(boardFilter) - 1] || LEVELS[Number(boardFilter)].name}»`;
       els.boardStatus.textContent = pending
-        ? `Пока нет идеальных 10/10${lvlName}. В очереди ${pending} — ждём сеть.`
-        : `Пока нет идеальных 10/10${lvlName}. Пройди все примеры вовремя — и появишься здесь!`;
+        ? `Пока нет идеальных 10/10 (${modeName})${lvlName}. В очереди ${pending} — ждём сеть.`
+        : `Пока нет идеальных 10/10 (${modeName})${lvlName}. Пройди все примеры вовремя — и появишься здесь!`;
       updateSyncHint();
       return;
     }
+    const modeTitle = boardMode === MODE_CHAIN ? "2 действия" : "база";
     els.boardStatus.textContent = boardFilter === "all"
-      ? `Гонка за время · только 10/10 · ${top.length}${pending ? ` · очередь ${pending}` : ""}`
-      : `Топ по времени · ${LEVELS[Number(boardFilter)].name} · 10/10 · ${top.length}${pending ? ` · очередь ${pending}` : ""}`;
+      ? `Гонка за время · ${modeTitle} · только 10/10 · ${top.length}${pending ? ` · очередь ${pending}` : ""}`
+      : `Топ по времени · ${MODE_META[boardMode].levelNames[Number(boardFilter) - 1] || LEVELS[Number(boardFilter)].name} · ${modeTitle} · 10/10 · ${top.length}${pending ? ` · очередь ${pending}` : ""}`;
     els.boardList.innerHTML = top.map((row, i) => {
       const lvl = LEVELS[row.level] || LEVELS[1];
+      const rowMode = row.mode || MODE_BASIC;
+      const rowLvlName = MODE_META[rowMode]?.levelNames[(row.level || 1) - 1] || lvl.name;
       const place = i + 1;
       const me = row.nick === playerNick ? " me" : "";
       const podium = place <= 3 ? ` podium p${place}` : "";
@@ -1946,7 +2007,7 @@ async function renderBoard() {
         ${boardAvatarHtml(row.nick, look.skin, look.hat)}
         <div class="board-main">
           <strong class="board-nick">${nickBadge}${escapeHtml(row.nick)}</strong>
-          <span class="board-meta"><span class="hist-level l${row.level}">${lvl.name}</span> 10/10 · ${formatTime(row.ms)}</span>
+          <span class="board-meta"><span class="hist-level l${row.level}">${rowLvlName}</span>${rowMode === MODE_CHAIN ? " · 2ш" : ""} · 10/10 · ${formatTime(row.ms)}</span>
         </div>
       </li>`;
     }).join("");
@@ -2326,6 +2387,7 @@ function useBoost(id) {
     run.timeScale = 0.5;
     run.slowOn = true;
     state.shop.slow -= 1;
+    state.shop.boostUsed.slow = (state.shop.boostUsed.slow || 0) + 1;
     document.body.classList.add("slow-mo");
     saveState();
     showToasts([{ plain: true, icon: "🐌", name: "Время замедлилось", desc: "Таймер ползёт, как улитка!" }]);
@@ -2334,12 +2396,14 @@ function useBoost(id) {
     run.limit += 15000;
     run.extraOn = true;
     state.shop.extra -= 1;
+    state.shop.boostUsed.extra = (state.shop.boostUsed.extra || 0) + 1;
     saveState();
     showToasts([{ plain: true, icon: "⏳", name: "+15 секунд", desc: "Ещё чуть-чуть времени!" }]);
   }
   if (id === "cheat" && run.level === 5 && state.shop.cheat > 0 && (run.forgive || 0) < CHEAT_MAX_PER_RUN) {
     run.forgive = (run.forgive || 0) + 1;
     state.shop.cheat -= 1;
+    state.shop.boostUsed.cheat = (state.shop.boostUsed.cheat || 0) + 1;
     saveState();
     showToasts([{
       plain: true,
@@ -2402,6 +2466,26 @@ function renderShop() {
         label,
         on
       );
+    }).join("");
+    return;
+  }
+  if (shopTab === "relics") {
+    const myRank = rankFor(state.stars);
+    els.shopList.innerHTML = Object.values(RELICS).map((r) => {
+      const owned = state.shop.relics.includes(r.id);
+      const on = state.shop.relic === r.id;
+      const rankOpen = state.stars >= r.rankMin;
+      const canBuy = rankOpen && (owned || state.coins >= r.price);
+      const action = owned ? (on ? "on" : "equip-relic") : "buy-relic";
+      const label = on ? "Активен" : owned ? "Включить" : r.price > 0 ? "Купить" : "Получить";
+      const price = owned || r.price === 0 ? 0 : r.price;
+      const rankNeed = rankOpen ? `<span class="rank-need">доступно (${myRank.name})</span>` : `<span class="rank-need">нужно звание: ${r.rank}</span>`;
+      return `<article class="shop-card ${rankOpen ? "" : "locked-rank"}">
+        <div class="ico"><span class="relic-ico">${r.icon}</span></div>
+        <div class="name">${r.name}${rankNeed}</div>
+        <button type="button" class="buy ${(!canBuy && !owned) || !rankOpen ? "ghost" : ""}" data-act="${action}" data-id="${r.id}" ${(!canBuy && !owned) || !rankOpen || action === "on" ? "disabled" : ""}>${label}${price ? ` · ${price}&nbsp;<span class="coin sm" aria-hidden="true"></span>` : ""}</button>
+        <div class="desc">${r.desc}${r.price ? ` · Цена зависит от звания (${r.rank})` : " · Награда только за звание"}</div>
+      </article>`;
     }).join("");
     return;
   }
@@ -2497,6 +2581,18 @@ function shopAction(act, id) {
   } else if (act === "equip-fx") {
     if (!state.shop.fxOwned.includes(id)) return;
     state.shop.fx = id;
+  } else if (act === "buy-relic") {
+    const item = RELICS[id];
+    if (!item) return;
+    if (state.stars < item.rankMin) return;
+    if (item.price > 0 && state.coins < item.price) return notEnough();
+    if (item.price > 0) state.coins -= item.price;
+    if (!state.shop.relics.includes(id)) state.shop.relics.push(id);
+    state.shop.relic = id;
+    pingBuy(item.icon, item.name);
+  } else if (act === "equip-relic") {
+    if (!state.shop.relics.includes(id)) return;
+    state.shop.relic = id;
   }
   saveState();
   renderShop();
@@ -2571,6 +2667,7 @@ let selectedMode = (() => {
     return MODE_BASIC;
   }
 })();
+boardMode = selectedMode;
 
 function saveMode() {
   try {
@@ -2591,6 +2688,16 @@ document.getElementById("modeTabs").addEventListener("click", (e) => {
   state.lastLevel = selectedLevel;
   saveState();
   renderHome();
+});
+
+document.getElementById("boardModeFilters").addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-board-mode]");
+  if (!btn) return;
+  boardMode = btn.dataset.boardMode === MODE_CHAIN ? MODE_CHAIN : MODE_BASIC;
+  document.querySelectorAll("#boardModeFilters .filter-btn").forEach((b) => {
+    b.classList.toggle("selected", b === btn);
+  });
+  renderBoard();
 });
 
 els.openShopBtn.addEventListener("click", () => {
