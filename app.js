@@ -1,9 +1,11 @@
 const STORAGE_KEY = "schet-do-20";
 const NICK_KEY = "schet-do-20-nick";
 const SCORE_QUEUE_KEY = "schet-do-20-score-queue";
-const DATA_VERSION = 3;
+const DATA_VERSION = 4;
 const TOTAL = 10;
 const HARD_LIMIT_MS = 60 * 1000;
+const MODE_BASIC = "basic";
+const MODE_CHAIN = "chain";
 
 const SUPABASE_URL = "https://edetrdhgardsvhoomwto.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_MBvrcDFCQlIcHcWEk8RygQ_zwW2bJ4M";
@@ -298,6 +300,35 @@ const LEVELS = {
   },
 };
 
+const MODE_META = {
+  [MODE_BASIC]: {
+    id: MODE_BASIC,
+    name: "База",
+    unlockText: "Базовые уровни",
+    levelNames: ["Лёгкий", "Средний", "Сложный", "Хард", "Реальный хард"],
+    levelDescs: [
+      "Простые + и − до 20",
+      "Двузначные суммы и вычитание из 10–20",
+      "7+8 и 15−8, плюс 3 примера как на среднем",
+      "Как сложный, но только 1 минута",
+      "1 минута + школьная оценка: 1 ошибка — 4, 2 — 3, 3+ — 2",
+    ],
+  },
+  [MODE_CHAIN]: {
+    id: MODE_CHAIN,
+    name: "2 действия",
+    unlockText: "Цепочки в 2 действия",
+    levelNames: ["Лёгкий", "Средний", "Сложный", "Хард", "Реальный хард"],
+    levelDescs: [
+      "Примеры в 2 шага до 20. Тут можно и с нулём.",
+      "2 шага: +/− без нулей и без отрицательных",
+      "Больше смешанных вариантов +/− в 2 шага",
+      "Как сложный, но на весь тест 1 минута",
+      "Минута + школьная оценка в режиме 2 шага",
+    ],
+  },
+};
+
 const RANKS = [
   { min: 0, name: "Новичок", icon: "🌱" },
   { min: 18, name: "Ученик", icon: "✏️" },
@@ -344,6 +375,9 @@ const TOYS = {
   rainbow: { id: "rainbow", name: "Радуга", price: 200, icon: "🌈" },
   mathbook: { id: "mathbook", name: "Книга по математике", price: 1200, icon: "📘", custom: true },
   fiveplus: { id: "fiveplus", name: "5+", price: 1500, icon: "5️⃣", custom: true },
+  starpin: { id: "starpin", name: "Звёздная булавка", price: 260, icon: "⭐" },
+  rocket: { id: "rocket", name: "Мини-ракета", price: 340, icon: "🚀" },
+  donut: { id: "donut", name: "Пончик", price: 180, icon: "🍩" },
 };
 
 const FX = {
@@ -678,7 +712,7 @@ function loadState() {
     if (!raw) return empty;
     const data = JSON.parse(raw);
     const ver = Number(data.version);
-    if (ver !== 2 && ver !== DATA_VERSION) {
+    if (ver !== 2 && ver !== 3 && ver !== DATA_VERSION) {
       return { ...empty, lastLevel: 1 };
     }
     let runs = Array.isArray(data.runs) ? data.runs : [];
@@ -719,7 +753,9 @@ function rankIndexOf(stars) {
 }
 
 function hasPerfect(levelId) {
-  return state.runs.some((r) => (r.level || 1) === levelId && r.correct === 10);
+  return state.runs.some((r) =>
+    (r.mode || MODE_BASIC) === selectedMode && (r.level || 1) === levelId && r.correct === 10
+  );
 }
 
 function isLevelOpen(id) {
@@ -734,6 +770,10 @@ function maxOpenLevel() {
     else break;
   }
   return max;
+}
+
+function modeProgress(modeId, levelId) {
+  return state.runs.some((r) => (r.mode || MODE_BASIC) === modeId && (r.level || 1) === levelId && r.correct === 10);
 }
 
 function schoolGrade(correct, forgive = 0) {
@@ -784,6 +824,7 @@ function xpInfo() {
 
 function renderLevels() {
   if (!isLevelOpen(selectedLevel)) selectedLevel = maxOpenLevel();
+  const modeInfo = MODE_META[selectedMode] || MODE_META[MODE_BASIC];
   document.querySelectorAll(".level-card").forEach((card) => {
     const id = Number(card.dataset.level);
     const open = isLevelOpen(id);
@@ -791,9 +832,16 @@ function renderLevels() {
     card.classList.toggle("selected", selectedLevel === id);
     const need = card.querySelector(".lvl-need");
     if (need) {
-      const prev = LEVELS[id - 1];
-      need.textContent = open || !prev ? "" : `🔒 10/10 «${prev.name}»`;
+      const prevName = modeInfo.levelNames[id - 2];
+      need.textContent = open || !prevName ? "" : `🔒 10/10 «${prevName}»`;
     }
+    const nameEl = card.querySelector(".lvl-name");
+    const descEl = card.querySelector(".lvl-desc");
+    if (nameEl) nameEl.textContent = modeInfo.levelNames[id - 1] || LEVELS[id].name;
+    if (descEl) descEl.textContent = modeInfo.levelDescs[id - 1] || "";
+  });
+  document.querySelectorAll("#modeTabs .filter-btn").forEach((btn) => {
+    btn.classList.toggle("selected", btn.dataset.mode === selectedMode);
   });
 }
 
@@ -841,8 +889,47 @@ function generateMedium() {
     return { a, b, op: "+", answer: sum };
   }
   const a = rand(10, 20);
-  const b = rand(1, a);
+  const b = rand(1, a - 1);
   return { a, b, op: "−", answer: a - b };
+}
+
+function generateChainProblem(level) {
+  const mediumOrHard = level >= 2;
+  const hardish = level >= 3;
+  const noZero = mediumOrHard;
+  const minBase = noZero ? 1 : 0;
+  let a = rand(minBase, 18);
+  let b = rand(minBase, 10);
+  let c = rand(minBase, hardish ? 10 : 8);
+  let op1 = Math.random() < 0.5 ? "+" : "−";
+  let op2 = Math.random() < 0.5 ? "+" : "−";
+  let guard = 0;
+  while (guard < 200) {
+    if (noZero && (a === 0 || b === 0 || c === 0)) {
+      a = rand(1, 18); b = rand(1, 10); c = rand(1, hardish ? 10 : 8); guard += 1; continue;
+    }
+    const step1 = op1 === "+" ? a + b : a - b;
+    const result = op2 === "+" ? step1 + c : step1 - c;
+    const badEqualSub = (op1 === "−" && a === b) || (op2 === "−" && step1 === c);
+    if (step1 < 0 || result < 0 || step1 > 20 || result > 20 || badEqualSub) {
+      a = rand(minBase, 18); b = rand(minBase, 10); c = rand(minBase, hardish ? 10 : 8);
+      if (hardish && Math.random() < 0.55) {
+        op1 = Math.random() < 0.5 ? "+" : "−";
+        op2 = op1 === "+" ? "−" : "+";
+      } else {
+        op1 = Math.random() < 0.5 ? "+" : "−";
+        op2 = Math.random() < 0.5 ? "+" : "−";
+      }
+      guard += 1;
+      continue;
+    }
+    return {
+      a, b, c, op1, op2,
+      text: `${a} ${op1} ${b} ${op2} ${c} = ?`,
+      answer: result,
+    };
+  }
+  return { a: 8, b: 3, c: 2, op1: "+", op2: "−", text: "8 + 3 − 2 = ?", answer: 9 };
 }
 
 function generateCrossingAdd() {
@@ -864,6 +951,7 @@ function generateSharpFocus() {
 }
 
 function generateProblem(level) {
+  if (selectedMode === MODE_CHAIN) return generateChainProblem(level);
   if (level >= 3) return generateSharpFocus();
   if (level === 2) return generateMedium();
   return generateEasy();
@@ -905,6 +993,12 @@ function generateSharpRun() {
 }
 
 function generateRun(level) {
+  if (selectedMode === MODE_CHAIN) {
+    const items = [];
+    const seen = new Set();
+    while (items.length < TOTAL) pushUnique(items, seen, () => generateChainProblem(level), 80);
+    return items;
+  }
   if (level >= 3) return generateSharpRun();
   const items = [];
   const seen = new Set();
@@ -931,7 +1025,10 @@ function showScreen(name) {
 function applyTheme(level) {
   const cfg = LEVELS[level] || LEVELS[1];
   document.body.dataset.theme = cfg.theme;
-  els.homeSubtitle.textContent = cfg.subtitle;
+  const modeInfo = MODE_META[selectedMode] || MODE_META[MODE_BASIC];
+  els.homeSubtitle.textContent = selectedMode === MODE_CHAIN
+    ? `Режим «${modeInfo.name}»: ${modeInfo.levelDescs[(level || 1) - 1] || cfg.subtitle}`
+    : cfg.subtitle;
   [els.balloon1, els.balloon2, els.balloon3].forEach((node, i) => {
     node.textContent = cfg.balloons[i];
   });
@@ -1030,13 +1127,13 @@ function scheduleSpeechHide(until) {
 
 function mouthPath(mood, form) {
   if (form === "hedgehog") {
-    if (mood === "happy") return "M64 118 Q80 134 96 118";
-    if (mood === "sad") return "M64 128 Q80 112 96 128";
-    return "M66 122 H94";
+    if (mood === "happy") return "M62 116 Q80 138 98 116";
+    if (mood === "sad") return "M62 130 Q80 108 98 130";
+    return "M64 121 H96";
   }
-  if (mood === "happy") return "M62 116 Q80 136 98 116";
-  if (mood === "sad") return "M62 128 Q80 110 98 128";
-  return "M64 120 H96";
+  if (mood === "happy") return "M60 114 Q80 140 100 114";
+  if (mood === "sad") return "M60 130 Q80 106 100 130";
+  return "M62 120 H98";
 }
 
 function eyeExtras(mood) {
@@ -1114,7 +1211,8 @@ function mascotMarkup(size, mood = "neutral", look = null) {
       <circle cx="100" cy="78" r="2.5" fill="#fff"/>
       <ellipse cx="80" cy="100" rx="8" ry="5" fill="${skin.inner}"/>
       <path d="M28 100 H52 M28 108 H50 M108 100 H132 M110 108 H132" stroke="#3D3A4A" stroke-width="2" stroke-linecap="round"/>
-      <path d="${mouth}" fill="none" stroke="#3D3A4A" stroke-width="4" stroke-linecap="round"/>
+      ${bow}
+      <path d="${mouth}" fill="none" stroke="#3D3A4A" stroke-width="5" stroke-linecap="round"/>
     `;
   } else if (form === "hedgehog") {
     body = `
@@ -1134,7 +1232,8 @@ function mascotMarkup(size, mood = "neutral", look = null) {
       <circle cx="64" cy="85" r="2.5" fill="#fff"/>
       <circle cx="100" cy="85" r="2.5" fill="#fff"/>
       <ellipse cx="80" cy="104" rx="9" ry="6" fill="#F07167"/>
-      <path d="${mouth}" fill="none" stroke="#3D3A4A" stroke-width="4" stroke-linecap="round"/>
+      ${bow}
+      <path d="${mouth}" fill="none" stroke="#3D3A4A" stroke-width="5" stroke-linecap="round"/>
     `;
   } else {
     body = `
@@ -1152,7 +1251,7 @@ function mascotMarkup(size, mood = "neutral", look = null) {
       ${glasses}
       ${shades}
       <ellipse cx="80" cy="102" rx="10" ry="7" fill="#F07167"/>
-      <path d="${mouth}" fill="none" stroke="#3D3A4A" stroke-width="4" stroke-linecap="round"/>
+      <path d="${mouth}" fill="none" stroke="#3D3A4A" stroke-width="5" stroke-linecap="round"/>
     `;
   }
 
@@ -1278,9 +1377,10 @@ function answersReviewHtml(answers) {
     const cls = a.ok ? "ok" : "bad";
     const kid = a.given == null || a.given === "" ? "—" : a.given;
     const mark = a.ok ? "верно" : `нужно ${a.answer}`;
+    const expr = a.text ? a.text.replace("?", kid) : `${a.a} ${a.op} ${a.b} = ${kid}`;
     return `<li class="${cls}">
       <span class="n">${i + 1}.</span>
-      <span class="ex">${a.a} ${a.op} ${a.b} = ${kid}</span>
+      <span class="ex">${expr}</span>
       <span class="mark">${mark}</span>
     </li>`;
   }).join("")}</ul>`;
@@ -1304,7 +1404,7 @@ function historyItemHtml(r, detailed) {
     <details class="hist-fold">
       <summary>
         <div class="hist-top">
-          <span><span class="hist-level l${r.level || 1}">${lvl.name}</span>${r.correct}/10${gradeBit}</span>
+          <span><span class="hist-level l${r.level || 1}">${lvl.name}${(r.mode || MODE_BASIC) === MODE_CHAIN ? " · 2ш" : ""}</span>${r.correct}/10${gradeBit}</span>
           <span>${formatTime(r.ms)}${extra}</span>
         </div>
         <div class="hist-start">Старт: ${formatStamp(startIsoOf(r))}</div>
@@ -1343,16 +1443,17 @@ function renderHome() {
   const xp = xpInfo();
   els.xpLabel.textContent = xp.label;
   els.xpFill.style.width = `${xp.pct}%`;
+  const modeInfo = MODE_META[selectedMode] || MODE_META[MODE_BASIC];
   if (!isLevelOpen(2)) {
-    els.unlockHint.textContent = "10/10 на Лёгком откроет Средний";
+    els.unlockHint.textContent = `10/10 на «${modeInfo.levelNames[0]}» откроет «${modeInfo.levelNames[1]}»`;
   } else if (!isLevelOpen(3)) {
-    els.unlockHint.textContent = "10/10 на Среднем откроет Сложный";
+    els.unlockHint.textContent = `10/10 на «${modeInfo.levelNames[1]}» откроет «${modeInfo.levelNames[2]}»`;
   } else if (!isLevelOpen(4)) {
-    els.unlockHint.textContent = "10/10 на Сложном откроет Хард";
+    els.unlockHint.textContent = `10/10 на «${modeInfo.levelNames[2]}» откроет «${modeInfo.levelNames[3]}»`;
   } else if (!isLevelOpen(5)) {
-    els.unlockHint.textContent = "10/10 на Харде откроет Реальный хард";
+    els.unlockHint.textContent = `10/10 на «${modeInfo.levelNames[3]}» откроет «${modeInfo.levelNames[4]}»`;
   } else {
-    els.unlockHint.textContent = "Все уровни открыты. Можно выбирать любой!";
+    els.unlockHint.textContent = `Все уровни «${modeInfo.unlockText}» открыты.`;
   }
   renderLevels();
 
@@ -1448,7 +1549,8 @@ function startGame() {
     forgive: 0,
   };
   document.body.classList.remove("slow-mo");
-  els.gameLevel.textContent = cfg.name;
+  const modeInfo = MODE_META[selectedMode] || MODE_META[MODE_BASIC];
+  els.gameLevel.textContent = `${modeInfo.levelNames[cfg.id - 1] || cfg.name}${selectedMode === MODE_CHAIN ? " · 2ш" : ""}`;
   els.timer.classList.toggle("countdown", Boolean(cfg.limit));
   els.timer.classList.remove("danger");
   showScreen("game");
@@ -1495,7 +1597,7 @@ function renderProblem() {
   run.input = "";
   els.stepNow.textContent = String(run.index + 1);
   els.progressFill.style.width = `${((run.index + 1) / TOTAL) * 100}%`;
-  els.problem.textContent = `${item.a}  ${item.op}  ${item.b}  =  ?`;
+  els.problem.textContent = item.text || `${item.a}  ${item.op}  ${item.b}  =  ?`;
   els.problemCard.classList.remove("pop");
   void els.problemCard.offsetWidth;
   els.problemCard.classList.add("pop");
@@ -1609,6 +1711,7 @@ function finishRun({ timedOut = false } = {}) {
     total: TOTAL,
     ms,
     level: run.level,
+    mode: selectedMode,
     timedOut,
     coins: gainedCoins,
     grade: grade ? grade.mark : undefined,
@@ -1618,6 +1721,10 @@ function finishRun({ timedOut = false } = {}) {
       a: a.a,
       op: a.op,
       b: a.b,
+      c: a.c,
+      op1: a.op1,
+      op2: a.op2,
+      text: a.text,
       answer: a.answer,
       given: a.given,
       ok: a.ok,
@@ -1654,7 +1761,7 @@ function finishRun({ timedOut = false } = {}) {
     extraBanners.push(`<div class="ach-banner"><span class="rank-medal r${rankAfter} on">${RANKS[rankAfter].icon}</span><div>${RANKS[rankAfter].name}<small>Новый ранг за опыт</small></div></div>`);
   }
   els.newAchs.innerHTML = extraBanners.join("") + fresh
-    .map((a) => `<div class="ach-banner"><span class="ico">${a.icon === "🪙" ? '<span class="coin md"></span>' : a.icon}</span><div>${a.name}<small>${a.desc}</small></div></div>`)
+    .map((a) => `<div class="ach-banner"><span class="ico">${a.icon === "🪙" ? '<span class="coin md"></span>' : (a.icon === "67" ? '<span class="ico-67">6 7</span>' : a.icon)}</span><div>${a.name}<small>${a.desc}</small></div></div>`)
     .join("");
   els.reviewList.innerHTML = answersReviewHtml(run.answers);
 
@@ -1870,7 +1977,7 @@ function spawnFireworks(perfect) {
   fw.sparks = [];
   fw.launched = 0;
   fw.nextLaunch = 0;
-  fw.stopAt = Date.now() + (perfect ? 7000 : 2800);
+  fw.stopAt = Date.now() + (perfect ? 5000 : 2200);
   fwResize();
   fw.ctx = fw.canvas.getContext("2d");
   fw.canvas.classList.add("on");
@@ -1901,14 +2008,14 @@ function spawnFxLayer(id, perfect) {
   const big = perfect ? " big" : "";
   els.fxLayer.className = `fx-layer on fx-${id}${big}`;
   if (id === "rainbow") {
-    els.fxLayer.innerHTML = fxBits("ribbon", perfect ? 18 : 10, (i) =>
+    els.fxLayer.innerHTML = fxBits("ribbon", perfect ? 10 : 6, (i) =>
       `<i class="fx-ribbon r${i % 6}" style="left:${6 + (i * 5.2) % 88}%;animation-delay:${(i * 0.08).toFixed(2)}s;--rot:${-28 + (i % 7) * 8}deg"></i>`
     );
   } else if (id === "galaxy") {
     els.fxLayer.innerHTML = `
       <div class="fx-nebula"></div>
       <div class="fx-spin">
-        ${fxBits("star", perfect ? 24 : 14, (i) =>
+        ${fxBits("star", perfect ? 14 : 8, (i) =>
           `<i class="fx-star" style="--a:${(i * 37) % 360}deg;--d:${40 + (i % 8) * 18}px;animation-delay:${(i * 0.05).toFixed(2)}s"></i>`
         )}
       </div>
@@ -1918,7 +2025,7 @@ function spawnFxLayer(id, perfect) {
       <div class="fx-flame-ring a"></div>
       <div class="fx-flame-ring b"></div>
       <div class="fx-flame-ring c"></div>
-      ${fxBits("ember", perfect ? 22 : 12, (i) =>
+      ${fxBits("ember", perfect ? 12 : 7, (i) =>
         `<i class="fx-ember" style="left:${10 + (i * 7) % 80}%;animation-delay:${(i * 0.07).toFixed(2)}s"></i>`
       )}
     `;
@@ -1927,22 +2034,22 @@ function spawnFxLayer(id, perfect) {
       <div class="fx-aurora a"></div>
       <div class="fx-aurora b"></div>
       <div class="fx-aurora c"></div>
-      ${fxBits("glint", perfect ? 16 : 8, (i) =>
+      ${fxBits("glint", perfect ? 10 : 6, (i) =>
         `<i class="fx-glint" style="left:${8 + (i * 11) % 84}%;top:${12 + (i * 9) % 50}%;animation-delay:${(i * 0.12).toFixed(2)}s"></i>`
       )}
     `;
   } else if (id === "golden") {
     els.fxLayer.innerHTML = `
       <div class="fx-gold-glow"></div>
-      ${fxBits("coin", perfect ? 26 : 14, (i) =>
+      ${fxBits("coin", perfect ? 14 : 8, (i) =>
         `<i class="fx-gold" style="left:${4 + (i * 3.7) % 92}%;animation-delay:${(i * 0.06).toFixed(2)}s;--spin:${rand(-40, 40)}deg"></i>`
       )}
-      ${fxBits("spark", perfect ? 20 : 10, (i) =>
+      ${fxBits("spark", perfect ? 10 : 6, (i) =>
         `<i class="fx-sparkle" style="left:${10 + (i * 8) % 80}%;top:${8 + (i * 13) % 55}%;animation-delay:${(i * 0.09).toFixed(2)}s"></i>`
       )}
     `;
   }
-  fxTimer = setTimeout(stopFxLayer, perfect ? 6800 : 3400);
+  fxTimer = setTimeout(stopFxLayer, perfect ? 5000 : 2400);
 }
 
 function spawnVictoryFx(celebrate, perfect) {
@@ -2028,24 +2135,24 @@ function fwScheduleLaunches(now) {
   if (fw.perfect) {
     const palette = Math.random() < 0.55 ? FW_GOLD : FW_COLORS;
     const styles = ["peony", "ring", "willow", "gold"];
-    const count = fw.launched === 0 ? 3 : rand(2, 4);
+    const count = fw.launched === 0 ? 2 : rand(1, 2);
     for (let i = 0; i < count; i += 1) {
       fwLaunch(
         w * (0.12 + Math.random() * 0.76),
         h * (0.16 + Math.random() * 0.32),
         fwPick(palette),
-        rand(52, 86),
+        rand(36, 58),
         fwPick(styles)
       );
     }
-    fw.nextLaunch = now + (fw.launched < 2 ? 280 : 420);
+    fw.nextLaunch = now + (fw.launched < 2 ? 320 : 520);
     fw.launched += 1;
-    if (fw.launched === 6) {
+    if (fw.launched === 4) {
       const cx = w / 2;
       const cy = h * 0.28;
-      fwBurst(cx, cy, "#ffd24a", 110, "gold");
-      fwBurst(cx - 90, cy + 20, "#ff6b9d", 70, "ring");
-      fwBurst(cx + 90, cy + 20, "#4ecdc4", 70, "ring");
+      fwBurst(cx, cy, "#ffd24a", 66, "gold");
+      fwBurst(cx - 90, cy + 20, "#ff6b9d", 42, "ring");
+      fwBurst(cx + 90, cy + 20, "#4ecdc4", 42, "ring");
     }
   } else {
     fwLaunch(
@@ -2133,7 +2240,7 @@ function fwTick() {
 
 function spawnConfetti(many) {
   els.confetti.innerHTML = "";
-  const n = many ? 28 : 10;
+  const n = many ? 16 : 6;
   const colors = ["#ff7a59", "#ffd166", "#4ecdc4", "#6bcb77", "#f07167", "#c084fc"];
   for (let i = 0; i < n; i += 1) {
     const bit = document.createElement("i");
@@ -2396,6 +2503,42 @@ function shopAction(act, id) {
   renderHome();
 }
 
+// Дополнительные ачивки для режима "2 действия"
+ACHIEVEMENTS.push(
+  {
+    id: "chain_open",
+    icon: "🧠",
+    name: "Два шага",
+    desc: "Пройди любой уровень в режиме 2 действия",
+    check: (s) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_CHAIN),
+    progress: (s) => ({ current: s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_CHAIN).length, target: 1 }),
+  },
+  {
+    id: "chain_mid",
+    icon: "➕",
+    name: "Комбо-счёт",
+    desc: "10/10 на среднем в режиме 2 действия",
+    check: (s) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_CHAIN && r.level === 2 && r.correct === 10),
+    progress: (s) => ({ current: s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_CHAIN && r.level === 2).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }),
+  },
+  {
+    id: "chain_hard",
+    icon: "⚙️",
+    name: "Комбо-хард",
+    desc: "10/10 на харде в режиме 2 действия вовремя",
+    check: (s) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_CHAIN && r.level === 4 && r.correct === 10 && !r.timedOut),
+    progress: (s) => ({ current: s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_CHAIN && r.level === 4 && !r.timedOut).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }),
+  },
+  {
+    id: "chain_exam5",
+    icon: "📚",
+    name: "Комбо-отличник",
+    desc: "Оценка 5 на экзамене 2 шага",
+    check: (s) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_CHAIN && r.level === 5 && r.grade === 5 && !r.timedOut),
+    progress: (s) => ({ current: s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_CHAIN && r.level === 5 && r.grade === 5 && !r.timedOut) ? 1 : 0, target: 1 }),
+  }
+);
+
 function pingBuy(icon, name) {
   showToasts([{ plain: true, icon, name: "Куплено!", desc: name }]);
 }
@@ -2408,8 +2551,9 @@ document.getElementById("levels").addEventListener("click", (e) => {
     card.classList.remove("shake");
     void card.offsetWidth;
     card.classList.add("shake");
-    const prev = LEVELS[id - 1];
-    showToasts([{ plain: true, icon: "🔒", name: "Пока закрыто", desc: prev ? `Сначала 10/10 на «${prev.name}»` : "Ещё рано" }]);
+    const meta = MODE_META[selectedMode] || MODE_META[MODE_BASIC];
+    const prevName = meta.levelNames[id - 2];
+    showToasts([{ plain: true, icon: "🔒", name: "Пока закрыто", desc: prevName ? `Сначала 10/10 на «${prevName}»` : "Ещё рано" }]);
     return;
   }
   selectedLevel = id;
@@ -2417,6 +2561,36 @@ document.getElementById("levels").addEventListener("click", (e) => {
   saveState();
   applyTheme(selectedLevel);
   renderLevels();
+});
+
+let selectedMode = (() => {
+  try {
+    const saved = localStorage.getItem(`${STORAGE_KEY}-mode`);
+    return saved === MODE_CHAIN ? MODE_CHAIN : MODE_BASIC;
+  } catch {
+    return MODE_BASIC;
+  }
+})();
+
+function saveMode() {
+  try {
+    localStorage.setItem(`${STORAGE_KEY}-mode`, selectedMode);
+  } catch {
+    /* ignore */
+  }
+}
+
+document.getElementById("modeTabs").addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-mode]");
+  if (!btn) return;
+  const nextMode = btn.dataset.mode === MODE_CHAIN ? MODE_CHAIN : MODE_BASIC;
+  if (nextMode === selectedMode) return;
+  selectedMode = nextMode;
+  saveMode();
+  selectedLevel = maxOpenLevel();
+  state.lastLevel = selectedLevel;
+  saveState();
+  renderHome();
 });
 
 els.openShopBtn.addEventListener("click", () => {

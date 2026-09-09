@@ -366,6 +366,10 @@ h1 {
   right: auto;
   left: 6%;
 }
+.mascot-stage.has-speech .toy.rocket {
+  right: auto;
+  left: 10%;
+}
 
 .mood-storm {
   position: absolute;
@@ -460,6 +464,9 @@ h1 {
 .toy.rainbow { left: 8%; top: 18%; font-size: 34px; z-index: 0; animation: floaty 4s ease-in-out infinite; }
 .toy.duck { right: 10%; bottom: 8%; animation: coin-bob 2s ease-in-out infinite; }
 .toy.clover { left: 12%; bottom: 18%; animation: spark-twinkle 1.8s ease-in-out infinite; }
+.toy.starpin { right: 18%; top: 14%; font-size: 16px; animation: spark-twinkle 1.3s ease-in-out infinite; }
+.toy.rocket { right: 7%; bottom: 14%; font-size: 24px; animation: floaty 2.8s ease-in-out infinite; }
+.toy.donut { left: 14%; bottom: 8%; font-size: 22px; animation: coin-bob 2.3s ease-in-out infinite; }
 .toy.wand {
   right: 4%;
   top: 10%;
@@ -1720,6 +1727,10 @@ body[data-theme="hard"] .gallery-item .done-tag { color: #8ef0b0; }
   grid-template-columns: repeat(3, 1fr);
   gap: 6px;
   margin-bottom: 12px;
+}
+.mode-tabs {
+  grid-template-columns: repeat(2, 1fr);
+  margin-bottom: 10px;
 }
 
 .filter-btn {
