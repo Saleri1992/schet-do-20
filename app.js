@@ -1,7 +1,7 @@
 const STORAGE_KEY = "schet-do-20";
 const NICK_KEY = "schet-do-20-nick";
 const SCORE_QUEUE_KEY = "schet-do-20-score-queue";
-const DATA_VERSION = 4;
+const DATA_VERSION = 5;
 const TOTAL = 10;
 const HARD_LIMIT_MS = 60 * 1000;
 const MODE_BASIC = "basic";
@@ -402,11 +402,36 @@ const TOYS = {
   donut: { id: "donut", name: "Пончик", price: 180, icon: "🍩" },
 };
 
+/* Артефакты персонажа: нужны и звание, и монеты (по одному на каждое звание). */
 const RELICS = {
-  speedAura: { id: "speedAura", name: "Аура скорости", icon: "💨", rank: "Считальщик", rankMin: 42, price: 240, desc: "Лёгкая аура чемпиона вокруг маскота." },
-  brainCrown: { id: "brainCrown", name: "Корона ума", icon: "🧠", rank: "Знаток", rankMin: 72, price: 420, desc: "Показывает, что ты думаешь быстро." },
-  cometTrail: { id: "cometTrail", name: "След кометы", icon: "☄️", rank: "Отличник", rankMin: 110, price: 640, desc: "Огненный след за победами." },
-  legendSeal: { id: "legendSeal", name: "Печать легенды", icon: "🏛️", rank: "Легенда", rankMin: 660, price: 0, desc: "Только за звание. Монеты не нужны." },
+  sproutBadge: { id: "sproutBadge", name: "Росток силы", icon: "🌱", rank: "Новичок", rankMin: 0, price: 40, desc: "Маленький значок первого шага." },
+  pencilPin: { id: "pencilPin", name: "Карандаш удачи", icon: "✏️", rank: "Ученик", rankMin: 18, price: 90, desc: "Пишет правильные ответы." },
+  bookCharm: { id: "bookCharm", name: "Книжный амулет", icon: "📘", rank: "Считальщик", rankMin: 42, price: 160, desc: "Страницы шепчут подсказки." },
+  starMedallion: { id: "starMedallion", name: "Звёздный медальон", icon: "★", rank: "Знаток", rankMin: 72, price: 240, desc: "Сияет на груди у умников." },
+  shineOrb: { id: "shineOrb", name: "Шар отличника", icon: "🌟", rank: "Отличник", rankMin: 110, price: 340, desc: "Тёплый свет вокруг маскота." },
+  masterRing: { id: "masterRing", name: "Кольцо мастера", icon: "✦", rank: "Мастер", rankMin: 160, price: 460, desc: "Кольцо точных ответов." },
+  sageOrb: { id: "sageOrb", name: "Сфера мудреца", icon: "🔮", rank: "Мудрец", rankMin: 220, price: 600, desc: "Магический шар счёта." },
+  champCup: { id: "champCup", name: "Кубок чемпиона", icon: "🏆", rank: "Чемпион", rankMin: 300, price: 780, desc: "Золотой кубок за скорость." },
+  knightShield: { id: "knightShield", name: "Щит рыцаря", icon: "🛡️", rank: "Рыцарь счёта", rankMin: 400, price: 980, desc: "Защищает от глупых ошибок." },
+  heroFlame: { id: "heroFlame", name: "Пламя героя", icon: "🔥", rank: "Герой", rankMin: 520, price: 1200, desc: "Огонёк смелости за спиной." },
+  legendSeal: { id: "legendSeal", name: "Печать легенды", icon: "💎", rank: "Легенда", rankMin: 660, price: 1500, desc: "Редкая печать легендарных." },
+  archCrown: { id: "archCrown", name: "Корона архимага", icon: "👑", rank: "Архимаг", rankMin: 850, price: 2000, desc: "Самый крутой артефакт." },
+};
+
+/* Небо / декор фона: только за звание, монеты не нужны. */
+const SKIES = {
+  none: { id: "none", name: "Обычное небо", icon: "🌤️", rank: "Новичок", rankMin: 0, price: 0, desc: "Привычные облака и шарики." },
+  softClouds: { id: "softClouds", name: "Пушистые облачка", icon: "☁️", rank: "Ученик", rankMin: 18, price: 0, desc: "Мягкие облачка плывут по небу." },
+  floatingStars: { id: "floatingStars", name: "Парящие звёзды", icon: "✨", rank: "Считальщик", rankMin: 42, price: 0, desc: "Звёздочки мягко мерцают." },
+  softMoon: { id: "softMoon", name: "Лунный диск", icon: "🌙", rank: "Знаток", rankMin: 72, price: 0, desc: "Луна медленно качается." },
+  nightSky: { id: "nightSky", name: "Ночное небо", icon: "🌃", rank: "Отличник", rankMin: 110, price: 0, desc: "Луна и россыпь звёзд." },
+  auroraClouds: { id: "auroraClouds", name: "Сияющие облака", icon: "🌌", rank: "Мастер", rankMin: 160, price: 0, desc: "Облака с цветным сиянием." },
+  goldenStars: { id: "goldenStars", name: "Золотые звёзды", icon: "⭐", rank: "Мудрец", rankMin: 220, price: 0, desc: "Золотые звёзды кружатся." },
+  twinMoons: { id: "twinMoons", name: "Две луны", icon: "🌕", rank: "Чемпион", rankMin: 300, price: 0, desc: "Две луны пляшут в небе." },
+  nebula: { id: "nebula", name: "Туманность", icon: "💫", rank: "Рыцарь счёта", rankMin: 400, price: 0, desc: "Цветная космическая дымка." },
+  meteorShowers: { id: "meteorShowers", name: "Метеоры", icon: "☄️", rank: "Герой", rankMin: 520, price: 0, desc: "Падающие звёзды-метеоры." },
+  crystalSky: { id: "crystalSky", name: "Кристальное небо", icon: "💎", rank: "Легенда", rankMin: 660, price: 0, desc: "Кристаллы и искры в воздухе." },
+  archmageSky: { id: "archmageSky", name: "Небо архимага", icon: "🪄", rank: "Архимаг", rankMin: 850, price: 0, desc: "Луна, звёзды, облака и магия сразу." },
 };
 
 const FX = {
@@ -498,6 +523,8 @@ const ACHIEVEMENTS = [
   { id: "coins_10", icon: "🪙", name: "Копилка", desc: "Собери 10 монет", check: (s) => s.coins >= 10, progress: (s) => ({ current: s.coins, target: 10 }) },
   { id: "coins_50", icon: "💰", name: "Богач", desc: "Собери 50 монет", check: (s) => s.coins >= 50, progress: (s) => ({ current: s.coins, target: 50 }) },
   { id: "coins_100", icon: "🏦", name: "Сундук", desc: "Собери 100 монет", check: (s) => s.coins >= 100, progress: (s) => ({ current: s.coins, target: 100 }) },
+  { id: "coins_200", icon: "💎", name: "Казна", desc: "Собери 200 монет", check: (s) => s.coins >= 200, progress: (s) => ({ current: s.coins, target: 200 }) },
+  { id: "coins_500", icon: "🏰", name: "Капитал", desc: "Собери 500 монет", check: (s) => s.coins >= 500, progress: (s) => ({ current: s.coins, target: 500 }) },
   { id: "easy_perfect", icon: "🌱", name: "Лёгкий герой", desc: "10/10 на лёгком", check: (s) => s.runs.some((r) => (r.level || 1) === 1 && r.correct === 10), progress: (s) => ({ current: bestOn(s, 1), target: 10 }) },
   { id: "medium_go", icon: "⭐", name: "Смелее", desc: "Пройди средний уровень", check: (s) => s.runs.some((r) => r.level === 2), progress: (s) => ({ current: s.runs.filter((r) => r.level === 2).length, target: 1 }) },
   { id: "medium_perfect", icon: "🌟", name: "Двузначный", desc: "10/10 на среднем", check: (s) => s.runs.some((r) => r.level === 2 && r.correct === 10), progress: (s) => ({ current: bestOn(s, 2), target: 10 }) },
@@ -512,15 +539,36 @@ const ACHIEVEMENTS = [
   { id: "exam_five", icon: "🏅", name: "Отличник школы", desc: "Оценка 5 на реальном харде вовремя", check: (s) => s.runs.some((r) => r.level === 5 && r.grade === 5 && !r.timedOut), progress: (s) => ({ current: bestGradeOn(s, 5, (r) => !r.timedOut), target: 5 }) },
   { id: "six_seven", icon: "67", name: "6 7", desc: "Пасхалка: 10/10 на всех 5 уровнях — Six Seven!", gold: true, check: (s) => perfectedLevelsCount(s) >= 5, progress: (s) => ({ current: perfectedLevelsCount(s), target: 5 }) },
   { id: "five_runs", icon: "🎯", name: "Тренировка", desc: "5 прогонов", check: (s) => s.runs.length >= 5, progress: (s) => ({ current: s.runs.length, target: 5 }) },
+  { id: "ten_runs", icon: "🏃", name: "Разгон", desc: "10 прогонов", check: (s) => s.runs.length >= 10, progress: (s) => ({ current: s.runs.length, target: 10 }) },
+  { id: "twenty_runs", icon: "🏋️", name: "Спортсмен счёта", desc: "20 прогонов", check: (s) => s.runs.length >= 20, progress: (s) => ({ current: s.runs.length, target: 20 }) },
+  { id: "fifty_runs", icon: "📅", name: "Марафонец", desc: "50 прогонов", check: (s) => s.runs.length >= 50, progress: (s) => ({ current: s.runs.length, target: 50 }) },
   { id: "stars_25", icon: "✨", name: "Звёздный", desc: "25 звёзд", check: (s) => s.stars >= 25, progress: (s) => ({ current: s.stars, target: 25 }) },
-  { id: "coop_party", icon: "🤝", name: "Класс в сборе", desc: "Кооп: 15 разных ников в общем топе", coop: true, check: () => coopStats.players >= 15, progress: () => ({ current: coopStats.players, target: 15 }) },
-  { id: "coop_runs", icon: "🌍", name: "Общий зачёт", desc: "Кооп: всего 120 идеальных 10/10 у всех", coop: true, check: () => coopStats.runs >= 120, progress: () => ({ current: coopStats.runs, target: 120 }) },
-  { id: "coop_perfects", icon: "🌟", name: "Россыпь десяток", desc: "Кооп: 75 идеальных 10/10 у всех", coop: true, check: () => coopStats.perfects >= 75, progress: () => ({ current: coopStats.perfects, target: 75 }) },
-  { id: "coop_hard", icon: "🔥", name: "Огненная банда", desc: "Кооп: 24 ников с 10/10 на хард/реальном", coop: true, check: () => coopStats.hardPlayers >= 24, progress: () => ({ current: coopStats.hardPlayers, target: 24 }) },
-  { id: "coop_sum", icon: "🧮", name: "Сумма класса", desc: "Кооп: сумма верных из идеальных прогонов ≥ 900", coop: true, check: () => coopStats.sumCorrect >= 900, progress: () => ({ current: coopStats.sumCorrect, target: 900 }) },
+  { id: "stars_50", icon: "🌠", name: "Созвездие", desc: "50 звёзд", check: (s) => s.stars >= 50, progress: (s) => ({ current: s.stars, target: 50 }) },
+  { id: "stars_100", icon: "🌌", name: "Галактика", desc: "100 звёзд", check: (s) => s.stars >= 100, progress: (s) => ({ current: s.stars, target: 100 }) },
+  { id: "stars_200", icon: "🚀", name: "Космолёт", desc: "200 звёзд", check: (s) => s.stars >= 200, progress: (s) => ({ current: s.stars, target: 200 }) },
+  { id: "perfects_3", icon: "3️⃣", name: "Три десятки", desc: "3 идеальных 10/10", check: (s) => s.runs.filter((r) => r.correct === 10).length >= 3, progress: (s) => ({ current: s.runs.filter((r) => r.correct === 10).length, target: 3 }) },
+  { id: "perfects_8", icon: "8️⃣", name: "Восемь десяток", desc: "8 идеальных 10/10", check: (s) => s.runs.filter((r) => r.correct === 10).length >= 8, progress: (s) => ({ current: s.runs.filter((r) => r.correct === 10).length, target: 8 }) },
+  { id: "rank_uchenik", icon: "✏️", name: "Звание: Ученик", desc: "Достигни звания Ученик", check: (s) => s.stars >= 18, progress: (s) => ({ current: Math.min(s.stars, 18), target: 18 }) },
+  { id: "rank_znatok", icon: "★", name: "Звание: Знаток", desc: "Достигни звания Знаток", check: (s) => s.stars >= 72, progress: (s) => ({ current: Math.min(s.stars, 72), target: 72 }) },
+  { id: "rank_master", icon: "✦", name: "Звание: Мастер", desc: "Достигни звания Мастер", check: (s) => s.stars >= 160, progress: (s) => ({ current: Math.min(s.stars, 160), target: 160 }) },
+  { id: "rank_champion", icon: "🏆", name: "Звание: Чемпион", desc: "Достигни звания Чемпион", check: (s) => s.stars >= 300, progress: (s) => ({ current: Math.min(s.stars, 300), target: 300 }) },
+  { id: "rank_legend", icon: "💎", name: "Звание: Легенда", desc: "Достигни звания Легенда", check: (s) => s.stars >= 660, progress: (s) => ({ current: Math.min(s.stars, 660), target: 660 }) },
+  { id: "shop_skin", icon: "🎨", name: "Новый окрас", desc: "Купи любой скин в магазине", check: (s) => (s.shop?.skins || []).length > 1, progress: (s) => ({ current: Math.max(0, (s.shop?.skins || []).length - 1), target: 1 }) },
+  { id: "shop_hat", icon: "🎩", name: "Шляпник", desc: "Купи любую шляпу", check: (s) => (s.shop?.hats || []).some((h) => h !== "none"), progress: (s) => ({ current: (s.shop?.hats || []).filter((h) => h !== "none").length ? 1 : 0, target: 1 }) },
+  { id: "shop_toy", icon: "🎀", name: "Коллекционер штучек", desc: "Купи любую штучку", check: (s) => (s.shop?.toys || []).length >= 1, progress: (s) => ({ current: (s.shop?.toys || []).length, target: 1 }) },
+  { id: "relic_first", icon: "🏺", name: "Первый артефакт", desc: "Купи любой артефакт", check: (s) => (s.shop?.relics || []).length >= 1, progress: (s) => ({ current: (s.shop?.relics || []).length, target: 1 }) },
+  { id: "relic_three", icon: "🔮", name: "Три артефакта", desc: "Собери 3 артефакта", check: (s) => (s.shop?.relics || []).length >= 3, progress: (s) => ({ current: (s.shop?.relics || []).length, target: 3 }) },
+  { id: "sky_first", icon: "☁️", name: "Небо открыто", desc: "Открой любой фон неба (кроме обычного)", check: (s) => (s.shop?.skies || []).some((id) => id !== "none"), progress: (s) => ({ current: (s.shop?.skies || []).filter((id) => id !== "none").length ? 1 : 0, target: 1 }) },
+  { id: "sky_three", icon: "🌙", name: "Небосвод", desc: "Открой 3 фона неба", check: (s) => (s.shop?.skies || []).filter((id) => id !== "none").length >= 3, progress: (s) => ({ current: (s.shop?.skies || []).filter((id) => id !== "none").length, target: 3 }) },
+  { id: "coop_party", icon: "🤝", name: "Класс в сборе", desc: "Кооп ×3: 15 разных ников в общем топе", coop: true, check: () => coopStats.players >= 15, progress: () => ({ current: coopStats.players, target: 15 }) },
+  { id: "coop_runs", icon: "🌍", name: "Общий зачёт", desc: "Кооп ×3: всего 120 прогонов у всех", coop: true, check: () => coopStats.runs >= 120, progress: () => ({ current: coopStats.runs, target: 120 }) },
+  { id: "coop_perfects", icon: "🌟", name: "Россыпь десяток", desc: "Кооп ×3: 75 идеальных 10/10 у всех", coop: true, check: () => coopStats.perfects >= 75, progress: () => ({ current: coopStats.perfects, target: 75 }) },
+  { id: "coop_hard", icon: "🔥", name: "Огненная банда", desc: "Кооп ×3: 24 ника с 10/10 на хард/реальном", coop: true, check: () => coopStats.hardPlayers >= 24, progress: () => ({ current: coopStats.hardPlayers, target: 24 }) },
+  { id: "coop_sum", icon: "🧮", name: "Сумма класса", desc: "Кооп ×3: сумма верных из всех прогонов ≥ 900", coop: true, check: () => coopStats.sumCorrect >= 900, progress: () => ({ current: coopStats.sumCorrect, target: 900 }) },
   { id: "boost_slow_3", icon: "🐌", name: "Медленный гений", desc: "Используй «Улитку» 3 раза", check: (s) => (s.shop?.boostUsed?.slow || 0) >= 3, progress: (s) => ({ current: s.shop?.boostUsed?.slow || 0, target: 3 }) },
   { id: "boost_extra_5", icon: "⏳", name: "Запас времени", desc: "Используй +15 сек 5 раз", check: (s) => (s.shop?.boostUsed?.extra || 0) >= 5, progress: (s) => ({ current: s.shop?.boostUsed?.extra || 0, target: 5 }) },
   { id: "boost_cheat_5", icon: "🕵️", name: "Хитрый план", desc: "Используй читер 5 раз", check: (s) => (s.shop?.boostUsed?.cheat || 0) >= 5, progress: (s) => ({ current: s.shop?.boostUsed?.cheat || 0, target: 5 }) },
+  { id: "boost_any_10", icon: "⚡", name: "Буст-мастер", desc: "Используй любые бусты суммарно 10 раз", check: (s) => ((s.shop?.boostUsed?.slow || 0) + (s.shop?.boostUsed?.extra || 0) + (s.shop?.boostUsed?.cheat || 0)) >= 10, progress: (s) => ({ current: (s.shop?.boostUsed?.slow || 0) + (s.shop?.boostUsed?.extra || 0) + (s.shop?.boostUsed?.cheat || 0), target: 10 }) },
 ];
 
 async function refreshCoopStats() {
@@ -536,7 +584,7 @@ async function refreshCoopStats() {
       const nick = normalizeNick(r.nick);
       if (!isNickOk(nick)) return;
       nicks.add(nick);
-      if (r.level >= 4) hardNicks.add(nick);
+      if (r.level >= 4 && r.correct === 10) hardNicks.add(nick);
       if (r.correct === 10) perfects += 1;
       sumCorrect += Number(r.correct) || 0;
       const prev = looks[nick];
@@ -647,6 +695,7 @@ const els = {
   shopCoins: document.getElementById("shopCoins"),
   shopList: document.getElementById("shopList"),
   fxLayer: document.getElementById("fxLayer"),
+  skyDecor: document.getElementById("skyDecor"),
   welcomeModal: document.getElementById("welcomeModal"),
   welcomeOkBtn: document.getElementById("welcomeOkBtn"),
   sixSevenModal: document.getElementById("sixSevenModal"),
@@ -705,9 +754,11 @@ function emptyShop() {
     toys: [],
     fxOwned: ["classic"],
     relics: [],
+    skies: ["none"],
     skin: "honey",
     hat: "none",
     relic: "none",
+    sky: "none",
     toysOn: [],
     fx: "classic",
     slow: 0,
@@ -724,18 +775,23 @@ function normalizeShop(raw) {
   const hats = Array.isArray(raw.hats) ? raw.hats : base.hats;
   const toys = Array.isArray(raw.toys) ? raw.toys : base.toys;
   const relics = Array.isArray(raw.relics) ? raw.relics.filter((id) => RELICS[id]) : [];
+  let skies = Array.isArray(raw.skies) ? raw.skies.filter((id) => SKIES[id]) : ["none"];
+  if (!skies.includes("none")) skies = ["none", ...skies];
   let fxOwned = Array.isArray(raw.fxOwned) ? raw.fxOwned.filter((id) => FX[id]) : ["classic"];
   if (!fxOwned.includes("classic")) fxOwned = ["classic", ...fxOwned];
   const fx = FX[raw.fx] ? raw.fx : "classic";
+  const sky = SKIES[raw.sky] ? raw.sky : "none";
   return {
     skins: skins.includes("honey") ? skins : ["honey", ...skins],
     hats: hats.includes("none") ? hats : ["none", ...hats],
     toys,
     relics,
+    skies,
     fxOwned,
     skin: SKINS[raw.skin] ? raw.skin : "honey",
     hat: HATS[raw.hat] ? raw.hat : "none",
     relic: RELICS[raw.relic] ? raw.relic : "none",
+    sky: skies.includes(sky) ? sky : "none",
     toysOn: Array.isArray(raw.toysOn) ? raw.toysOn.filter((id) => TOYS[id]) : [],
     fx: fxOwned.includes(fx) ? fx : "classic",
     slow: Number(raw.slow) || 0,
@@ -756,7 +812,7 @@ function loadState() {
     if (!raw) return empty;
     const data = JSON.parse(raw);
     const ver = Number(data.version);
-    if (ver !== 2 && ver !== 3 && ver !== DATA_VERSION) {
+    if (ver !== 2 && ver !== 3 && ver !== 4 && ver !== DATA_VERSION) {
       return { ...empty, lastLevel: 1 };
     }
     let runs = Array.isArray(data.runs) ? data.runs : [];
@@ -1215,11 +1271,59 @@ function hatSVG(id) {
 }
 
 function relicSVG(id) {
-  if (id === "speedAura") return `<circle cx="80" cy="86" r="60" fill="none" stroke="#7eb6ff" stroke-width="3" opacity=".55" stroke-dasharray="6 7"/>`;
-  if (id === "brainCrown") return `<text x="80" y="4" text-anchor="middle" font-size="18">🧠</text>`;
-  if (id === "cometTrail") return `<path d="M124 44 Q144 34 152 22" fill="none" stroke="#ffd166" stroke-width="4" stroke-linecap="round" opacity=".8"/>`;
+  if (id === "sproutBadge") return `<text x="128" y="132" text-anchor="middle" font-size="16">🌱</text>`;
+  if (id === "pencilPin") return `<text x="128" y="36" text-anchor="middle" font-size="15">✏️</text>`;
+  if (id === "bookCharm") return `<rect x="118" y="118" width="22" height="16" rx="2" fill="#3d6ea8"/><text x="129" y="130" text-anchor="middle" font-size="8" fill="#fff6c2" font-weight="900">+</text>`;
+  if (id === "starMedallion") return `<circle cx="80" cy="128" r="10" fill="#ffd166" stroke="#d48910" stroke-width="2"/><text x="80" y="132" text-anchor="middle" font-size="10">★</text>`;
+  if (id === "shineOrb") return `<circle cx="80" cy="86" r="58" fill="none" stroke="#ffd166" stroke-width="2.5" opacity=".5"/><circle cx="80" cy="86" r="64" fill="none" stroke="#fff6c2" stroke-width="1.5" opacity=".35"/>`;
+  if (id === "masterRing") return `<circle cx="108" cy="118" r="9" fill="none" stroke="#c084fc" stroke-width="3"/><circle cx="108" cy="118" r="4" fill="#ffd166"/>`;
+  if (id === "sageOrb") return `<circle cx="30" cy="100" r="12" fill="#7b5cff" opacity=".55"/><circle cx="28" cy="96" r="3" fill="#fff" opacity=".6"/>`;
+  if (id === "champCup") return `<text x="80" y="8" text-anchor="middle" font-size="18">🏆</text>`;
+  if (id === "knightShield") return `<path d="M128 20 L146 28 L146 48 Q137 62 128 68 Q119 62 110 48 L110 28 Z" fill="#7a8fa0" stroke="#445566" stroke-width="2"/><text x="128" y="48" text-anchor="middle" font-size="10" fill="#fff">+</text>`;
+  if (id === "heroFlame") return `<path d="M18 70 Q8 50 22 40 Q16 55 28 62 Q34 48 40 58 Q48 70 30 78 Z" fill="#ff7a59" opacity=".85"/>`;
   if (id === "legendSeal") return `<circle cx="126" cy="24" r="12" fill="#ffd24a"/><text x="126" y="28" text-anchor="middle" font-size="11" font-weight="900">L</text>`;
+  if (id === "archCrown") return `<path d="M48 20 L56 4 L68 18 L80 0 L92 18 L104 4 L112 20 Z" fill="#ffd166" stroke="#d48910" stroke-width="2"/><circle cx="80" cy="8" r="3" fill="#fff"/>`;
   return "";
+}
+
+function skyDecorHtml(id) {
+  if (!id || id === "none") return "";
+  const stars = (n, cls = "sky-star") => Array.from({ length: n }, (_, i) => `<span class="${cls} s${(i % 8) + 1}"></span>`).join("");
+  const clouds = (n) => Array.from({ length: n }, (_, i) => `<span class="sky-puff p${(i % 5) + 1}"></span>`).join("");
+  if (id === "softClouds") return clouds(5);
+  if (id === "floatingStars") return stars(10);
+  if (id === "softMoon") return `<span class="sky-moon m1"></span>`;
+  if (id === "nightSky") return `<span class="sky-moon m1"></span>${stars(12)}`;
+  if (id === "auroraClouds") return `<span class="sky-aurora a1"></span><span class="sky-aurora a2"></span>${clouds(3)}`;
+  if (id === "goldenStars") return stars(14, "sky-star gold");
+  if (id === "twinMoons") return `<span class="sky-moon m1"></span><span class="sky-moon m2"></span>${stars(6)}`;
+  if (id === "nebula") return `<span class="sky-nebula n1"></span><span class="sky-nebula n2"></span>${stars(8)}`;
+  if (id === "meteorShowers") return `${stars(6)}<span class="sky-meteor me1"></span><span class="sky-meteor me2"></span><span class="sky-meteor me3"></span>`;
+  if (id === "crystalSky") return `${stars(8, "sky-star crystal")}<span class="sky-crystal c1"></span><span class="sky-crystal c2"></span><span class="sky-crystal c3"></span>`;
+  if (id === "archmageSky") {
+    return `<span class="sky-moon m1"></span><span class="sky-aurora a1"></span>${clouds(3)}${stars(10)}<span class="sky-meteor me1"></span><span class="sky-crystal c1"></span>`;
+  }
+  return "";
+}
+
+function applySkyDecor() {
+  const skyId = (state.shop && SKIES[state.shop.sky] && state.shop.skies.includes(state.shop.sky))
+    ? state.shop.sky
+    : "none";
+  document.body.dataset.sky = skyId;
+  const el = els.skyDecor || document.getElementById("skyDecor");
+  if (el) el.innerHTML = skyDecorHtml(skyId);
+}
+
+function unlockSkiesByRank() {
+  let changed = false;
+  Object.values(SKIES).forEach((sky) => {
+    if (state.stars >= sky.rankMin && !state.shop.skies.includes(sky.id)) {
+      state.shop.skies.push(sky.id);
+      changed = true;
+    }
+  });
+  return changed;
 }
 
 function mascotMarkup(size, mood = "neutral", look = null) {
@@ -1481,7 +1585,9 @@ function renderNickCard(forceEdit = false) {
 
 function renderHome() {
   if (!isLevelOpen(selectedLevel)) selectedLevel = maxOpenLevel();
+  if (unlockSkiesByRank()) saveState();
   applyTheme(selectedLevel);
+  applySkyDecor();
   renderNickCard();
   updateSyncHint();
   els.totalStars.textContent = String(state.stars);
@@ -2477,14 +2583,35 @@ function renderShop() {
       const rankOpen = state.stars >= r.rankMin;
       const canBuy = rankOpen && (owned || state.coins >= r.price);
       const action = owned ? (on ? "on" : "equip-relic") : "buy-relic";
-      const label = on ? "Активен" : owned ? "Включить" : r.price > 0 ? "Купить" : "Получить";
-      const price = owned || r.price === 0 ? 0 : r.price;
-      const rankNeed = rankOpen ? `<span class="rank-need">доступно (${myRank.name})</span>` : `<span class="rank-need">нужно звание: ${r.rank}</span>`;
+      const label = on ? "Активен" : owned ? "Включить" : "Купить";
+      const price = owned ? 0 : r.price;
+      const rankNeed = rankOpen ? `<span class="rank-need">доступно (${myRank.name})</span>` : `<span class="rank-need">нужно: ${r.rank}</span>`;
       return `<article class="shop-card ${rankOpen ? "" : "locked-rank"}">
         <div class="ico"><span class="relic-ico">${r.icon}</span></div>
         <div class="name">${r.name}${rankNeed}</div>
         <button type="button" class="buy ${(!canBuy && !owned) || !rankOpen ? "ghost" : ""}" data-act="${action}" data-id="${r.id}" ${(!canBuy && !owned) || !rankOpen || action === "on" ? "disabled" : ""}>${label}${price ? ` · ${price}&nbsp;<span class="coin sm" aria-hidden="true"></span>` : ""}</button>
-        <div class="desc">${r.desc}${r.price ? ` · Цена зависит от звания (${r.rank})` : " · Награда только за звание"}</div>
+        <div class="desc">${r.desc} · звание + монеты</div>
+      </article>`;
+    }).join("");
+    return;
+  }
+  if (shopTab === "skies") {
+    unlockSkiesByRank();
+    const myRank = rankFor(state.stars);
+    els.shopList.innerHTML = Object.values(SKIES).map((sky) => {
+      const owned = state.shop.skies.includes(sky.id);
+      const on = state.shop.sky === sky.id;
+      const rankOpen = state.stars >= sky.rankMin;
+      const action = owned ? (on ? "on" : "equip-sky") : "claim-sky";
+      const label = on ? "Включено" : owned ? "Включить" : rankOpen ? "Открыть" : "Закрыто";
+      const rankNeed = rankOpen
+        ? `<span class="rank-need">за звание (${sky.rank})</span>`
+        : `<span class="rank-need">нужно: ${sky.rank}</span>`;
+      return `<article class="shop-card ${rankOpen ? "" : "locked-rank"}">
+        <div class="ico"><span class="relic-ico sky-ico">${sky.icon}</span></div>
+        <div class="name">${sky.name}${rankNeed}</div>
+        <button type="button" class="buy ${!rankOpen && !owned ? "ghost" : ""}" data-act="${action}" data-id="${sky.id}" ${(!rankOpen && !owned) || action === "on" ? "disabled" : ""}>${label}</button>
+        <div class="desc">${sky.desc} · бесплатно за звание · сейчас: ${myRank.name}</div>
       </article>`;
     }).join("");
     return;
@@ -2593,6 +2720,16 @@ function shopAction(act, id) {
   } else if (act === "equip-relic") {
     if (!state.shop.relics.includes(id)) return;
     state.shop.relic = id;
+  } else if (act === "claim-sky") {
+    const item = SKIES[id];
+    if (!item) return;
+    if (state.stars < item.rankMin) return;
+    if (!state.shop.skies.includes(id)) state.shop.skies.push(id);
+    state.shop.sky = id;
+    pingBuy(item.icon, item.name);
+  } else if (act === "equip-sky") {
+    if (!state.shop.skies.includes(id)) return;
+    state.shop.sky = id;
   }
   saveState();
   renderShop();
@@ -2610,12 +2747,28 @@ ACHIEVEMENTS.push(
     progress: (s) => ({ current: s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_CHAIN).length, target: 1 }),
   },
   {
+    id: "chain_easy",
+    icon: "🌱",
+    name: "Комбо-лёгкий",
+    desc: "10/10 на лёгком в режиме 2 действия",
+    check: (s) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_CHAIN && (r.level || 1) === 1 && r.correct === 10),
+    progress: (s) => ({ current: s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_CHAIN && (r.level || 1) === 1).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }),
+  },
+  {
     id: "chain_mid",
     icon: "➕",
     name: "Комбо-счёт",
     desc: "10/10 на среднем в режиме 2 действия",
     check: (s) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_CHAIN && r.level === 2 && r.correct === 10),
     progress: (s) => ({ current: s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_CHAIN && r.level === 2).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }),
+  },
+  {
+    id: "chain_sharp",
+    icon: "⚡",
+    name: "Комбо-сложный",
+    desc: "10/10 на сложном в режиме 2 действия",
+    check: (s) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_CHAIN && r.level === 3 && r.correct === 10),
+    progress: (s) => ({ current: s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_CHAIN && r.level === 3).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }),
   },
   {
     id: "chain_hard",
@@ -2632,6 +2785,17 @@ ACHIEVEMENTS.push(
     desc: "Оценка 5 на экзамене 2 шага",
     check: (s) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_CHAIN && r.level === 5 && r.grade === 5 && !r.timedOut),
     progress: (s) => ({ current: s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_CHAIN && r.level === 5 && r.grade === 5 && !r.timedOut) ? 1 : 0, target: 1 }),
+  },
+  {
+    id: "chain_all",
+    icon: "🧩",
+    name: "Двойной комплект",
+    desc: "10/10 на всех 5 уровнях в режиме 2 действия",
+    check: (s) => [1, 2, 3, 4, 5].every((lvl) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_CHAIN && (r.level || 1) === lvl && r.correct === 10 && (lvl < 4 || !r.timedOut))),
+    progress: (s) => ({
+      current: [1, 2, 3, 4, 5].filter((lvl) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_CHAIN && (r.level || 1) === lvl && r.correct === 10 && (lvl < 4 || !r.timedOut))).length,
+      target: 5,
+    }),
   }
 );
 
