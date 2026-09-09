@@ -1,11 +1,12 @@
 const STORAGE_KEY = "schet-do-20";
 const NICK_KEY = "schet-do-20-nick";
 const SCORE_QUEUE_KEY = "schet-do-20-score-queue";
-const DATA_VERSION = 6;
+const DATA_VERSION = 7;
 const TOTAL = 10;
 const HARD_LIMIT_MS = 60 * 1000;
 const SECRET_SPEED_MS = 40 * 1000;
 const UNITS_INTRO_MS = 10 * 1000;
+const ARCHMAGE_MIN = 850;
 const MODE_BASIC = "basic";
 const MODE_CHAIN = "chain";
 const MODE_UNITS = "units";
@@ -494,6 +495,34 @@ const SKIES = {
   secretNight: { id: "secretNight", name: "Тайная ночь", icon: "🗝️", rank: "Секрет", rankMin: 99999, price: 0, desc: "Награда за секретный уровень. Не купить." },
 };
 
+/* Скиллы: открываются секретными уровнями, покупка от Архимага. */
+const SKILLS = {
+  timeLord: {
+    id: "timeLord",
+    name: "Владыка времени",
+    icon: "⌛",
+    price: 2800,
+    rankMin: ARCHMAGE_MIN,
+    rank: "Архимаг",
+    secretMode: MODE_BASIC,
+    durationMs: 10 * 1000,
+    cooldownMs: 20 * 1000,
+    desc: "Замедляет время на 10 сек. Перезарядка 20 сек. Кнопка в любой игре, вместе с бустами.",
+  },
+  sageHint: {
+    id: "sageHint",
+    name: "Мудрец",
+    icon: "💡",
+    price: 3200,
+    rankMin: ARCHMAGE_MIN,
+    rank: "Архимаг",
+    secretMode: MODE_CHAIN,
+    durationMs: 0,
+    cooldownMs: 30 * 1000,
+    desc: "Подсказка: один правильный ответ. Раз в 30 сек. Кнопка в любой игре.",
+  },
+};
+
 const FX = {
   classic: {
     id: "classic",
@@ -833,10 +862,12 @@ function emptyShop() {
     fxOwned: ["classic"],
     relics: [],
     skies: ["none"],
+    skills: [],
     skin: "honey",
     hat: "none",
     relic: "none",
     sky: "none",
+    skill: "none",
     toysOn: [],
     fx: "classic",
     slow: 0,
@@ -853,23 +884,27 @@ function normalizeShop(raw) {
   const hats = Array.isArray(raw.hats) ? raw.hats : base.hats;
   const toys = Array.isArray(raw.toys) ? raw.toys : base.toys;
   const relics = Array.isArray(raw.relics) ? raw.relics.filter((id) => RELICS[id]) : [];
+  const skills = Array.isArray(raw.skills) ? raw.skills.filter((id) => SKILLS[id]) : [];
   let skies = Array.isArray(raw.skies) ? raw.skies.filter((id) => SKIES[id]) : ["none"];
   if (!skies.includes("none")) skies = ["none", ...skies];
   let fxOwned = Array.isArray(raw.fxOwned) ? raw.fxOwned.filter((id) => FX[id]) : ["classic"];
   if (!fxOwned.includes("classic")) fxOwned = ["classic", ...fxOwned];
   const fx = FX[raw.fx] ? raw.fx : "classic";
   const sky = SKIES[raw.sky] ? raw.sky : "none";
+  const skill = SKILLS[raw.skill] ? raw.skill : "none";
   return {
     skins: skins.includes("honey") ? skins : ["honey", ...skins],
     hats: hats.includes("none") ? hats : ["none", ...hats],
     toys,
     relics,
+    skills,
     skies,
     fxOwned,
     skin: SKINS[raw.skin] ? raw.skin : "honey",
     hat: HATS[raw.hat] ? raw.hat : "none",
     relic: RELICS[raw.relic] ? raw.relic : "none",
     sky: skies.includes(sky) ? sky : "none",
+    skill: skills.includes(skill) ? skill : "none",
     toysOn: Array.isArray(raw.toysOn) ? raw.toysOn.filter((id) => TOYS[id]) : [],
     fx: fxOwned.includes(fx) ? fx : "classic",
     slow: Number(raw.slow) || 0,
@@ -890,7 +925,7 @@ function loadState() {
     if (!raw) return empty;
     const data = JSON.parse(raw);
     const ver = Number(data.version);
-    if (ver !== 2 && ver !== 3 && ver !== 4 && ver !== 5 && ver !== DATA_VERSION) {
+    if (ver !== 2 && ver !== 3 && ver !== 4 && ver !== 5 && ver !== 6 && ver !== DATA_VERSION) {
       return { ...empty, lastLevel: 1 };
     }
     let runs = Array.isArray(data.runs) ? data.runs : [];
@@ -989,6 +1024,34 @@ function grantSecretReward() {
     changed = true;
   }
   return changed;
+}
+
+function hasSecretPerfect(modeId) {
+  return state.runs.some((r) =>
+    (r.mode || MODE_BASIC) === modeId && (r.level || 1) === SECRET_LEVEL && r.correct === 10
+  );
+}
+
+function skillGateOpen(skill) {
+  if (!skill) return false;
+  return hasSecretPerfect(skill.secretMode);
+}
+
+function equippedSkill() {
+  const id = state.shop && state.shop.skill;
+  return id && SKILLS[id] && state.shop.skills.includes(id) ? SKILLS[id] : null;
+}
+
+function skillReadyAt(runObj = run) {
+  return (runObj && runObj.skillReadyAt) || 0;
+}
+
+function skillIsActive(runObj = run) {
+  return !!(runObj && runObj.skillActiveUntil && Date.now() < runObj.skillActiveUntil);
+}
+
+function skillCooldownLeft(runObj = run) {
+  return Math.max(0, skillReadyAt(runObj) - Date.now());
 }
 
 function hasPerfect(levelId) {
@@ -2135,6 +2198,9 @@ async function startGame() {
       slowOn: false,
       extraOn: false,
       forgive: 0,
+      skillReadyAt: 0,
+      skillActiveUntil: 0,
+      skillHintUsedOn: -1,
     };
     document.body.classList.remove("slow-mo");
     const modeInfo = MODE_META[selectedMode] || MODE_META[MODE_BASIC];
@@ -2163,6 +2229,7 @@ function startTimer() {
   run.lastTick = Date.now();
   const update = () => {
     if (!run || run.done) return;
+    tickSkillEffects();
     if (run.limit) {
       const left = Math.max(0, run.limit - gameElapsed());
       els.timer.textContent = formatTime(left);
@@ -2171,9 +2238,88 @@ function startTimer() {
     } else {
       els.timer.textContent = formatTime(gameElapsed());
     }
+    refreshSkillButton();
   };
   update();
   tickId = setInterval(update, 200);
+}
+
+function tickSkillEffects() {
+  if (!run || !run.skillActiveUntil) return;
+  if (Date.now() < run.skillActiveUntil) return;
+  gameElapsed();
+  run.skillActiveUntil = 0;
+  if (!run.slowOn) {
+    run.timeScale = 1;
+    document.body.classList.remove("slow-mo");
+  }
+}
+
+function skillButtonHtml() {
+  const skill = equippedSkill();
+  if (!skill || !run) return "";
+  const now = Date.now();
+  const active = skillIsActive();
+  const cd = skillCooldownLeft();
+  let label = skill.name;
+  let disabled = false;
+  let cls = "boost-btn skill-btn";
+  if (active && skill.id === "timeLord") {
+    const left = Math.ceil((run.skillActiveUntil - now) / 1000);
+    label = `${skill.icon} Замедление ${left}с`;
+    cls += " on";
+    disabled = true;
+  } else if (cd > 0) {
+    label = `${skill.icon} ${Math.ceil(cd / 1000)}с`;
+    disabled = true;
+  } else {
+    label = `${skill.icon} ${skill.name}`;
+  }
+  return `<button type="button" class="${cls}" data-skill="${skill.id}" ${disabled ? "disabled" : ""}>${label}</button>`;
+}
+
+function refreshSkillButton() {
+  if (!els.boostBar || !run || run.done) return;
+  const btn = els.boostBar.querySelector("[data-skill]");
+  const html = skillButtonHtml();
+  if (!html) {
+    if (btn) btn.remove();
+    return;
+  }
+  if (!btn) {
+    els.boostBar.insertAdjacentHTML("beforeend", html);
+    return;
+  }
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html;
+  const next = tmp.firstElementChild;
+  if (next) btn.replaceWith(next);
+}
+
+function useSkill(id) {
+  if (!run || run.done) return;
+  const skill = SKILLS[id];
+  if (!skill || state.shop.skill !== id || !state.shop.skills.includes(id)) return;
+  if (skillCooldownLeft() > 0 || skillIsActive()) return;
+
+  if (id === "timeLord") {
+    gameElapsed();
+    const now = Date.now();
+    run.skillActiveUntil = now + skill.durationMs;
+    run.skillReadyAt = run.skillActiveUntil + skill.cooldownMs;
+    run.timeScale = 0.5;
+    document.body.classList.add("slow-mo");
+    showToasts([{ plain: true, icon: skill.icon, name: skill.name, desc: "Время замедлено на 10 секунд!" }]);
+  } else if (id === "sageHint") {
+    const item = run.items[run.index];
+    if (!item) return;
+    run.skillReadyAt = Date.now() + skill.cooldownMs;
+    run.skillHintUsedOn = run.index;
+    run.input = String(item.answer);
+    drawAnswer();
+    showToasts([{ plain: true, icon: skill.icon, name: "Подсказка мудреца", desc: `Правильный ответ: ${item.answer}` }]);
+  }
+  refreshSkillButton();
 }
 
 function stopTimer() {
@@ -2361,6 +2507,12 @@ function finishRun({ timedOut = false } = {}) {
   }
   if (run.level === SECRET_LEVEL && correct === 10) {
     extraBanners.push(`<div class="ach-banner"><span class="ico">🗝️</span><div>Награда тайны<small>Ключ тайны + небо «Тайная ночь»</small></div></div>`);
+    if (selectedMode === MODE_BASIC) {
+      extraBanners.push(`<div class="ach-banner"><span class="ico">⌛</span><div>Скилл открыт!<small>«Владыка времени» в магазине (нужен Архимаг)</small></div></div>`);
+    }
+    if (selectedMode === MODE_CHAIN) {
+      extraBanners.push(`<div class="ach-banner"><span class="ico">💡</span><div>Скилл открыт!<small>«Мудрец» в магазине (нужен Архимаг)</small></div></div>`);
+    }
   }
   els.newAchs.innerHTML = extraBanners.join("") + fresh
     .map((a) => `<div class="ach-banner"><span class="ico">${a.icon === "🪙" ? '<span class="coin md"></span>' : (a.icon === "67" ? '<span class="ico-67">6 7</span>' : a.icon)}</span><div>${a.name}<small>${a.desc}</small></div></div>`)
@@ -2909,23 +3061,28 @@ function notEnough() {
 }
 
 function renderBoostBar() {
-  if (!run || run.level < 4 || run.level >= SECRET_LEVEL || selectedMode === MODE_UNITS || !levelCfg(run.level).limit) {
+  if (!run || run.done) {
     els.boostBar.innerHTML = "";
     return;
   }
-  const slowN = state.shop.slow;
-  const extraN = state.shop.extra;
-  const cheatN = state.shop.cheat;
-  const cheatUsed = run.forgive || 0;
-  const cheatLeft = CHEAT_MAX_PER_RUN - cheatUsed;
-  const canCheat = run.level === 5 && cheatN > 0 && cheatLeft > 0;
-  let html = `
-    <button type="button" class="boost-btn ${run.slowOn ? "on" : ""}" data-boost="slow" ${run.slowOn || slowN < 1 ? "disabled" : ""}>🐌 Замедлить${slowN ? ` ×${slowN}` : ""}</button>
-    <button type="button" class="boost-btn ${run.extraOn ? "on" : ""}" data-boost="extra" ${run.extraOn || extraN < 1 ? "disabled" : ""}>⏳ +15 сек${extraN ? ` ×${extraN}` : ""}</button>
-  `;
-  if (run.level === 5) {
-    html += `<button type="button" class="boost-btn ${cheatUsed ? "on" : ""}" data-boost="cheat" ${canCheat ? "" : "disabled"}>🕵️ Читер${cheatUsed ? ` +${cheatUsed}` : ""}${cheatN ? ` ×${cheatN}` : ""}</button>`;
+  let html = "";
+  const showBoosts = run.level >= 4 && run.level < SECRET_LEVEL && selectedMode !== MODE_UNITS && levelCfg(run.level).limit;
+  if (showBoosts) {
+    const slowN = state.shop.slow;
+    const extraN = state.shop.extra;
+    const cheatN = state.shop.cheat;
+    const cheatUsed = run.forgive || 0;
+    const cheatLeft = CHEAT_MAX_PER_RUN - cheatUsed;
+    const canCheat = run.level === 5 && cheatN > 0 && cheatLeft > 0;
+    html += `
+      <button type="button" class="boost-btn ${run.slowOn ? "on" : ""}" data-boost="slow" ${run.slowOn || slowN < 1 ? "disabled" : ""}>🐌 Замедлить${slowN ? ` ×${slowN}` : ""}</button>
+      <button type="button" class="boost-btn ${run.extraOn ? "on" : ""}" data-boost="extra" ${run.extraOn || extraN < 1 ? "disabled" : ""}>⏳ +15 сек${extraN ? ` ×${extraN}` : ""}</button>
+    `;
+    if (run.level === 5) {
+      html += `<button type="button" class="boost-btn ${cheatUsed ? "on" : ""}" data-boost="cheat" ${canCheat ? "" : "disabled"}>🕵️ Читер${cheatUsed ? ` +${cheatUsed}` : ""}${cheatN ? ` ×${cheatN}` : ""}</button>`;
+    }
   }
+  html += skillButtonHtml();
   els.boostBar.innerHTML = html;
 }
 
@@ -3059,6 +3216,43 @@ function renderShop() {
     }).join("");
     return;
   }
+  if (shopTab === "skills") {
+    const myRank = rankFor(state.stars);
+    const rankOk = state.stars >= ARCHMAGE_MIN;
+    const unequip = state.shop.skill !== "none"
+      ? `<article class="shop-card">
+          <div class="ico"><span class="relic-ico skill-ico">∅</span></div>
+          <div class="name">Без скилла</div>
+          <button type="button" class="buy ghost" data-act="equip-skill" data-id="none">Снять</button>
+          <div class="desc">Убрать активный скилл с персонажа</div>
+        </article>`
+      : "";
+    els.shopList.innerHTML = unequip + Object.values(SKILLS).map((sk) => {
+      const gate = skillGateOpen(sk);
+      const owned = state.shop.skills.includes(sk.id);
+      const on = state.shop.skill === sk.id;
+      const canBuy = gate && rankOk && (owned || state.coins >= sk.price);
+      const action = owned ? (on ? "on" : "equip-skill") : "buy-skill";
+      const label = on ? "Надет" : owned ? "Надеть" : "Купить";
+      const price = owned ? 0 : sk.price;
+      let need = "";
+      if (!gate) {
+        need = `<span class="rank-need">секрет: ${sk.secretMode === MODE_CHAIN ? "2 действия" : "База"}</span>`;
+      } else if (!rankOk) {
+        need = `<span class="rank-need">нужно: Архимаг</span>`;
+      } else {
+        need = `<span class="rank-need">Архимаг · ${myRank.name}</span>`;
+      }
+      const locked = !gate || (!owned && !rankOk);
+      return `<article class="shop-card ${locked ? "locked-rank" : ""}">
+        <div class="ico"><span class="relic-ico skill-ico">${sk.icon}</span></div>
+        <div class="name">${sk.name}${need}</div>
+        <button type="button" class="buy ${(!canBuy && !owned) || locked ? "ghost" : ""}" data-act="${action}" data-id="${sk.id}" ${(!canBuy && !owned) || locked || action === "on" ? "disabled" : ""}>${label}${price ? ` · ${price}&nbsp;<span class="coin sm" aria-hidden="true"></span>` : ""}</button>
+        <div class="desc">${sk.desc}</div>
+      </article>`;
+    }).join("");
+    return;
+  }
   els.shopList.innerHTML = Object.values(TOYS).filter((t) => !t.secret || state.shop.toys.includes(t.id)).map((t) => {
     const owned = state.shop.toys.includes(t.id);
     const on = state.shop.toysOn.includes(t.id);
@@ -3173,6 +3367,26 @@ function shopAction(act, id) {
   } else if (act === "equip-sky") {
     if (!state.shop.skies.includes(id)) return;
     state.shop.sky = id;
+  } else if (act === "buy-skill") {
+    const item = SKILLS[id];
+    if (!item) return;
+    if (!skillGateOpen(item)) return;
+    if (state.stars < item.rankMin) {
+      showToasts([{ plain: true, icon: "👑", name: "Нужен Архимаг", desc: "Скилл доступен с ранга Архимаг." }]);
+      return;
+    }
+    if (state.coins < item.price) return notEnough();
+    state.coins -= item.price;
+    if (!state.shop.skills.includes(id)) state.shop.skills.push(id);
+    state.shop.skill = id;
+    pingBuy(item.icon, item.name);
+  } else if (act === "equip-skill") {
+    if (id === "none") {
+      state.shop.skill = "none";
+    } else {
+      if (!state.shop.skills.includes(id)) return;
+      state.shop.skill = id;
+    }
   }
   saveState();
   renderShop();
@@ -3332,6 +3546,11 @@ els.shopList.addEventListener("click", (e) => {
 });
 
 els.boostBar.addEventListener("click", (e) => {
+  const skillBtn = e.target.closest("[data-skill]");
+  if (skillBtn && !skillBtn.disabled) {
+    useSkill(skillBtn.dataset.skill);
+    return;
+  }
   const btn = e.target.closest("[data-boost]");
   if (!btn || btn.disabled) return;
   useBoost(btn.dataset.boost);

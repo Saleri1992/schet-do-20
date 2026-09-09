@@ -883,6 +883,15 @@ body[data-theme="exam"] .gallery-item.gold-meme.unlocked {
   background: #cfe4ff;
   color: #1d4f8c;
 }
+.boost-btn.skill-btn {
+  background: linear-gradient(135deg, #efe4ff, #d8c4ff);
+  color: #4a2a8a;
+  border: 2px solid #b48cff;
+}
+.boost-btn.skill-btn.on {
+  background: linear-gradient(135deg, #c084fc, #7b5cff);
+  color: #fff;
+}
 
 body.slow-mo .timer {
   background: #cfe4ff;
@@ -2807,9 +2816,9 @@ body.fw-perfect .fw-canvas {
   .ach-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
-#shopTabs { grid-template-columns: repeat(3, 1fr); }
+#shopTabs { grid-template-columns: repeat(4, 1fr); }
 @media (min-width: 560px) {
-  #shopTabs { grid-template-columns: repeat(6, 1fr); }
+  #shopTabs { grid-template-columns: repeat(7, 1fr); }
 }
 
 .shop-card.locked-rank { opacity: 0.75; filter: saturate(0.86); }
@@ -2836,6 +2845,10 @@ body.fw-perfect .fw-canvas {
 .relic-ico.sky-ico {
   background: linear-gradient(135deg, #cfe8ff, #8ec5ff);
   color: #1f4f8a;
+}
+.relic-ico.skill-ico {
+  background: linear-gradient(135deg, #efe4ff, #c084fc);
+  color: #4a2a8a;
 }
 
 .units-intro {
