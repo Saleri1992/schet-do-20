@@ -911,68 +911,75 @@ const SAFE_SCENARIOS = [
 const KINGDOM_SLOTS = 12;
 const KINGDOM_COLLECT_CAP_MS = 8 * 60 * 60 * 1000;
 const KINGDOM_CASTLE_SLOT = 5;
-const KINGDOM_GATHER_CD_MS = 45 * 1000;
+const KINGDOM_GATHER_CD_MS = 70 * 1000;
 
 /** Природа на карте: клик = добыть дерево/камень (кулдаун). */
 const KINGDOM_NATURE = {
-  tree: { id: "tree", name: "Дерево", ico: "🌳", kind: "nature", gather: "wood", amount: 4, desc: "Руби → дерево в склад." },
-  rock: { id: "rock", name: "Камни", ico: "🪨", kind: "nature", gather: "stone", amount: 3, desc: "Копай → камень в склад." },
-  bush: { id: "bush", name: "Куст", ico: "🌿", kind: "nature", gather: "wood", amount: 2, desc: "Мало веток, но тоже дерево." },
+  tree: { id: "tree", name: "Дерево", ico: "🌳", kind: "nature", gather: "wood", amount: 2, desc: "Руби → дерево в склад." },
+  rock: { id: "rock", name: "Камни", ico: "🪨", kind: "nature", gather: "stone", amount: 2, desc: "Копай → камень в склад." },
+  bush: { id: "bush", name: "Куст", ico: "🌿", kind: "nature", gather: "wood", amount: 1, desc: "Мало веток, но тоже дерево." },
 };
 
-/** Постройки. cost: монеты/дерево/камень. rate* = в час. */
+/**
+ * Баланс: школьный прогон ≈ 10–40 монет.
+ * Королевство не должно обгонять учёбу — доход/час скромный, стройка через задачи.
+ */
 const KINGDOM_BUILDINGS = {
   castle: {
-    id: "castle", name: "Замок", ico: "🏰", cost: { coins: 0, wood: 0, stone: 0 }, rate: 2, fixed: true,
+    id: "castle", name: "Замок", ico: "🏰", cost: { coins: 0, wood: 0, stone: 0 }, rate: 1, fixed: true,
     desc: "Дом маскота. Чуть монет.",
   },
   farm: {
-    id: "farm", name: "Ферма", ico: "🌾", cost: { coins: 35, wood: 4, stone: 0 }, rate: 12,
-    desc: "Урожай → монеты. Нужно дерево.",
+    id: "farm", name: "Ферма", ico: "🌾", cost: { coins: 40, wood: 5, stone: 0 }, rate: 6,
+    desc: "Урожай → монеты.",
   },
   garden: {
-    id: "garden", name: "Сад", ico: "🌸", cost: { coins: 25, wood: 2, stone: 0 }, rate: 6,
+    id: "garden", name: "Сад", ico: "🌸", cost: { coins: 28, wood: 3, stone: 0 }, rate: 3,
     desc: "Красиво и чуть монет.",
   },
   well: {
-    id: "well", name: "Колодец", ico: "⛲", cost: { coins: 40, wood: 0, stone: 6 }, rate: 9,
+    id: "well", name: "Колодец", ico: "⛲", cost: { coins: 45, wood: 0, stone: 7 }, rate: 4,
     desc: "Нужен камень.",
   },
   lumber: {
-    id: "lumber", name: "Лесопилка", ico: "🪓", cost: { coins: 50, wood: 3, stone: 2 }, rate: 4, woodRate: 10,
-    desc: "Пилит лес → дерево/час + монеты.",
+    id: "lumber", name: "Лесопилка", ico: "🪓", cost: { coins: 55, wood: 4, stone: 3 }, rate: 2, woodRate: 5,
+    desc: "Дерево/час + чуть монет.",
   },
   quarry: {
-    id: "quarry", name: "Каменоломня", ico: "⛏️", cost: { coins: 55, wood: 2, stone: 3 }, rate: 4, stoneRate: 8,
-    desc: "Добывает камень/час.",
+    id: "quarry", name: "Каменоломня", ico: "⛏️", cost: { coins: 60, wood: 3, stone: 4 }, rate: 2, stoneRate: 4,
+    desc: "Камень/час.",
   },
   mill: {
-    id: "mill", name: "Мельница", ico: "🌬️", cost: { coins: 70, wood: 8, stone: 2 }, rate: 20,
-    desc: "Много монет. Дорого по дереву.",
+    id: "mill", name: "Мельница", ico: "🌬️", cost: { coins: 85, wood: 10, stone: 3 }, rate: 10,
+    desc: "Больше монет.",
   },
   bakery: {
-    id: "bakery", name: "Пекарня", ico: "🍞", cost: { coins: 100, wood: 6, stone: 4 }, rate: 28,
+    id: "bakery", name: "Пекарня", ico: "🍞", cost: { coins: 110, wood: 8, stone: 5 }, rate: 14,
     desc: "Пирожки на продажу.",
   },
   market: {
-    id: "market", name: "Рынок", ico: "🏪", cost: { coins: 120, wood: 5, stone: 8 }, rate: 34,
+    id: "market", name: "Рынок", ico: "🏪", cost: { coins: 140, wood: 6, stone: 10 }, rate: 17,
     desc: "Торговля на площади.",
   },
   tower: {
-    id: "tower", name: "Башня", ico: "🗼", cost: { coins: 160, wood: 4, stone: 14 }, rate: 42,
+    id: "tower", name: "Башня", ico: "🗼", cost: { coins: 180, wood: 5, stone: 16 }, rate: 20,
     desc: "Много камня на стены.",
   },
   school: {
-    id: "school", name: "Школа", ico: "🏫", cost: { coins: 140, wood: 10, stone: 6 }, rate: 16, starRate: 1,
+    id: "school", name: "Школа", ico: "🏫", cost: { coins: 150, wood: 12, stone: 7 }, rate: 8, starRate: 1,
     desc: "Монеты + ★/час.",
   },
+  forge: {
+    id: "forge", name: "Кузница", ico: "🔥", cost: { coins: 70, wood: 4, stone: 8 }, rate: 1, stoneRate: 1,
+    desc: "Открывает ковку кирпичей и самоцветов.",
+  },
   flag: {
-    id: "flag", name: "Флаг", ico: "🚩", cost: { coins: 15, wood: 1, stone: 0 }, rate: 0,
+    id: "flag", name: "Флаг", ico: "🚩", cost: { coins: 18, wood: 2, stone: 0 }, rate: 0,
     desc: "Украшение.",
   },
 };
 
-const KINGDOM_SHOP_ORDER = ["farm", "garden", "well", "lumber", "quarry", "mill", "bakery", "market", "school", "tower", "flag"];
+const KINGDOM_SHOP_ORDER = ["farm", "garden", "well", "lumber", "quarry", "forge", "mill", "bakery", "market", "school", "tower", "flag"];
 
 function kingdomCostOf(b, mult = 1) {
   const c = (b && b.cost) || { coins: b?.price || 0, wood: 0, stone: 0 };
@@ -1375,6 +1382,7 @@ const TOYS = {
   bell: { id: "bell", name: "Колокольчик", price: 130, icon: "🔔" },
   scarf: { id: "scarf", name: "Шарфик", price: 170, icon: "🧣" },
   secretKey: { id: "secretKey", name: "Ключ тайны", price: 0, icon: "🗝️", secret: true },
+  kdCharm: { id: "kdCharm", name: "Амулет двора", price: 0, icon: "🔮", secret: true },
   engBook: { id: "engBook", name: "English book", price: 220, icon: "📗", theme: THEME_ENG },
   engFlag: { id: "engFlag", name: "Флажок EN", price: 180, icon: "🇬🇧", theme: THEME_ENG },
   codeBug: { id: "codeBug", name: "Жучик-баг", price: 200, icon: "🐛", theme: THEME_CODE },
@@ -6114,6 +6122,242 @@ function shopAction(act, id) {
 
 
 
+/* kingdom quiz + forge + retune helpers — injected into app.js */
+
+function kingdomSoftHint(msg) {
+  const hint = document.getElementById("kingdomHint");
+  if (hint) hint.textContent = msg;
+}
+
+function kingdomHasModeProgress(modeId) {
+  return state.runs.some((r) => (r.mode || MODE_BASIC) === modeId && (r.correct || 0) >= 5);
+}
+
+function kingdomHasPerfect(modeId, levelId) {
+  return state.runs.some((r) =>
+    (r.mode || MODE_BASIC) === modeId && (r.level || 1) === levelId && r.correct === 10
+  );
+}
+
+/** Случайная задача из уже тронутого материала (закрепление). */
+function makeKingdomDrill() {
+  const options = [];
+  if (kingdomHasModeProgress(MODE_BASIC) || kingdomHasModeProgress(MODE_CHAIN)) {
+    options.push("math");
+  }
+  if (kingdomHasModeProgress(MODE_MUL)) options.push("mul");
+  if (kingdomHasModeProgress(MODE_DIV)) options.push("div");
+  if (kingdomHasModeProgress(MODE_ENG)) options.push("eng");
+  if (kingdomHasModeProgress(MODE_CODE)) options.push("code");
+  if (safeClearedCount() >= 1) options.push("safe");
+  if (!options.length) options.push("math");
+
+  const kind = options[rand(0, options.length - 1)];
+  if (kind === "eng") {
+    const prev = selectedMode;
+    selectedMode = MODE_ENG;
+    const lvl = [1, 2, 3, 4, 5].filter((l) => kingdomHasPerfect(MODE_ENG, l) || kingdomHasModeProgress(MODE_ENG)).pop() || 1;
+    const p = generateEngProblem(Math.min(lvl, 3));
+    selectedMode = prev;
+    return { ...p, drillLabel: "Английский" };
+  }
+  if (kind === "code") {
+    const prev = selectedMode;
+    selectedMode = MODE_CODE;
+    const p = generateCodeProblem(kingdomHasPerfect(MODE_CODE, 2) ? 2 : 1);
+    selectedMode = prev;
+    return { ...p, drillLabel: "ПК" };
+  }
+  if (kind === "safe") {
+    const cleared = SAFE_SCENARIOS.filter((s) => state.safeCleared && state.safeCleared[s.id]);
+    const bank = cleared.length ? cleared : SAFE_SCENARIOS.slice(0, 3);
+    const sc = bank[rand(0, bank.length - 1)];
+    const okIdx = sc.choices.findIndex((c) => c.ok);
+    const choices = sc.choices.map((c) => c.text);
+    return {
+      text: `🛡 ${sc.scene}`,
+      choice: true,
+      choices,
+      answer: okIdx + 1,
+      hint: "Вспомни квест безопасности",
+      drillLabel: "Безопасность",
+    };
+  }
+  if (kind === "mul") {
+    const prev = selectedMode;
+    selectedMode = MODE_MUL;
+    const p = generateMulProblem(kingdomHasPerfect(MODE_MUL, 2) ? 2 : 1);
+    selectedMode = prev;
+    return { ...p, text: p.text || `${p.a} × ${p.b} = ?`, drillLabel: "Умножение" };
+  }
+  if (kind === "div") {
+    const prev = selectedMode;
+    selectedMode = MODE_DIV;
+    const p = generateDivProblem(kingdomHasPerfect(MODE_DIV, 2) ? 2 : 1);
+    selectedMode = prev;
+    return { ...p, text: p.text || `${p.a} ÷ ${p.b} = ?`, drillLabel: "Деление" };
+  }
+  // math default — лёгкий/средний из пройденного
+  const hardEnough = kingdomHasPerfect(MODE_BASIC, 2) || kingdomHasPerfect(MODE_CHAIN, 2);
+  const p = hardEnough ? generateMedium() : generateEasy();
+  return {
+    ...p,
+    text: p.text || `${p.a} ${p.op} ${p.b} = ?`,
+    drillLabel: "Счёт",
+  };
+}
+
+let kingdomGate = null; // { action, drill, input }
+
+function closeKingdomGate() {
+  kingdomGate = null;
+  const modal = document.getElementById("kingdomGate");
+  if (modal) {
+    modal.classList.add("hidden");
+    modal.setAttribute("aria-hidden", "true");
+  }
+  document.body.classList.remove("kd-gate-open");
+}
+
+function openKingdomGate(action) {
+  if (kingdomGate) return; // уже открыто — не плодим окна
+  const drill = makeKingdomDrill();
+  kingdomGate = { action, drill, input: "" };
+  const modal = document.getElementById("kingdomGate");
+  if (!modal) {
+    // fallback без UI
+    kingdomResolveGate(true);
+    return;
+  }
+  document.getElementById("kdGateLabel").textContent = `Закрепление: ${drill.drillLabel || "задача"}`;
+  document.getElementById("kdGateProblem").innerHTML = escapeHtml(drill.text || "").replace(/\n/g, "<br>");
+  const hint = document.getElementById("kdGateHint");
+  if (hint) hint.textContent = drill.hint || "Ответь верно — и действие выполнится.";
+  const choices = document.getElementById("kdGateChoices");
+  const numRow = document.getElementById("kdGateNum");
+  if (drill.choice && Array.isArray(drill.choices)) {
+    choices.classList.remove("hidden");
+    numRow.classList.add("hidden");
+    choices.innerHTML = drill.choices.map((c, i) =>
+      `<button type="button" class="kd-gate-choice" data-kd-ans="${i + 1}"><span>${i + 1}</span> ${escapeHtml(String(c))}</button>`
+    ).join("");
+  } else {
+    choices.classList.add("hidden");
+    numRow.classList.remove("hidden");
+    document.getElementById("kdGateAnswer").textContent = "?";
+  }
+  modal.classList.remove("hidden");
+  modal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("kd-gate-open");
+}
+
+function kingdomGateSetInput(v) {
+  if (!kingdomGate || kingdomGate.drill.choice) return;
+  kingdomGate.input = String(v).slice(0, 4);
+  const el = document.getElementById("kdGateAnswer");
+  if (el) el.textContent = kingdomGate.input || "?";
+}
+
+function kingdomGateSubmitChoice(n) {
+  if (!kingdomGate) return;
+  const ok = Number(n) === Number(kingdomGate.drill.answer);
+  kingdomResolveGate(ok);
+}
+
+function kingdomGateSubmitNum() {
+  if (!kingdomGate || kingdomGate.drill.choice) return;
+  const ok = Number(kingdomGate.input) === Number(kingdomGate.drill.answer);
+  kingdomResolveGate(ok);
+}
+
+function kingdomResolveGate(ok) {
+  const action = kingdomGate && kingdomGate.action;
+  closeKingdomGate();
+  if (!ok) {
+    kingdomSoftHint("Неверно — попробуй ещё раз. Действие не выполнено.");
+    showToasts([{ plain: true, icon: "❌", name: "Мимо", desc: "Реши задачу верно, чтобы строить или собрать." }]);
+    return;
+  }
+  if (!action) return;
+  if (action.type === "collect") collectKingdom(false, true);
+  else if (action.type === "gather") kingdomGather(action.slot, true);
+  else if (action.type === "place") kingdomPlace(action.slot, true);
+  else if (action.type === "upgrade") kingdomPlace(action.slot, true);
+  else if (action.type === "forge") kingdomForge(action.recipeId, true);
+  else if (action.type === "clear") kingdomClearNature(action.slot, true);
+  kingdomSoftHint("Верно! Действие выполнено.");
+}
+
+const KINGDOM_FORGE = {
+  brick: {
+    id: "brick",
+    name: "Кирпич",
+    ico: "🧱",
+    need: { stone: 5, wood: 0, coins: 0 },
+    desc: "Из камня. +1 к защите построек (скидка апгрейда 5%).",
+  },
+  gem: {
+    id: "gem",
+    name: "Самоцвет",
+    ico: "💎",
+    need: { stone: 10, wood: 4, coins: 8 },
+    desc: "Ковка. Каждый даёт +3% монет с королевства (макс. 5).",
+  },
+  charm: {
+    id: "charm",
+    name: "Амулет двора",
+    ico: "🔮",
+    need: { stone: 6, wood: 6, coins: 15 },
+    desc: "В инвентарь маскота (штучка). Красиво и +1★ при сборе, если надет.",
+  },
+};
+
+function kingdomForgeBonus() {
+  const k = ensureKingdom();
+  const gems = Math.min(5, k.forge?.gem || 0);
+  const bricks = k.forge?.brick || 0;
+  return {
+    coinMul: 1 + gems * 0.03,
+    upgradeDisc: Math.min(0.25, bricks * 0.05),
+    charmOn: ((k.equipCharm) || (state.shop?.equip?.accessory || []).includes("kdCharm")),
+  };
+}
+
+function kingdomForge(recipeId, unlocked = false) {
+  const recipe = KINGDOM_FORGE[recipeId];
+  if (!recipe) return;
+  if (!unlocked) {
+    openKingdomGate({ type: "forge", recipeId });
+    return;
+  }
+  const k = ensureKingdom();
+  const need = recipe.need;
+  if (state.coins < need.coins || (k.wood || 0) < need.wood || (k.stone || 0) < need.stone) {
+    kingdomSoftHint(`Мало ресурсов для ковки: нужно ${kingdomFormatCost(need)}`);
+    return;
+  }
+  state.coins -= need.coins;
+  k.wood -= need.wood;
+  k.stone -= need.stone;
+  if (!k.forge) k.forge = { brick: 0, gem: 0, charm: 0 };
+  k.forge[recipeId] = (k.forge[recipeId] || 0) + 1;
+  if (recipeId === "charm") {
+    if (!state.shop.toys.includes("kdCharm")) state.shop.toys.push("kdCharm");
+    state.shop.equip = state.shop.equip || emptyEquip();
+    const acc = state.shop.equip.accessory || [];
+    if (acc.length < ACCESSORY_MAX && !acc.includes("kdCharm")) {
+      acc.push("kdCharm");
+      state.shop.equip.accessory = acc;
+      syncEquipMirrors(state.shop);
+    }
+    k.equipCharm = true;
+  }
+  saveState();
+  showToasts([{ plain: true, icon: recipe.ico, name: "Выковано!", desc: recipe.name }]);
+  unlockAchievements();
+  renderKingdom();
+}
+
 /* ——— Королевство маскота ——— */
 let kingdomBuildPick = null;
 let kingdomTimerId = 0;
@@ -6131,9 +6375,10 @@ function emptyKingdom() {
     slots,
     lastCollectAt: Date.now(),
     levels: {},
-    wood: 8,
-    stone: 5,
+    wood: 6,
+    stone: 4,
     gatherAt: {},
+    forge: { brick: 0, gem: 0, charm: 0 },
   };
 }
 
@@ -6155,6 +6400,7 @@ function normalizeKingdom(raw) {
   if (built === 0 && !raw.wood && !raw.stone) {
     return base;
   }
+  const forgeRaw = (raw.forge && typeof raw.forge === "object") ? raw.forge : {};
   return {
     slots,
     lastCollectAt: Math.max(0, Number(raw.lastCollectAt) || Date.now()),
@@ -6162,6 +6408,11 @@ function normalizeKingdom(raw) {
     wood: Math.max(0, Number(raw.wood) || 0),
     stone: Math.max(0, Number(raw.stone) || 0),
     gatherAt,
+    forge: {
+      brick: Math.max(0, Number(forgeRaw.brick) || 0),
+      gem: Math.max(0, Number(forgeRaw.gem) || 0),
+      charm: Math.max(0, Number(forgeRaw.charm) || 0),
+    },
   };
 }
 
@@ -6197,6 +6448,8 @@ function kingdomRates() {
     woodPerHour += (b.woodRate || 0) * lv;
     stonePerHour += (b.stoneRate || 0) * lv;
   });
+  const bonus = kingdomForgeBonus();
+  coinPerHour = Math.floor(coinPerHour * bonus.coinMul);
   return { coinPerHour, starPerHour, woodPerHour, stonePerHour };
 }
 
@@ -6217,31 +6470,38 @@ function kingdomPending() {
   };
 }
 
-function collectKingdom(silent = false) {
+function collectKingdom(silent = false, unlocked = false) {
+  if (!unlocked) {
+    const pend = kingdomPending();
+    if (pend.coins < 1 && pend.stars < 1 && pend.wood < 1 && pend.stone < 1) {
+      kingdomSoftHint("Пока копить нечего — построй здания или подожди.");
+      return pend;
+    }
+    openKingdomGate({ type: "collect" });
+    return pend;
+  }
   const pend = kingdomPending();
   const k = ensureKingdom();
   if (pend.coins < 1 && pend.stars < 1 && pend.wood < 1 && pend.stone < 1) {
-    if (!silent) {
-      showToasts([{ plain: true, icon: "🏰", name: "Пока пусто", desc: "Построй лесопилку/ферму или подожди — ресурсы копятся." }]);
-    }
+    kingdomSoftHint("Пока копить нечего — построй здания или подожди.");
     return pend;
   }
+  let starsGain = pend.stars;
+  if (kingdomForgeBonus().charmOn) starsGain += 1;
   state.coins += pend.coins;
-  state.stars += pend.stars;
+  state.stars += starsGain;
   k.wood = (k.wood || 0) + pend.wood;
   k.stone = (k.stone || 0) + pend.stone;
   k.lastCollectAt = Date.now();
   saveState();
   const fresh = unlockAchievements();
-  if (!silent) {
-    const bits = [];
-    if (pend.coins) bits.push(`+${pend.coins}🪙`);
-    if (pend.wood) bits.push(`+${pend.wood}🪵`);
-    if (pend.stone) bits.push(`+${pend.stone}🪨`);
-    if (pend.stars) bits.push(`+${pend.stars}★`);
-    showToasts([{ plain: true, icon: "📦", name: "Склад пополнен!", desc: bits.join(" · ") }]);
-    if (fresh.length) showToasts(fresh.slice(0, 2).map((a) => ({ icon: a.icon, name: a.name, desc: a.desc })));
-  }
+  const bits = [];
+  if (pend.coins) bits.push(`+${pend.coins}🪙`);
+  if (pend.wood) bits.push(`+${pend.wood}🪵`);
+  if (pend.stone) bits.push(`+${pend.stone}🪨`);
+  if (starsGain) bits.push(`+${starsGain}★`);
+  if (!silent) showToasts([{ plain: true, icon: "📦", name: "Склад пополнен!", desc: bits.join(" · ") }]);
+  if (fresh.length) showToasts(fresh.slice(0, 2).map((a) => ({ icon: a.icon, name: a.name, desc: a.desc })));
   renderKingdom();
   if (els.totalCoins) els.totalCoins.textContent = String(state.coins);
   if (els.totalStars) els.totalStars.textContent = String(state.stars);
@@ -6254,7 +6514,12 @@ function kingdomUpgradePrice(slotIndex) {
   const b = KINGDOM_BUILDINGS[id];
   if (!b || b.fixed) return kingdomCostOf(b || {}, 0);
   const lv = kingdomLevelOf(slotIndex);
-  return kingdomCostOf(b, 0.7 + lv * 0.55);
+  const disc = 1 - kingdomForgeBonus().upgradeDisc;
+  return kingdomCostOf(b, (0.75 + lv * 0.6) * disc);
+}
+
+function kingdomHasForgeBuilding() {
+  return ensureKingdom().slots.some((id) => id === "forge");
 }
 
 function kingdomGatherReady(slotIndex) {
@@ -6269,14 +6534,18 @@ function kingdomGatherLeft(slotIndex) {
   return Math.max(0, at - Date.now());
 }
 
-function kingdomGather(slotIndex) {
+function kingdomGather(slotIndex, unlocked = false) {
   const k = ensureKingdom();
   const id = k.slots[slotIndex];
   const nat = KINGDOM_NATURE[id];
   if (!nat) return;
   if (!kingdomGatherReady(slotIndex)) {
     const sec = Math.ceil(kingdomGatherLeft(slotIndex) / 1000);
-    showToasts([{ plain: true, icon: nat.ico, name: "Ещё рано", desc: `Подожди ${sec} сек — ресурс восстановится.` }]);
+    kingdomSoftHint(`${nat.name}: подожди ещё ${sec} сек.`);
+    return;
+  }
+  if (!unlocked) {
+    openKingdomGate({ type: "gather", slot: slotIndex });
     return;
   }
   const amt = nat.amount || 1;
@@ -6309,10 +6578,13 @@ function renderKingdom() {
   if (m) paintStage("kingdomStage", m, 96, "happy", "");
 
   if (bag) {
+    const f = k.forge || {};
     bag.innerHTML = `
       <span title="Монеты">🪙 <strong>${state.coins}</strong></span>
       <span title="Дерево">🪵 <strong>${k.wood || 0}</strong></span>
       <span title="Камень">🪨 <strong>${k.stone || 0}</strong></span>
+      <span title="Кирпичи">🧱 <strong>${f.brick || 0}</strong></span>
+      <span title="Самоцветы">💎 <strong>${f.gem || 0}</strong></span>
       <span title="Опыт">★ <strong>${state.stars}</strong></span>`;
   }
   if (stats) {
@@ -6386,10 +6658,26 @@ function renderKingdom() {
   }).join("");
 
   const hint = document.getElementById("kingdomHint");
-  if (hint) {
+  if (hint && !kingdomGate) {
     hint.textContent = kingdomBuildPick
-      ? `Выбрано: ${KINGDOM_BUILDINGS[kingdomBuildPick].name} (${kingdomFormatCost(kingdomCostOf(KINGDOM_BUILDINGS[kingdomBuildPick]))}). Жми пустую клетку.`
-      : "🌳/🪨 на карте — добудь ресурсы. Постройки стоят 🪙🪵🪨. «Собрать» забирает накопленное со зданий.";
+      ? `Выбрано: ${KINGDOM_BUILDINGS[kingdomBuildPick].name} (${kingdomFormatCost(kingdomCostOf(KINGDOM_BUILDINGS[kingdomBuildPick]))}). Жми пустую клетку — будет задача.`
+      : "Стройка/сбор/рубка — через мини-задачу из пройденного. 🌳🪨 кликай, когда готовы.";
+  }
+  const forgeEl = document.getElementById("kingdomForge");
+  if (forgeEl) {
+    const open = kingdomHasForgeBuilding();
+    forgeEl.classList.toggle("locked", !open);
+    forgeEl.innerHTML = open
+      ? Object.values(KINGDOM_FORGE).map((r) => {
+        const have = (k.forge && k.forge[r.id]) || 0;
+        return `<button type="button" class="kd-forge-card" data-kd-forge="${r.id}">
+          <span class="kd-ico">${r.ico}</span>
+          <span class="kd-name">${r.name} ×${have}</span>
+          <span class="kd-price">${kingdomFormatCost(r.need)}</span>
+          <span class="kd-desc">${r.desc}</span>
+        </button>`;
+      }).join("")
+      : `<p class="kd-forge-lock">Построй <strong>🔥 Кузницу</strong>, чтобы ковать кирпичи и самоцветы в инвентарь.</p>`;
   }
 }
 
@@ -6404,21 +6692,25 @@ function openKingdom() {
   }, 3000);
 }
 
-function kingdomPlace(slotIndex) {
+function kingdomPlace(slotIndex, unlocked = false) {
   const k = ensureKingdom();
   if (slotIndex < 0 || slotIndex >= KINGDOM_SLOTS) return;
   if (slotIndex === KINGDOM_CASTLE_SLOT) return;
   if (KINGDOM_NATURE[k.slots[slotIndex]]) {
-    showToasts([{ plain: true, icon: "🚫", name: "Тут природа", desc: "Собери ресурс или расчисти клетку (5🪙)." }]);
+    kingdomSoftHint("Тут природа — собери ресурс или расчисти клетку.");
     return;
   }
   if (k.slots[slotIndex]) {
     const id = k.slots[slotIndex];
     const b = KINGDOM_BUILDINGS[id];
     if (!b || b.fixed) return;
+    if (!unlocked) {
+      openKingdomGate({ type: "upgrade", slot: slotIndex });
+      return;
+    }
     const price = kingdomUpgradePrice(slotIndex);
     if (!kingdomCanAfford(price)) {
-      showToasts([{ plain: true, icon: "📦", name: "Мало ресурсов", desc: `Нужно ${kingdomFormatCost(price)}` }]);
+      kingdomSoftHint(`Мало ресурсов на апгрейд: ${kingdomFormatCost(price)}`);
       return;
     }
     kingdomPay(price);
@@ -6430,14 +6722,18 @@ function kingdomPlace(slotIndex) {
     return;
   }
   if (!kingdomBuildPick) {
-    showToasts([{ plain: true, icon: "🏰", name: "Выбери здание", desc: "В каталоге ниже." }]);
+    kingdomSoftHint("Сначала выбери здание в каталоге «Строить».");
+    return;
+  }
+  if (!unlocked) {
+    openKingdomGate({ type: "place", slot: slotIndex });
     return;
   }
   const b = KINGDOM_BUILDINGS[kingdomBuildPick];
   if (!b || b.fixed) return;
   const cost = kingdomCostOf(b);
   if (!kingdomCanAfford(cost)) {
-    showToasts([{ plain: true, icon: "📦", name: "Мало ресурсов", desc: `Нужно ${kingdomFormatCost(cost)}. Руби деревья и копи камень!` }]);
+    kingdomSoftHint(`Мало ресурсов: ${kingdomFormatCost(cost)}`);
     return;
   }
   kingdomPay(cost);
@@ -6451,19 +6747,23 @@ function kingdomPlace(slotIndex) {
   renderKingdom();
 }
 
-function kingdomClearNature(slotIndex) {
+function kingdomClearNature(slotIndex, unlocked = false) {
   const k = ensureKingdom();
   const nat = KINGDOM_NATURE[k.slots[slotIndex]];
   if (!nat) return;
+  if (!unlocked) {
+    openKingdomGate({ type: "clear", slot: slotIndex });
+    return;
+  }
   if (state.coins < 5) {
-    showToasts([{ plain: true, icon: "🪙", name: "Нужно 5 монет", desc: "Чтобы расчистить клетку под стройку." }]);
+    kingdomSoftHint("Нужно 5 монет, чтобы расчистить клетку.");
     return;
   }
   state.coins -= 5;
   k.slots[slotIndex] = null;
   delete k.gatherAt[slotIndex];
   saveState();
-  showToasts([{ plain: true, icon: "🧹", name: "Расчищено", desc: "Можно строить." }]);
+  kingdomSoftHint("Клетка расчищена — можно строить.");
   renderKingdom();
 }
 
@@ -6685,6 +6985,20 @@ ACHIEVEMENTS.push(
     desc: "Накопи 25 камня на складе",
     check: () => (ensureKingdom().stone || 0) >= 25,
     progress: () => ({ current: Math.min(ensureKingdom().stone || 0, 25), target: 25 }),
+  },
+  {
+    id: "kd_forge",
+    icon: "🔥",
+    name: "Кузнец",
+    desc: "Выкуй кирпич или самоцвет",
+    check: () => {
+      const f = ensureKingdom().forge || {};
+      return (f.brick || 0) + (f.gem || 0) + (f.charm || 0) >= 1;
+    },
+    progress: () => {
+      const f = ensureKingdom().forge || {};
+      return { current: Math.min(1, (f.brick || 0) + (f.gem || 0) + (f.charm || 0)), target: 1 };
+    },
   },
   {
     id: "safe_first",
@@ -6992,10 +7306,16 @@ document.getElementById("openKingdomBtn")?.addEventListener("click", () => {
 });
 
 document.getElementById("kingdomCollectBtn")?.addEventListener("click", () => {
-  collectKingdom(false);
+  collectKingdom(false, false);
 });
 
 document.getElementById("kingdom")?.addEventListener("click", (e) => {
+  if (kingdomGate) return;
+  const forgeBtn = e.target.closest("[data-kd-forge]");
+  if (forgeBtn) {
+    kingdomForge(forgeBtn.dataset.kdForge, false);
+    return;
+  }
   const buy = e.target.closest("[data-kd-buy]");
   if (buy) {
     const id = buy.dataset.kdBuy;
@@ -7011,7 +7331,7 @@ document.getElementById("kingdom")?.addEventListener("click", (e) => {
   const up = e.target.closest("[data-kd-up]");
   if (up) {
     e.stopPropagation();
-    kingdomPlace(Number(up.dataset.kdUp));
+    kingdomPlace(Number(up.dataset.kdUp), false);
     return;
   }
   const sellBtn = e.target.closest("[data-kd-sell]");
@@ -7023,7 +7343,7 @@ document.getElementById("kingdom")?.addEventListener("click", (e) => {
   const clearBtn = e.target.closest("[data-kd-clear]");
   if (clearBtn) {
     e.stopPropagation();
-    kingdomClearNature(Number(clearBtn.dataset.kdClear));
+    kingdomClearNature(Number(clearBtn.dataset.kdClear), false);
     return;
   }
   const slot = e.target.closest("[data-kd-slot]");
@@ -7031,16 +7351,16 @@ document.getElementById("kingdom")?.addEventListener("click", (e) => {
   const i = Number(slot.dataset.kdSlot);
   const id = ensureKingdom().slots[i];
   if (!id) {
-    kingdomPlace(i);
+    kingdomPlace(i, false);
     return;
   }
   if (id === "castle") {
-    showToasts([{ plain: true, icon: "🏰", name: "Замок маскота", desc: "Центр королевства." }]);
+    kingdomSoftHint("Замок маскота — центр королевства.");
     return;
   }
   if (KINGDOM_NATURE[id]) {
     if (kingdomGatherReady(i)) {
-      kingdomGather(i);
+      kingdomGather(i, false);
     } else {
       const panel = document.getElementById("kingdomSlotActions");
       if (panel) {
@@ -7051,8 +7371,9 @@ document.getElementById("kingdom")?.addEventListener("click", (e) => {
         panel.innerHTML = `
           <strong>${nat.ico} ${nat.name}</strong>
           <span>Восстановление: ${sec}с</span>
-          <button type="button" class="btn ghost-btn" data-kd-clear="${i}">Расчистить · 5🪙</button>`;
+          <button type="button" class="btn ghost-btn" data-kd-clear="${i}">Расчистить · 5🪙 (задача)</button>`;
       }
+      kingdomSoftHint(`${KINGDOM_NATURE[id].name}: ещё ${Math.ceil(kingdomGatherLeft(i) / 1000)}с.`);
     }
     return;
   }
@@ -7068,6 +7389,26 @@ document.getElementById("kingdom")?.addEventListener("click", (e) => {
       <strong>${b.ico} ${b.name} Lv${kingdomLevelOf(i)}</strong>
       <button type="button" class="btn primary" data-kd-up="${i}">Улучшить · ${kingdomFormatCost(price)}</button>
       <button type="button" class="btn ghost-btn" data-kd-sell="${i}">Снести (−40%)</button>`;
+  }
+});
+
+document.getElementById("kingdomGate")?.addEventListener("click", (e) => {
+  if (e.target.id === "kingdomGate" || e.target.closest("[data-kd-gate-close]")) {
+    closeKingdomGate();
+    kingdomSoftHint("Задача отменена.");
+    return;
+  }
+  const ans = e.target.closest("[data-kd-ans]");
+  if (ans) {
+    kingdomGateSubmitChoice(Number(ans.dataset.kdAns));
+    return;
+  }
+  const key = e.target.closest("[data-kd-gate-key]");
+  if (key) {
+    const k = key.dataset.kdGateKey;
+    if (k === "ok") kingdomGateSubmitNum();
+    else if (k === "back") kingdomGateSetInput((kingdomGate?.input || "").slice(0, -1));
+    else kingdomGateSetInput((kingdomGate?.input || "") + k);
   }
 });
 

@@ -4353,3 +4353,50 @@ body.safe-fail .safe-choice { border-color: #ff3b5c; }
 .kd-shop-card.selected { outline: 3px solid #4ecdc4; }
 .kd-shop-card.poor { opacity: .55; }
 body.screen-kingdom .sky { filter: saturate(1.1); }
+
+
+/* kingdom gate + forge */
+.kd-gate .kd-gate-card { width: min(420px, 100%); }
+.kd-gate-problem {
+  font-size: 18px; font-weight: 900; text-align: center; margin: 8px 0 10px; line-height: 1.35;
+}
+.kd-gate-hint { text-align: center; font-weight: 700; opacity: .75; margin: 0 0 10px; font-size: 13px; }
+.kd-gate-choices { display: grid; gap: 8px; margin-bottom: 10px; }
+.kd-gate-choice {
+  display: flex; gap: 8px; align-items: flex-start; text-align: left;
+  border: 0; border-radius: 12px; padding: 10px; font-family: inherit; font-weight: 800;
+  background: #eef8ff; cursor: pointer; color: var(--ink);
+}
+.kd-gate-choice span {
+  width: 24px; height: 24px; border-radius: 8px; background: #5b6cff; color: #fff;
+  display: grid; place-items: center; flex: 0 0 auto;
+}
+.kd-gate-answer {
+  text-align: center; font-size: 28px; font-weight: 900; margin-bottom: 8px;
+  background: #fff; border-radius: 12px; padding: 8px;
+}
+.kd-gate-keys {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px;
+}
+.kd-gate-keys button {
+  border: 0; border-radius: 10px; padding: 12px; font-family: inherit; font-weight: 900;
+  background: #fff; cursor: pointer; box-shadow: 0 3px 0 rgba(0,0,0,.08);
+}
+.kd-gate-keys button.ok { background: #4ecdc4; color: #fff; }
+body.kd-gate-open .kingdom-screen { pointer-events: none; opacity: .55; }
+.kd-gate { z-index: 80; }
+.kd-forge {
+  display: grid; gap: 8px; margin-bottom: 14px;
+}
+.kd-forge.locked {
+  padding: 12px; border-radius: 14px; background: rgba(0,0,0,.04); text-align: center;
+}
+.kd-forge-card {
+  display: grid; grid-template-columns: 36px 1fr auto; gap: 2px 8px;
+  text-align: left; border: 0; border-radius: 14px; padding: 10px;
+  background: linear-gradient(135deg, #fff4e6, #ffe8cc); font-family: inherit; cursor: pointer;
+  box-shadow: 0 3px 0 rgba(0,0,0,.08); color: var(--ink);
+}
+.kd-forge-card .kd-ico { grid-row: 1 / span 3; font-size: 26px; align-self: center; }
+.kd-forge-card .kd-desc { grid-column: 2 / span 2; font-size: 12px; font-weight: 700; opacity: .75; }
+.kd-forge-card .kd-price { font-weight: 800; font-size: 12px; }
