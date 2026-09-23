@@ -4400,3 +4400,43 @@ body.kd-gate-open .kingdom-screen { pointer-events: none; opacity: .55; }
 .kd-forge-card .kd-ico { grid-row: 1 / span 3; font-size: 26px; align-self: center; }
 .kd-forge-card .kd-desc { grid-column: 2 / span 2; font-size: 12px; font-weight: 700; opacity: .75; }
 .kd-forge-card .kd-price { font-weight: 800; font-size: 12px; }
+
+/* ——— Тамагочи: уход за маскотом ——— */
+.pet-care {
+  margin: 4px auto 12px;
+  max-width: 340px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: linear-gradient(160deg, rgba(255,255,255,.72), rgba(255,244,220,.85));
+  box-shadow: 0 4px 0 rgba(0,0,0,.06);
+}
+.pet-bars { display: grid; gap: 6px; margin-bottom: 8px; }
+.pet-bar {
+  display: grid;
+  grid-template-columns: 28px 1fr 32px;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+}
+.pet-bar .bar { height: 10px; background: rgba(0,0,0,.08); border-radius: 999px; overflow: hidden; }
+.pet-bar .bar > div {
+  height: 100%; width: 0; border-radius: inherit;
+  background: linear-gradient(90deg, #7ed957, #4ecdc4);
+  transition: width .35s ease;
+}
+.pet-bar.mid .bar > div { background: linear-gradient(90deg, #ffd166, #f4a261); }
+.pet-bar.low .bar > div { background: linear-gradient(90deg, #ff6b6b, #ee6c4d); }
+.pet-bar em { font-style: normal; font-size: 12px; text-align: right; opacity: .8; }
+.pet-ico { font-size: 16px; text-align: center; }
+.pet-actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.pet-btn { padding: 8px 10px !important; font-size: 13px !important; }
+.pet-btn:disabled { opacity: .45; cursor: not-allowed; }
+.pet-status {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  opacity: .8;
+  line-height: 1.3;
+}
+

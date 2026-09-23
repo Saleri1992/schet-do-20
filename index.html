@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=29" />
+  <link rel="stylesheet" href="style.css?v=30" />
 </head>
 <body data-theme="easy">
   <div class="sky">
@@ -60,6 +60,31 @@
     <section class="screen" id="home" data-screen="home">
       <div class="mascot-stage" id="homeStage">
         <div class="mascot bounce-soft" id="homeMascot" aria-hidden="true"></div>
+      </div>
+      <div class="pet-care" id="petCare" aria-label="Уход за маскотом">
+        <div class="pet-bars">
+          <div class="pet-bar ok" data-pet-stat="petHunger">
+            <span class="pet-ico" title="Сытость">🍎</span>
+            <div class="bar"><div id="petHungerFill"></div></div>
+            <em id="petHungerVal">78</em>
+          </div>
+          <div class="pet-bar ok" data-pet-stat="petHappy">
+            <span class="pet-ico" title="Счастье">😊</span>
+            <div class="bar"><div id="petHappyFill"></div></div>
+            <em id="petHappyVal">78</em>
+          </div>
+          <div class="pet-bar ok" data-pet-stat="petEnergy">
+            <span class="pet-ico" title="Энергия">⚡</span>
+            <div class="bar"><div id="petEnergyFill"></div></div>
+            <em id="petEnergyVal">78</em>
+          </div>
+        </div>
+        <div class="pet-actions">
+          <button type="button" class="btn ghost-btn pet-btn" id="petFeedBtn" data-pet="feed">🍎 Кормить · 4🪙</button>
+          <button type="button" class="btn ghost-btn pet-btn" id="petPlayBtn" data-pet="play">🎾 Играть</button>
+          <button type="button" class="btn ghost-btn pet-btn" id="petSleepBtn" data-pet="sleep">😴 Спать</button>
+        </div>
+        <p class="pet-status" id="petStatus"></p>
       </div>
       <h1 id="homeTitle">Счёт до 20</h1>
       <p class="subtitle" id="homeSubtitle">10 весёлых примеров. Можно ошибаться — в конце узнаем результат!</p>
@@ -499,6 +524,6 @@
       <button type="button" class="btn ghost-btn" data-kd-gate-close>Отмена</button>
     </div>
   </div>
-  <script src="app.js?v=29"></script>
+  <script src="app.js?v=30"></script>
 </body>
 </html>
