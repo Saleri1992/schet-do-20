@@ -1,7 +1,7 @@
 const STORAGE_KEY = "schet-do-20";
 const NICK_KEY = "schet-do-20-nick";
 const SCORE_QUEUE_KEY = "schet-do-20-score-queue";
-const DATA_VERSION = 9;
+const DATA_VERSION = 10;
 const TOTAL = 10;
 const HARD_LIMIT_MS = 60 * 1000;
 const SECRET_SPEED_MS = 40 * 1000;
@@ -907,6 +907,104 @@ const SAFE_SCENARIOS = [
 ];
 
 
+
+const KINGDOM_SLOTS = 12;
+const KINGDOM_COLLECT_CAP_MS = 8 * 60 * 60 * 1000;
+const KINGDOM_CASTLE_SLOT = 5;
+const KINGDOM_GATHER_CD_MS = 45 * 1000;
+
+/** Природа на карте: клик = добыть дерево/камень (кулдаун). */
+const KINGDOM_NATURE = {
+  tree: { id: "tree", name: "Дерево", ico: "🌳", kind: "nature", gather: "wood", amount: 4, desc: "Руби → дерево в склад." },
+  rock: { id: "rock", name: "Камни", ico: "🪨", kind: "nature", gather: "stone", amount: 3, desc: "Копай → камень в склад." },
+  bush: { id: "bush", name: "Куст", ico: "🌿", kind: "nature", gather: "wood", amount: 2, desc: "Мало веток, но тоже дерево." },
+};
+
+/** Постройки. cost: монеты/дерево/камень. rate* = в час. */
+const KINGDOM_BUILDINGS = {
+  castle: {
+    id: "castle", name: "Замок", ico: "🏰", cost: { coins: 0, wood: 0, stone: 0 }, rate: 2, fixed: true,
+    desc: "Дом маскота. Чуть монет.",
+  },
+  farm: {
+    id: "farm", name: "Ферма", ico: "🌾", cost: { coins: 35, wood: 4, stone: 0 }, rate: 12,
+    desc: "Урожай → монеты. Нужно дерево.",
+  },
+  garden: {
+    id: "garden", name: "Сад", ico: "🌸", cost: { coins: 25, wood: 2, stone: 0 }, rate: 6,
+    desc: "Красиво и чуть монет.",
+  },
+  well: {
+    id: "well", name: "Колодец", ico: "⛲", cost: { coins: 40, wood: 0, stone: 6 }, rate: 9,
+    desc: "Нужен камень.",
+  },
+  lumber: {
+    id: "lumber", name: "Лесопилка", ico: "🪓", cost: { coins: 50, wood: 3, stone: 2 }, rate: 4, woodRate: 10,
+    desc: "Пилит лес → дерево/час + монеты.",
+  },
+  quarry: {
+    id: "quarry", name: "Каменоломня", ico: "⛏️", cost: { coins: 55, wood: 2, stone: 3 }, rate: 4, stoneRate: 8,
+    desc: "Добывает камень/час.",
+  },
+  mill: {
+    id: "mill", name: "Мельница", ico: "🌬️", cost: { coins: 70, wood: 8, stone: 2 }, rate: 20,
+    desc: "Много монет. Дорого по дереву.",
+  },
+  bakery: {
+    id: "bakery", name: "Пекарня", ico: "🍞", cost: { coins: 100, wood: 6, stone: 4 }, rate: 28,
+    desc: "Пирожки на продажу.",
+  },
+  market: {
+    id: "market", name: "Рынок", ico: "🏪", cost: { coins: 120, wood: 5, stone: 8 }, rate: 34,
+    desc: "Торговля на площади.",
+  },
+  tower: {
+    id: "tower", name: "Башня", ico: "🗼", cost: { coins: 160, wood: 4, stone: 14 }, rate: 42,
+    desc: "Много камня на стены.",
+  },
+  school: {
+    id: "school", name: "Школа", ico: "🏫", cost: { coins: 140, wood: 10, stone: 6 }, rate: 16, starRate: 1,
+    desc: "Монеты + ★/час.",
+  },
+  flag: {
+    id: "flag", name: "Флаг", ico: "🚩", cost: { coins: 15, wood: 1, stone: 0 }, rate: 0,
+    desc: "Украшение.",
+  },
+};
+
+const KINGDOM_SHOP_ORDER = ["farm", "garden", "well", "lumber", "quarry", "mill", "bakery", "market", "school", "tower", "flag"];
+
+function kingdomCostOf(b, mult = 1) {
+  const c = (b && b.cost) || { coins: b?.price || 0, wood: 0, stone: 0 };
+  return {
+    coins: Math.round((c.coins || 0) * mult),
+    wood: Math.round((c.wood || 0) * mult),
+    stone: Math.round((c.stone || 0) * mult),
+  };
+}
+
+function kingdomCanAfford(cost) {
+  const k = ensureKingdom();
+  return state.coins >= cost.coins
+    && (k.wood || 0) >= cost.wood
+    && (k.stone || 0) >= cost.stone;
+}
+
+function kingdomPay(cost) {
+  const k = ensureKingdom();
+  state.coins -= cost.coins;
+  k.wood = Math.max(0, (k.wood || 0) - cost.wood);
+  k.stone = Math.max(0, (k.stone || 0) - cost.stone);
+}
+
+function kingdomFormatCost(cost) {
+  const bits = [];
+  if (cost.coins) bits.push(`🪙${cost.coins}`);
+  if (cost.wood) bits.push(`🪵${cost.wood}`);
+  if (cost.stone) bits.push(`🪨${cost.stone}`);
+  return bits.join(" ") || "бесплатно";
+}
+
 const ENG_LEVELS = {
   1: { id: 1, name: "Слова", theme: "easy", coin: 2, eng: "animals", balloons: ["🐱", "🇬🇧", "🐶"], subtitle: "Животные и вещи: выбери верный перевод." },
   2: { id: 2, name: "Цвета", theme: "medium", coin: 2, eng: "colors", balloons: ["🔴", "🇬🇧", "🔵"], subtitle: "Цвета и простые числа." },
@@ -1666,6 +1764,7 @@ const screens = {
   board: document.getElementById("board"),
   shop: document.getElementById("shop"),
   safe: document.getElementById("safe"),
+  kingdom: document.getElementById("kingdom"),
 };
 
 const els = {
@@ -1989,13 +2088,14 @@ function loadState() {
     dailyClaimDay: "",
     dailyStreak: 0,
     safeCleared: {},
+    kingdom: emptyKingdom(),
   };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return empty;
     const data = JSON.parse(raw);
     const ver = Number(data.version);
-    if (ver !== 2 && ver !== 3 && ver !== 4 && ver !== 5 && ver !== 6 && ver !== 7 && ver !== 8 && ver !== DATA_VERSION) {
+    if (ver !== 2 && ver !== 3 && ver !== 4 && ver !== 5 && ver !== 6 && ver !== 7 && ver !== 8 && ver !== 9 && ver !== DATA_VERSION) {
       return { ...empty, lastLevel: 1 };
     }
     let runs = Array.isArray(data.runs) ? data.runs : [];
@@ -2015,6 +2115,7 @@ function loadState() {
       dailyClaimDay: typeof data.dailyClaimDay === "string" ? data.dailyClaimDay : "",
       dailyStreak: Math.max(0, Number(data.dailyStreak) || 0),
       safeCleared: (data.safeCleared && typeof data.safeCleared === "object") ? data.safeCleared : {},
+      kingdom: normalizeKingdom(data.kingdom),
     };
   } catch {
     return empty;
@@ -3360,8 +3461,13 @@ function showScreen(name) {
   });
   document.body.classList.toggle("screen-game", name === "game");
   document.body.classList.toggle("screen-safe", name === "safe");
+  document.body.classList.toggle("screen-kingdom", name === "kingdom");
   if (name !== "safe") {
     document.body.classList.remove("safe-fail", "safe-win");
+  }
+  if (name !== "kingdom" && kingdomTimerId) {
+    clearInterval(kingdomTimerId);
+    kingdomTimerId = 0;
   }
 }
 
@@ -3976,6 +4082,8 @@ function renderHome() {
   if (els.startBtn) els.startBtn.classList.toggle("hidden", isSafeTheme);
   renderSafeBanner();
   renderSafeHub();
+  // тихо не собираем — игрок сам жмёт в королевстве
+
   if (isSafeTheme) {
     els.unlockHint.textContent = isSafeAllCleared()
       ? "Все квесты безопасности пройдены — ты кибер-герой!"
@@ -6005,6 +6113,385 @@ function shopAction(act, id) {
 }
 
 
+
+/* ——— Королевство маскота ——— */
+let kingdomBuildPick = null;
+let kingdomTimerId = 0;
+
+function emptyKingdom() {
+  const slots = Array(KINGDOM_SLOTS).fill(null);
+  slots[KINGDOM_CASTLE_SLOT] = "castle";
+  slots[0] = "tree";
+  slots[2] = "tree";
+  slots[3] = "bush";
+  slots[8] = "rock";
+  slots[10] = "rock";
+  slots[11] = "tree";
+  return {
+    slots,
+    lastCollectAt: Date.now(),
+    levels: {},
+    wood: 8,
+    stone: 5,
+    gatherAt: {},
+  };
+}
+
+function normalizeKingdom(raw) {
+  const base = emptyKingdom();
+  if (!raw || typeof raw !== "object") return base;
+  let slots = Array.isArray(raw.slots) ? raw.slots.slice(0, KINGDOM_SLOTS) : base.slots.slice();
+  while (slots.length < KINGDOM_SLOTS) slots.push(null);
+  slots = slots.map((id) => {
+    if (!id) return null;
+    if (KINGDOM_BUILDINGS[id] || KINGDOM_NATURE[id]) return id;
+    return null;
+  });
+  if (slots[KINGDOM_CASTLE_SLOT] !== "castle") slots[KINGDOM_CASTLE_SLOT] = "castle";
+  const levels = (raw.levels && typeof raw.levels === "object") ? { ...raw.levels } : {};
+  const gatherAt = (raw.gatherAt && typeof raw.gatherAt === "object") ? { ...raw.gatherAt } : {};
+  // migrate old 9-slot saves: keep known tiles, pad nature if empty map
+  const built = slots.filter((id) => id && id !== "castle").length;
+  if (built === 0 && !raw.wood && !raw.stone) {
+    return base;
+  }
+  return {
+    slots,
+    lastCollectAt: Math.max(0, Number(raw.lastCollectAt) || Date.now()),
+    levels,
+    wood: Math.max(0, Number(raw.wood) || 0),
+    stone: Math.max(0, Number(raw.stone) || 0),
+    gatherAt,
+  };
+}
+
+function ensureKingdom() {
+  if (!state.kingdom) state.kingdom = emptyKingdom();
+  state.kingdom = normalizeKingdom(state.kingdom);
+  return state.kingdom;
+}
+
+function kingdomBuildingCount() {
+  const k = ensureKingdom();
+  return k.slots.filter((id) => id && KINGDOM_BUILDINGS[id] && id !== "castle").length;
+}
+
+function kingdomLevelOf(slotIndex) {
+  const k = ensureKingdom();
+  const lv = Number(k.levels[slotIndex]);
+  return Math.max(1, Number.isFinite(lv) ? lv : 1);
+}
+
+function kingdomRates() {
+  const k = ensureKingdom();
+  let coinPerHour = 0;
+  let starPerHour = 0;
+  let woodPerHour = 0;
+  let stonePerHour = 0;
+  k.slots.forEach((id, i) => {
+    const b = KINGDOM_BUILDINGS[id];
+    if (!b) return;
+    const lv = kingdomLevelOf(i);
+    coinPerHour += (b.rate || 0) * lv;
+    starPerHour += (b.starRate || 0) * lv;
+    woodPerHour += (b.woodRate || 0) * lv;
+    stonePerHour += (b.stoneRate || 0) * lv;
+  });
+  return { coinPerHour, starPerHour, woodPerHour, stonePerHour };
+}
+
+function kingdomPending() {
+  const k = ensureKingdom();
+  const now = Date.now();
+  const elapsed = Math.min(KINGDOM_COLLECT_CAP_MS, Math.max(0, now - (k.lastCollectAt || now)));
+  const hours = elapsed / (60 * 60 * 1000);
+  const rates = kingdomRates();
+  return {
+    coins: Math.floor(rates.coinPerHour * hours),
+    stars: Math.floor(rates.starPerHour * hours),
+    wood: Math.floor(rates.woodPerHour * hours),
+    stone: Math.floor(rates.stonePerHour * hours),
+    elapsed,
+    rates,
+    capped: elapsed >= KINGDOM_COLLECT_CAP_MS,
+  };
+}
+
+function collectKingdom(silent = false) {
+  const pend = kingdomPending();
+  const k = ensureKingdom();
+  if (pend.coins < 1 && pend.stars < 1 && pend.wood < 1 && pend.stone < 1) {
+    if (!silent) {
+      showToasts([{ plain: true, icon: "🏰", name: "Пока пусто", desc: "Построй лесопилку/ферму или подожди — ресурсы копятся." }]);
+    }
+    return pend;
+  }
+  state.coins += pend.coins;
+  state.stars += pend.stars;
+  k.wood = (k.wood || 0) + pend.wood;
+  k.stone = (k.stone || 0) + pend.stone;
+  k.lastCollectAt = Date.now();
+  saveState();
+  const fresh = unlockAchievements();
+  if (!silent) {
+    const bits = [];
+    if (pend.coins) bits.push(`+${pend.coins}🪙`);
+    if (pend.wood) bits.push(`+${pend.wood}🪵`);
+    if (pend.stone) bits.push(`+${pend.stone}🪨`);
+    if (pend.stars) bits.push(`+${pend.stars}★`);
+    showToasts([{ plain: true, icon: "📦", name: "Склад пополнен!", desc: bits.join(" · ") }]);
+    if (fresh.length) showToasts(fresh.slice(0, 2).map((a) => ({ icon: a.icon, name: a.name, desc: a.desc })));
+  }
+  renderKingdom();
+  if (els.totalCoins) els.totalCoins.textContent = String(state.coins);
+  if (els.totalStars) els.totalStars.textContent = String(state.stars);
+  return pend;
+}
+
+function kingdomUpgradePrice(slotIndex) {
+  const k = ensureKingdom();
+  const id = k.slots[slotIndex];
+  const b = KINGDOM_BUILDINGS[id];
+  if (!b || b.fixed) return kingdomCostOf(b || {}, 0);
+  const lv = kingdomLevelOf(slotIndex);
+  return kingdomCostOf(b, 0.7 + lv * 0.55);
+}
+
+function kingdomGatherReady(slotIndex) {
+  const k = ensureKingdom();
+  const at = Number(k.gatherAt[slotIndex] || 0);
+  return Date.now() >= at;
+}
+
+function kingdomGatherLeft(slotIndex) {
+  const k = ensureKingdom();
+  const at = Number(k.gatherAt[slotIndex] || 0);
+  return Math.max(0, at - Date.now());
+}
+
+function kingdomGather(slotIndex) {
+  const k = ensureKingdom();
+  const id = k.slots[slotIndex];
+  const nat = KINGDOM_NATURE[id];
+  if (!nat) return;
+  if (!kingdomGatherReady(slotIndex)) {
+    const sec = Math.ceil(kingdomGatherLeft(slotIndex) / 1000);
+    showToasts([{ plain: true, icon: nat.ico, name: "Ещё рано", desc: `Подожди ${sec} сек — ресурс восстановится.` }]);
+    return;
+  }
+  const amt = nat.amount || 1;
+  if (nat.gather === "wood") k.wood = (k.wood || 0) + amt;
+  if (nat.gather === "stone") k.stone = (k.stone || 0) + amt;
+  k.gatherAt[slotIndex] = Date.now() + KINGDOM_GATHER_CD_MS;
+  saveState();
+  showToasts([{
+    plain: true,
+    icon: nat.ico,
+    name: nat.gather === "wood" ? "Дерево!" : "Камень!",
+    desc: `+${amt} в склад`,
+  }]);
+  unlockAchievements();
+  renderKingdom();
+}
+
+function renderKingdom() {
+  const map = document.getElementById("kingdomMap");
+  const shop = document.getElementById("kingdomShop");
+  const stats = document.getElementById("kingdomStats");
+  const pendEl = document.getElementById("kingdomPending");
+  const bag = document.getElementById("kingdomBag");
+  if (!map || !shop) return;
+  const k = ensureKingdom();
+  const pend = kingdomPending();
+  const rates = pend.rates;
+
+  const m = document.getElementById("kingdomMascot");
+  if (m) paintStage("kingdomStage", m, 96, "happy", "");
+
+  if (bag) {
+    bag.innerHTML = `
+      <span title="Монеты">🪙 <strong>${state.coins}</strong></span>
+      <span title="Дерево">🪵 <strong>${k.wood || 0}</strong></span>
+      <span title="Камень">🪨 <strong>${k.stone || 0}</strong></span>
+      <span title="Опыт">★ <strong>${state.stars}</strong></span>`;
+  }
+  if (stats) {
+    stats.innerHTML = `
+      <div><strong>${rates.coinPerHour}</strong><span>🪙/час</span></div>
+      <div><strong>${rates.woodPerHour}</strong><span>🪵/час</span></div>
+      <div><strong>${rates.stonePerHour}</strong><span>🪨/час</span></div>
+      <div><strong>${kingdomBuildingCount()}</strong><span>домов</span></div>`;
+  }
+  if (pendEl) {
+    const bits = [];
+    if (pend.coins) bits.push(`🪙${pend.coins}`);
+    if (pend.wood) bits.push(`🪵${pend.wood}`);
+    if (pend.stone) bits.push(`🪨${pend.stone}`);
+    if (pend.stars) bits.push(`★${pend.stars}`);
+    const cap = pend.capped ? " · склад полон (8ч)" : "";
+    pendEl.textContent = bits.length
+      ? `Готово к сбору: ${bits.join(" ")}${cap}`
+      : `Копится… 🪙${rates.coinPerHour} 🪵${rates.woodPerHour} 🪨${rates.stonePerHour} /час${cap}`;
+  }
+
+  map.innerHTML = k.slots.map((id, i) => {
+    const nat = KINGDOM_NATURE[id];
+    const b = KINGDOM_BUILDINGS[id];
+    const pick = kingdomBuildPick && !id ? " can-build" : "";
+    const mid = i === KINGDOM_CASTLE_SLOT ? " throne" : "";
+    if (!id) {
+      return `<button type="button" class="kd-slot empty${pick}" data-kd-slot="${i}">
+        <span class="kd-ico">➕</span>
+        <span class="kd-name">${kingdomBuildPick ? "Сюда!" : "Пусто"}</span>
+      </button>`;
+    }
+    if (nat) {
+      const ready = kingdomGatherReady(i);
+      const sec = Math.ceil(kingdomGatherLeft(i) / 1000);
+      return `<button type="button" class="kd-slot nature ${nat.gather}${ready ? " ready" : " cd"}" data-kd-slot="${i}">
+        <span class="kd-ico">${nat.ico}</span>
+        <span class="kd-name">${nat.name}</span>
+        <span class="kd-rate">${ready ? `+${nat.amount} ${nat.gather === "wood" ? "🪵" : "🪨"}` : `${sec}с`}</span>
+      </button>`;
+    }
+    const lv = kingdomLevelOf(i);
+    const rateBits = [];
+    if (b.rate) rateBits.push(`🪙${b.rate * lv}`);
+    if (b.woodRate) rateBits.push(`🪵${b.woodRate * lv}`);
+    if (b.stoneRate) rateBits.push(`🪨${b.stoneRate * lv}`);
+    return `<button type="button" class="kd-slot filled${mid}" data-kd-slot="${i}">
+      <span class="kd-ico">${b.ico}</span>
+      <span class="kd-name">${b.name}${lv > 1 ? ` L${lv}` : ""}</span>
+      <span class="kd-rate">${rateBits.length ? `${rateBits.join(" ")}/ч` : "декор"}</span>
+    </button>`;
+  }).join("");
+
+  shop.innerHTML = KINGDOM_SHOP_ORDER.map((id) => {
+    const b = KINGDOM_BUILDINGS[id];
+    const cost = kingdomCostOf(b);
+    const on = kingdomBuildPick === id ? " selected" : "";
+    const can = kingdomCanAfford(cost);
+    const rateBits = [];
+    if (b.rate) rateBits.push(`+${b.rate}🪙`);
+    if (b.woodRate) rateBits.push(`+${b.woodRate}🪵`);
+    if (b.stoneRate) rateBits.push(`+${b.stoneRate}🪨`);
+    if (b.starRate) rateBits.push(`+${b.starRate}★`);
+    return `<button type="button" class="kd-shop-card${on}${can ? "" : " poor"}" data-kd-buy="${id}">
+      <span class="kd-ico">${b.ico}</span>
+      <span class="kd-name">${b.name}</span>
+      <span class="kd-price">${kingdomFormatCost(cost)}</span>
+      <span class="kd-rate">${rateBits.join(" ") || "декор"}/ч</span>
+      <span class="kd-desc">${b.desc}</span>
+    </button>`;
+  }).join("");
+
+  const hint = document.getElementById("kingdomHint");
+  if (hint) {
+    hint.textContent = kingdomBuildPick
+      ? `Выбрано: ${KINGDOM_BUILDINGS[kingdomBuildPick].name} (${kingdomFormatCost(kingdomCostOf(KINGDOM_BUILDINGS[kingdomBuildPick]))}). Жми пустую клетку.`
+      : "🌳/🪨 на карте — добудь ресурсы. Постройки стоят 🪙🪵🪨. «Собрать» забирает накопленное со зданий.";
+  }
+}
+
+function openKingdom() {
+  ensureKingdom();
+  kingdomBuildPick = null;
+  showScreen("kingdom");
+  renderKingdom();
+  clearInterval(kingdomTimerId);
+  kingdomTimerId = setInterval(() => {
+    if (screens.kingdom && !screens.kingdom.classList.contains("hidden")) renderKingdom();
+  }, 3000);
+}
+
+function kingdomPlace(slotIndex) {
+  const k = ensureKingdom();
+  if (slotIndex < 0 || slotIndex >= KINGDOM_SLOTS) return;
+  if (slotIndex === KINGDOM_CASTLE_SLOT) return;
+  if (KINGDOM_NATURE[k.slots[slotIndex]]) {
+    showToasts([{ plain: true, icon: "🚫", name: "Тут природа", desc: "Собери ресурс или расчисти клетку (5🪙)." }]);
+    return;
+  }
+  if (k.slots[slotIndex]) {
+    const id = k.slots[slotIndex];
+    const b = KINGDOM_BUILDINGS[id];
+    if (!b || b.fixed) return;
+    const price = kingdomUpgradePrice(slotIndex);
+    if (!kingdomCanAfford(price)) {
+      showToasts([{ plain: true, icon: "📦", name: "Мало ресурсов", desc: `Нужно ${kingdomFormatCost(price)}` }]);
+      return;
+    }
+    kingdomPay(price);
+    k.levels[slotIndex] = kingdomLevelOf(slotIndex) + 1;
+    saveState();
+    showToasts([{ plain: true, icon: b.ico, name: `${b.name} Lv${k.levels[slotIndex]}!`, desc: `− ${kingdomFormatCost(price)}` }]);
+    unlockAchievements();
+    renderKingdom();
+    return;
+  }
+  if (!kingdomBuildPick) {
+    showToasts([{ plain: true, icon: "🏰", name: "Выбери здание", desc: "В каталоге ниже." }]);
+    return;
+  }
+  const b = KINGDOM_BUILDINGS[kingdomBuildPick];
+  if (!b || b.fixed) return;
+  const cost = kingdomCostOf(b);
+  if (!kingdomCanAfford(cost)) {
+    showToasts([{ plain: true, icon: "📦", name: "Мало ресурсов", desc: `Нужно ${kingdomFormatCost(cost)}. Руби деревья и копи камень!` }]);
+    return;
+  }
+  kingdomPay(cost);
+  k.slots[slotIndex] = b.id;
+  k.levels[slotIndex] = 1;
+  kingdomBuildPick = null;
+  saveState();
+  const fresh = unlockAchievements();
+  showToasts([{ plain: true, icon: b.ico, name: "Построено!", desc: b.name }]);
+  if (fresh.length) showToasts(fresh.slice(0, 2).map((a) => ({ icon: a.icon, name: a.name, desc: a.desc })));
+  renderKingdom();
+}
+
+function kingdomClearNature(slotIndex) {
+  const k = ensureKingdom();
+  const nat = KINGDOM_NATURE[k.slots[slotIndex]];
+  if (!nat) return;
+  if (state.coins < 5) {
+    showToasts([{ plain: true, icon: "🪙", name: "Нужно 5 монет", desc: "Чтобы расчистить клетку под стройку." }]);
+    return;
+  }
+  state.coins -= 5;
+  k.slots[slotIndex] = null;
+  delete k.gatherAt[slotIndex];
+  saveState();
+  showToasts([{ plain: true, icon: "🧹", name: "Расчищено", desc: "Можно строить." }]);
+  renderKingdom();
+}
+
+function kingdomSell(slotIndex) {
+  const k = ensureKingdom();
+  const id = k.slots[slotIndex];
+  const b = KINGDOM_BUILDINGS[id];
+  if (!b || b.fixed || slotIndex === KINGDOM_CASTLE_SLOT) return;
+  const lv = kingdomLevelOf(slotIndex);
+  const base = kingdomCostOf(b);
+  const refundCoins = Math.floor(base.coins * 0.4 * lv);
+  const refundWood = Math.floor(base.wood * 0.4 * lv);
+  const refundStone = Math.floor(base.stone * 0.4 * lv);
+  k.slots[slotIndex] = null;
+  delete k.levels[slotIndex];
+  state.coins += refundCoins;
+  k.wood = (k.wood || 0) + refundWood;
+  k.stone = (k.stone || 0) + refundStone;
+  saveState();
+  showToasts([{
+    plain: true,
+    icon: "🧹",
+    name: "Снесено",
+    desc: `Вернули ${kingdomFormatCost({ coins: refundCoins, wood: refundWood, stone: refundStone })}`,
+  }]);
+  renderKingdom();
+}
+
 /* ——— Безопасность: 8-бит квесты ——— */
 let safeRun = null;
 
@@ -6159,6 +6646,46 @@ document.getElementById("safeHomeBtn")?.addEventListener("click", () => {
 
 // Ачивки Английский / Код / профессии
 ACHIEVEMENTS.push(
+  {
+    id: "kd_first",
+    icon: "🏰",
+    name: "Первый кирпич",
+    desc: "Построй любое здание в королевстве маскота",
+    check: () => kingdomBuildingCount() >= 1,
+    progress: () => ({ current: kingdomBuildingCount(), target: 1 }),
+  },
+  {
+    id: "kd_five",
+    icon: "🏘️",
+    name: "Маленький город",
+    desc: "Поставь 5 построек (кроме замка)",
+    check: () => kingdomBuildingCount() >= 5,
+    progress: () => ({ current: Math.min(kingdomBuildingCount(), 5), target: 5 }),
+  },
+  {
+    id: "kd_rate",
+    icon: "📈",
+    name: "Экономика",
+    desc: "Доход королевства ≥ 60 монет/час",
+    check: () => kingdomRates().coinPerHour >= 60,
+    progress: () => ({ current: Math.min(kingdomRates().coinPerHour, 60), target: 60 }),
+  },
+  {
+    id: "kd_wood",
+    icon: "🪵",
+    name: "Дровосек",
+    desc: "Накопи 30 дерева на складе",
+    check: () => (ensureKingdom().wood || 0) >= 30,
+    progress: () => ({ current: Math.min(ensureKingdom().wood || 0, 30), target: 30 }),
+  },
+  {
+    id: "kd_stone",
+    icon: "🪨",
+    name: "Каменотёс",
+    desc: "Накопи 25 камня на складе",
+    check: () => (ensureKingdom().stone || 0) >= 25,
+    progress: () => ({ current: Math.min(ensureKingdom().stone || 0, 25), target: 25 }),
+  },
   {
     id: "safe_first",
     icon: "🛡️",
@@ -6459,6 +6986,91 @@ els.openShopBtn.addEventListener("click", () => {
   renderShop();
   showScreen("shop");
 });
+
+document.getElementById("openKingdomBtn")?.addEventListener("click", () => {
+  openKingdom();
+});
+
+document.getElementById("kingdomCollectBtn")?.addEventListener("click", () => {
+  collectKingdom(false);
+});
+
+document.getElementById("kingdom")?.addEventListener("click", (e) => {
+  const buy = e.target.closest("[data-kd-buy]");
+  if (buy) {
+    const id = buy.dataset.kdBuy;
+    kingdomBuildPick = kingdomBuildPick === id ? null : id;
+    const panel = document.getElementById("kingdomSlotActions");
+    if (panel) {
+      panel.classList.add("hidden");
+      delete panel.dataset.keep;
+    }
+    renderKingdom();
+    return;
+  }
+  const up = e.target.closest("[data-kd-up]");
+  if (up) {
+    e.stopPropagation();
+    kingdomPlace(Number(up.dataset.kdUp));
+    return;
+  }
+  const sellBtn = e.target.closest("[data-kd-sell]");
+  if (sellBtn) {
+    e.stopPropagation();
+    kingdomSell(Number(sellBtn.dataset.kdSell));
+    return;
+  }
+  const clearBtn = e.target.closest("[data-kd-clear]");
+  if (clearBtn) {
+    e.stopPropagation();
+    kingdomClearNature(Number(clearBtn.dataset.kdClear));
+    return;
+  }
+  const slot = e.target.closest("[data-kd-slot]");
+  if (!slot) return;
+  const i = Number(slot.dataset.kdSlot);
+  const id = ensureKingdom().slots[i];
+  if (!id) {
+    kingdomPlace(i);
+    return;
+  }
+  if (id === "castle") {
+    showToasts([{ plain: true, icon: "🏰", name: "Замок маскота", desc: "Центр королевства." }]);
+    return;
+  }
+  if (KINGDOM_NATURE[id]) {
+    if (kingdomGatherReady(i)) {
+      kingdomGather(i);
+    } else {
+      const panel = document.getElementById("kingdomSlotActions");
+      if (panel) {
+        panel.classList.remove("hidden");
+        panel.dataset.keep = "1";
+        const nat = KINGDOM_NATURE[id];
+        const sec = Math.ceil(kingdomGatherLeft(i) / 1000);
+        panel.innerHTML = `
+          <strong>${nat.ico} ${nat.name}</strong>
+          <span>Восстановление: ${sec}с</span>
+          <button type="button" class="btn ghost-btn" data-kd-clear="${i}">Расчистить · 5🪙</button>`;
+      }
+    }
+    return;
+  }
+  document.querySelectorAll(".kd-slot").forEach((n) => n.classList.remove("focus"));
+  slot.classList.add("focus");
+  const panel = document.getElementById("kingdomSlotActions");
+  if (panel) {
+    const b = KINGDOM_BUILDINGS[id];
+    const price = kingdomUpgradePrice(i);
+    panel.classList.remove("hidden");
+    panel.dataset.keep = "1";
+    panel.innerHTML = `
+      <strong>${b.ico} ${b.name} Lv${kingdomLevelOf(i)}</strong>
+      <button type="button" class="btn primary" data-kd-up="${i}">Улучшить · ${kingdomFormatCost(price)}</button>
+      <button type="button" class="btn ghost-btn" data-kd-sell="${i}">Снести (−40%)</button>`;
+  }
+});
+
 
 els.dailyBoxBtn?.addEventListener("click", () => {
   openDailyModal();

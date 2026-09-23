@@ -4276,3 +4276,80 @@ body.safe-fail .safe-choice { border-color: #ff3b5c; }
   opacity: .95;
 }
 .safe-result-box .btn { width: 100%; margin-top: 6px; }
+
+
+/* === Королевство маскота === */
+.home-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.kd-bag {
+  display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+  margin: 0 0 10px; font-weight: 900; font-size: 15px;
+}
+.kd-bag span {
+  background: var(--card); padding: 6px 10px; border-radius: 12px;
+  box-shadow: 0 3px 0 rgba(0,0,0,.08);
+}
+.kd-stats {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 8px;
+}
+.kd-stats div {
+  background: rgba(255,255,255,.7); border-radius: 12px; padding: 8px 4px; text-align: center;
+}
+.kd-stats strong { display: block; font-size: 18px; }
+.kd-stats span { font-size: 11px; font-weight: 800; opacity: .75; }
+.kd-pending { text-align: center; font-weight: 800; margin: 0 0 8px; font-size: 14px; }
+#kingdomCollectBtn { width: 100%; margin-bottom: 8px; }
+.kd-hint { font-size: 13px; font-weight: 700; opacity: .8; margin: 0 0 10px; text-align: center; }
+.kd-map {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.kd-slot {
+  min-height: 84px;
+  border: 3px solid rgba(61,58,74,.15);
+  border-radius: 16px;
+  background: linear-gradient(160deg, #e8f7e4, #fffdf8);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px; padding: 8px 4px; cursor: pointer;
+  font-family: inherit; color: var(--ink);
+  box-shadow: 0 4px 0 rgba(0,0,0,.08);
+}
+.kd-slot:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,.08); }
+.kd-slot.empty { background: linear-gradient(160deg, #f0f4f8, #fff); opacity: .9; }
+.kd-slot.can-build { outline: 3px dashed #4ecdc4; }
+.kd-slot.nature.wood { background: linear-gradient(160deg, #d8f3dc, #b7e4c7); }
+.kd-slot.nature.stone { background: linear-gradient(160deg, #dee2e6, #ced4da); }
+.kd-slot.nature.ready { box-shadow: 0 0 0 3px rgba(76, 175, 80, .45), 0 4px 0 rgba(0,0,0,.08); }
+.kd-slot.nature.cd { opacity: .72; }
+.kd-slot.filled { background: linear-gradient(160deg, #fff3d6, #ffe8cc); }
+.kd-slot.throne { background: linear-gradient(160deg, #ffe066, #ffd43b); border-color: #f59f00; }
+.kd-slot.focus { outline: 3px solid #5b6cff; }
+.kd-ico { font-size: 26px; line-height: 1; }
+.kd-name { font-size: 11px; font-weight: 900; text-align: center; }
+.kd-rate { font-size: 10px; font-weight: 800; opacity: .8; }
+.kd-slot-actions {
+  display: grid; gap: 6px; margin: 0 0 12px; padding: 10px;
+  background: var(--card); border-radius: 14px; box-shadow: var(--shadow);
+}
+.kd-slot-actions.hidden { display: none; }
+.kd-shop-title { margin: 8px 0 8px; font-size: 18px; text-align: center; }
+.kd-shop { display: grid; gap: 8px; margin-bottom: 20px; }
+.kd-shop-card {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  grid-template-rows: auto auto auto;
+  gap: 2px 8px;
+  text-align: left;
+  border: 0; border-radius: 14px; padding: 10px;
+  background: var(--card); box-shadow: 0 3px 0 rgba(0,0,0,.08);
+  font-family: inherit; color: var(--ink); cursor: pointer;
+}
+.kd-shop-card .kd-ico { grid-row: 1 / span 3; font-size: 28px; align-self: center; }
+.kd-shop-card .kd-name { font-weight: 900; font-size: 14px; }
+.kd-shop-card .kd-price { font-weight: 900; font-size: 12px; justify-self: end; }
+.kd-shop-card .kd-rate { font-size: 11px; font-weight: 800; color: #2d6a4f; grid-column: 2; }
+.kd-shop-card .kd-desc { grid-column: 2 / span 2; font-size: 12px; font-weight: 700; opacity: .75; }
+.kd-shop-card.selected { outline: 3px solid #4ecdc4; }
+.kd-shop-card.poor { opacity: .55; }
+body.screen-kingdom .sky { filter: saturate(1.1); }

@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=27" />
+  <link rel="stylesheet" href="style.css?v=28" />
 </head>
 <body data-theme="easy">
   <div class="sky">
@@ -117,6 +117,7 @@
       <button class="btn primary big pulse" id="startBtn">Старт</button>
       <div class="home-actions">
         <button class="btn ghost-btn shop-open" id="openShopBtn" type="button">Магазин</button>
+        <button class="btn ghost-btn" id="openKingdomBtn" type="button">🏰 Королевство</button>
         <button class="btn ghost-btn" id="openBoardBtn" type="button">Лидеры</button>
       </div>
 
@@ -355,6 +356,24 @@
         <div class="safe-result hidden" id="safeResult"></div>
       </div>
     </section>
+    <section class="screen hidden kingdom-screen" id="kingdom" data-screen="kingdom">
+      <header class="sub-head">
+        <button class="back-btn" type="button" data-back="home" aria-label="Назад">←</button>
+        <h1>Королевство</h1>
+      </header>
+      <div class="mascot-stage tiny" id="kingdomStage">
+        <div class="mascot tiny bounce-soft" id="kingdomMascot" aria-hidden="true"></div>
+      </div>
+      <div class="kd-bag" id="kingdomBag"></div>
+      <div class="kd-stats" id="kingdomStats"></div>
+      <p class="kd-pending" id="kingdomPending"></p>
+      <button type="button" class="btn primary" id="kingdomCollectBtn">Собрать со зданий</button>
+      <p class="kd-hint" id="kingdomHint"></p>
+      <div class="kd-map" id="kingdomMap" aria-label="Карта королевства"></div>
+      <div class="kd-slot-actions hidden" id="kingdomSlotActions"></div>
+      <h2 class="kd-shop-title">Строить</h2>
+      <div class="kd-shop" id="kingdomShop"></div>
+    </section>
   </main>
 
   <div class="units-intro hidden" id="unitsIntro" aria-hidden="true">
@@ -451,6 +470,6 @@
       <button type="button" class="btn primary" id="codeIntroSkip">Понятно — в викторину!</button>
     </div>
   </div>
-  <script src="app.js?v=27"></script>
+  <script src="app.js?v=28"></script>
 </body>
 </html>
