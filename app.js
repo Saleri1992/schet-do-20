@@ -643,16 +643,16 @@ const MODE_META = {
   },
   [MODE_CODE]: {
     id: MODE_CODE,
-    name: "Код",
-    unlockText: "Лестница программирования",
+    name: "ПК",
+    unlockText: "Лестница ПК для игр",
     maxLevel: 5,
-    levelNames: ["Шаги", "Переменные", "Если", "Циклы", "Смешанно"],
+    levelNames: ["Папки", "Копии", "Память", "Сеть", "Смешанно"],
     levelDescs: [
-      "Порядок шагов: что дальше?",
-      "Чему равна переменная?",
-      "Условия if",
-      "Сколько раз выполнится цикл?",
-      "Мини-задачки вместе",
+      "Папки — как сундуки: куда класть игры и сохранения",
+      "Копирование и установка игры",
+      "Память и свободное место на диске",
+      "Сеть и IP — как найти друга в онлайне",
+      "Всё вместе: викторина про игровой ПК",
     ],
     themes: ["easy", "medium", "sharp", "hard", "exam"],
   },
@@ -675,10 +675,10 @@ const THEME_META = {
   },
   [THEME_CODE]: {
     id: THEME_CODE,
-    name: "Код",
+    name: "ПК",
     icon: "💻",
     modes: [MODE_CODE],
-    blurb: "Простые шаги, переменные и циклы",
+    blurb: "Папки, память, сеть — чтобы ставить и играть",
   },
 };
 
@@ -695,9 +695,9 @@ const PROFESSIONS = {
     { id: "eng_poly", name: "Полиглот", icon: "🌍", need: 5, desc: "Вся лестница английского" },
   ],
   [THEME_CODE]: [
-    { id: "code_hatch", name: "Юный кодер", icon: "🐣", need: 1, desc: "Первая 10/10 по коду" },
-    { id: "code_dev", name: "Программист", icon: "👨‍💻", need: 3, desc: "3 этапа кода на 10/10" },
-    { id: "code_arch", name: "Архитектор кода", icon: "🏛️", need: 5, desc: "Вся лестница кода" },
+    { id: "code_hatch", name: "Юный геймер-ПК", icon: "🎮", need: 1, desc: "Первая 10/10 по ПК" },
+    { id: "code_dev", name: "Мастер установки", icon: "📦", need: 3, desc: "3 этапа ПК на 10/10" },
+    { id: "code_arch", name: "Админ игрового ПК", icon: "🖥️", need: 5, desc: "Вся лестница ПК" },
   ],
 };
 
@@ -710,12 +710,230 @@ const ENG_LEVELS = {
 };
 
 const CODE_LEVELS = {
-  1: { id: 1, name: "Шаги", theme: "easy", coin: 2, code: "seq", balloons: ["1️⃣", "💻", "2️⃣"], subtitle: "Что идёт дальше в последовательности?" },
-  2: { id: 2, name: "Переменные", theme: "medium", coin: 2, code: "vars", balloons: ["📦", "💻", "🔢"], subtitle: "Чему равна переменная?" },
-  3: { id: 3, name: "Если", theme: "sharp", coin: 3, code: "if", balloons: ["❓", "💻", "✅"], subtitle: "Условия if — что получится?" },
-  4: { id: 4, name: "Циклы", theme: "hard", coin: 4, code: "loop", balloons: ["🔁", "💻", "🔁"], subtitle: "Сколько раз выполнится цикл?" },
-  5: { id: 5, name: "Смешанно", theme: "exam", coin: 5, code: "mixed", balloons: ["🎲", "💻", "🎲"], subtitle: "Мини-задачки вместе." },
+  1: { id: 1, name: "Папки", theme: "easy", coin: 2, code: "folders", intro: true, balloons: ["📁", "🎮", "📂"], subtitle: "Папки — сундуки для игр и сохранений." },
+  2: { id: 2, name: "Копии", theme: "medium", coin: 2, code: "copy", intro: true, balloons: ["📋", "💿", "📦"], subtitle: "Копирование и установка игры." },
+  3: { id: 3, name: "Память", theme: "sharp", coin: 3, code: "memory", intro: true, balloons: ["🧠", "💾", "📊"], subtitle: "Память и место на диске." },
+  4: { id: 4, name: "Сеть", theme: "hard", coin: 4, code: "net", intro: true, balloons: ["🌐", "🏠", "🔢"], subtitle: "Сеть и IP — как найти друга в игре." },
+  5: { id: 5, name: "Смешанно", theme: "exam", coin: 5, code: "mixed", intro: true, balloons: ["🎲", "💻", "🎮"], subtitle: "Вся викторина про игровой ПК." },
 };
+
+const CODE_INTRO_MS = 18 * 1000;
+
+/** Мини-уроки перед викториной: всё на примерах игр. */
+const CODE_LESSONS = {
+  folders: {
+    title: "Папки = сундуки",
+    lead: "На ПК папки нужны, чтобы не потерять игру и сохранения.",
+    points: [
+      { ico: "📁", text: "Папка — как сундук в Minecraft: внутри лежат файлы (карта, моды, сейвы)." },
+      { ico: "🎮", text: "Игру часто кладут в папку Games или в папку с именем игры." },
+      { ico: "💾", text: "Сохранения (сейвы) — отдельные файлы. Их удобно держать в своей папке." },
+      { ico: "🆕", text: "Новая папка = новый сундук. Так легче найти «где моя игра»." },
+    ],
+    tip: "Хаос на рабочем столе = куча лута без сундуков. Папки наводят порядок.",
+  },
+  copy: {
+    title: "Копия и установка",
+    lead: "Поставить игру — это скопировать её файлы в нужное место.",
+    points: [
+      { ico: "📋", text: "Копировать = сделать вторую копию файла. Оригинал остаётся." },
+      { ico: "📦", text: "Установка игры: файлы копируются с диска/Steam в папку на твоём ПК." },
+      { ico: "USB", text: "Флешка — как переносной сундук: скопировал игру другу — у него тоже есть." },
+      { ico: "⚠️", text: "Вырезать (переместить) убирает файл из старого места. Копия — безопаснее." },
+    ],
+    tip: "Перед удалением «лишнего» проверь: это не сейвы любимой игры?",
+  },
+  memory: {
+    title: "Память и место",
+    lead: "Игре нужно и «место в шкафу», и «быстрая память» во время игры.",
+    points: [
+      { ico: "💾", text: "Диск (SSD/HDD) — большой шкаф: сюда ставят игры. Мало места → «не хватает места»." },
+      { ico: "🧠", text: "ОЗУ (RAM) — быстрая память «сейчас»: миры, текстуры, открытые вкладки." },
+      { ico: "📉", text: "Мало ОЗУ → лаги и долгая загрузка, даже если места на диске много." },
+      { ico: "📊", text: "Игра 20 ГБ не встанет на диск, где свободно 5 ГБ. Как рюкзак: не влезет." },
+    ],
+    tip: "Место на диске ≠ ОЗУ. Шкаф и «руки за столом» — разные вещи.",
+  },
+  net: {
+    title: "Сеть и IP",
+    lead: "Онлайн-игра = твой ПК говорит с ПК друга по сети.",
+    points: [
+      { ico: "🌐", text: "Сеть — дороги между компьютерами (Wi‑Fi дома, интернет)." },
+      { ico: "🏠", text: "IP — как адрес дома: «куда стучать», чтобы подключиться к миру." },
+      { ico: "🔢", text: "Дома часто бывает адрес вроде 192.168.0.10 — это твой ПК в домашней сети." },
+      { ico: "🤝", text: "В Minecraft/других играх «войти к другу» как раз использует адрес/код комнаты." },
+    ],
+    tip: "IP не секретный пароль от аккаунта — это адрес. Пароль не показывай никому.",
+  },
+  mixed: {
+    title: "Всё вместе",
+    lead: "Папки + копии + память + сеть = умеешь ставить игры и играть с друзьями.",
+    points: [
+      { ico: "📁", text: "Папка — сундук для файлов игры." },
+      { ico: "📦", text: "Установка — копирование файлов на диск." },
+      { ico: "💾", text: "Место на диске — влезет ли игра; ОЗУ — хватит ли «сейчас»." },
+      { ico: "🌐", text: "IP/сеть — как найти друга в онлайне." },
+    ],
+    tip: "Сейчас викторина по всем темам. Вспоминай игровые примеры!",
+  },
+};
+
+/** Банк вопросов викторины ПК (правильный ответ — строка из choices). */
+const CODE_QUIZ = {
+  folders: [
+    {
+      q: "Папка на ПК больше всего похожа на…",
+      choices: ["сундук в игре, куда кладут вещи", "кнопку «прыжок»", "звук музыки"],
+      ok: "сундук в игре, куда кладут вещи",
+      hint: "В сундуке хранят лут — в папке файлы.",
+    },
+    {
+      q: "Зачем создавать папку «Мои игры»?",
+      choices: ["чтобы легко найти установленные игры", "чтобы ускорить Wi‑Fi", "чтобы сменить обои"],
+      ok: "чтобы легко найти установленные игры",
+      hint: "Порядок = быстрее найти нужную игру.",
+    },
+    {
+      q: "Сохранение (сейв) Minecraft обычно лежит…",
+      choices: ["в файле/папке на диске", "только в облаке магии", "в кнопке Esc"],
+      ok: "в файле/папке на диске",
+      hint: "Сейв — обычный файл в папке мира.",
+    },
+    {
+      q: "На рабочем столе 30 ярлыков игр без папок. Это…",
+      choices: ["хаос — лучше разложить по папкам", "обязательно для скорости", "увеличивает ОЗУ"],
+      ok: "хаос — лучше разложить по папкам",
+      hint: "Сундуки помогают не потерять лут.",
+    },
+    {
+      q: "Новая папка — это…",
+      choices: ["пустой «сундук» для файлов", "новая видеокарта", "новый IP"],
+      ok: "пустой «сундук» для файлов",
+      hint: "Сначала пусто — потом кладёшь файлы.",
+    },
+    {
+      q: "Моды к игре удобно держать…",
+      choices: ["в отдельной папке модов", "в корзине", "в пароле от Wi‑Fi"],
+      ok: "в отдельной папке модов",
+      hint: "Своя полка = проще включать/выключать моды.",
+    },
+  ],
+  copy: [
+    {
+      q: "Скопировать файл игры значит…",
+      choices: ["сделать вторую копию, оригинал остаётся", "навсегда стереть оригинал", "выключить ПК"],
+      ok: "сделать вторую копию, оригинал остаётся",
+      hint: "Copy ≠ Cut.",
+    },
+    {
+      q: "Установка игры чаще всего…",
+      choices: ["копирует файлы игры в папку на диске", "рисует новый монитор", "меняет IP друга"],
+      ok: "копирует файлы игры в папку на диске",
+      hint: "Installer кладёт файлы «на полку» диска.",
+    },
+    {
+      q: "Скопировал сейв на флешку другу. У тебя сейв…",
+      choices: ["остаётся на твоём ПК", "исчезает навсегда", "превращается в мод"],
+      ok: "остаётся на твоём ПК",
+      hint: "Копия — у обоих есть свой файл.",
+    },
+    {
+      q: "«Вырезать» файл и вставить в другую папку…",
+      choices: ["перемещает файл (в старом месте его нет)", "создаёт бесконечные копии", "чинит лаги"],
+      ok: "перемещает файл (в старом месте его нет)",
+      hint: "Move убирает из старого сундука.",
+    },
+    {
+      q: "Перед удалением папки с игрой проверь…",
+      choices: ["нет ли там нужных сохранений", "какого цвета обои", "номер школы"],
+      ok: "нет ли там нужных сохранений",
+      hint: "Сейвы часто рядом с игрой.",
+    },
+    {
+      q: "Зачем копировать мир Minecraft на другой ПК?",
+      choices: ["чтобы продолжить строить там же", "чтобы увеличить ОЗУ", "чтобы сменить IP роутера"],
+      ok: "чтобы продолжить строить там же",
+      hint: "Мир = файлы. Скопировал файлы — мир с тобой.",
+    },
+  ],
+  memory: [
+    {
+      q: "Игра весит 40 ГБ, свободно 10 ГБ. Что будет?",
+      choices: ["не хватит места — не установится", "установится быстрее обычного", "само удалит школьные файлы"],
+      ok: "не хватит места — не установится",
+      hint: "Рюкзак меньше лута — не влезет.",
+    },
+    {
+      q: "ОЗУ (оперативная память) больше похожа на…",
+      choices: ["рабочий стол для дел «прямо сейчас»", "огромный склад в подвале", "цвет курсора"],
+      ok: "рабочий стол для дел «прямо сейчас»",
+      hint: "RAM — быстрая память во время игры.",
+    },
+    {
+      q: "Место на диске нужно, чтобы…",
+      choices: ["хранить установленные игры и сейвы", "прыгать выше в игре", "менять ник в чате"],
+      ok: "хранить установленные игры и сейвы",
+      hint: "Диск = шкаф для игр.",
+    },
+    {
+      q: "Мало ОЗУ во время тяжёлой игры часто даёт…",
+      choices: ["лаги и долгие загрузки", "бесплатные скины", "новый IP"],
+      ok: "лаги и долгие загрузки",
+      hint: "«Рукам за столом» не хватает места.",
+    },
+    {
+      q: "Удалил старые игры — стало больше…",
+      choices: ["свободного места на диске", "скорости света", "паролей Wi‑Fi"],
+      ok: "свободного места на диске",
+      hint: "Освободили шкаф.",
+    },
+    {
+      q: "Диск и ОЗУ — это…",
+      choices: ["разные виды памяти (шкаф и «сейчас»)", "одно и то же", "только для принтеров"],
+      ok: "разные виды памяти (шкаф и «сейчас»)",
+      hint: "Шкаф ≠ стол.",
+    },
+  ],
+  net: [
+    {
+      q: "Зачем нужна сеть / интернет для онлайн-игры?",
+      choices: ["чтобы ПК мог связаться с ПК друга", "чтобы папки стали цветными", "чтобы увеличить вес игры"],
+      ok: "чтобы ПК мог связаться с ПК друга",
+      hint: "Онлайн = разговор по «дорогам» сети.",
+    },
+    {
+      q: "IP-адрес проще понять как…",
+      choices: ["адрес дома, куда стучаться", "пароль от аккаунта Steam", "название папки"],
+      ok: "адрес дома, куда стучаться",
+      hint: "Адрес ≠ пароль.",
+    },
+    {
+      q: "192.168.0.5 чаще всего…",
+      choices: ["адрес устройства в домашней сети", "код читов", "размер игры в ГБ"],
+      ok: "адрес устройства в домашней сети",
+      hint: "192.168… — типичный домашний адрес.",
+    },
+    {
+      q: "Wi‑Fi дома — это…",
+      choices: ["беспроводная сеть между роутером и устройствами", "вид оперативной памяти", "папка с модами"],
+      ok: "беспроводная сеть между роутером и устройствами",
+      hint: "Воздушная «дорога» к роутеру.",
+    },
+    {
+      q: "Друг дал «код комнаты» / адрес сервера. Это чтобы…",
+      choices: ["твой клиент нашёл нужный мир/сервер", "увеличить ОЗУ", "создать папку"],
+      ok: "твой клиент нашёл нужный мир/сервер",
+      hint: "Как номер квартиры для встречи.",
+    },
+    {
+      q: "Можно ли светить пароль от аккаунта как «IP»?",
+      choices: ["нет, пароль — секрет, IP — адрес", "да, это одно и то же", "только по понедельникам"],
+      ok: "нет, пароль — секрет, IP — адрес",
+      hint: "Пароль никому. IP — просто адрес.",
+    },
+  ],
+};
+
 
 const ENG_WORDS = {
   animals: [
@@ -1034,7 +1252,7 @@ const SKILLS = {
     needProfession: "code_dev",
     durationMs: 0,
     cooldownMs: 28 * 1000,
-    desc: "Подсказка-ответ. Открывается профессией «Программист». КД 28 сек.",
+    desc: "Подсказка-ответ. Открывается профессией «Мастер установки». КД 28 сек.",
   },
 };
 
@@ -2718,88 +2936,32 @@ function generateEngProblem(level) {
   return generateEngQuiz(ENG_WORDS[kind] || ENG_WORDS.animals);
 }
 
-function generateCodeSeq() {
-  const start = rand(1, 5);
-  const step = rand(1, 3);
-  const seq = [start, start + step, start + step * 2];
-  const next = start + step * 3;
-  const q = shuffleChoices(next, [next, next + 1, next - 1, next + step, start]);
-  return {
-    text: `Шаги: ${seq.join(" → ")} → ?`,
-    hint: "Что дальше?",
-    choices: q.choices.map(String),
-    answer: q.answer,
-    choice: true,
-    op: "CODE",
-  };
-}
-
-function generateCodeVars() {
-  const x = rand(2, 9);
-  const y = rand(1, 6);
-  const roll = Math.random();
-  if (roll < 0.4) {
-    return { text: `x = ${x}
-Чему равно x?`, answer: x, hint: "Прочитай переменную", op: "CODE", a: x, b: 0 };
+function pickCodeQuizItem(kind) {
+  if (kind === "mixed") {
+    const keys = ["folders", "copy", "memory", "net"];
+    const k = keys[rand(0, keys.length - 1)];
+    const bank = CODE_QUIZ[k];
+    return { kind: k, item: bank[rand(0, bank.length - 1)] };
   }
-  if (roll < 0.7) {
-    return { text: `x = ${x}
-y = ${y}
-x + y = ?`, answer: x + y, hint: "Сложи переменные", op: "CODE", a: x, b: y };
-  }
-  return { text: `x = ${x}
-x + 2 = ?`, answer: x + 2, hint: "Прибавь 2", op: "CODE", a: x, b: 2 };
-}
-
-function generateCodeIf() {
-  const a = rand(2, 9);
-  const b = rand(1, 9);
-  const useGt = Math.random() < 0.5;
-  const cond = useGt ? a > b : a === b;
-  const yes = rand(3, 9);
-  const no = rand(1, 5);
-  const result = cond ? yes : no;
-  const op = useGt ? ">" : "==";
-  const q = shuffleChoices(result, [yes, no, a, b, yes + 1]);
-  return {
-    text: `if (${a} ${op} ${b}) → ${yes}
-иначе → ${no}
-Результат?`,
-    hint: "Проверь условие",
-    choices: q.choices.map(String),
-    answer: q.answer,
-    choice: true,
-    op: "CODE",
-  };
-}
-
-function generateCodeLoop() {
-  const times = rand(2, 6);
-  const add = rand(1, 4);
-  const start = rand(0, 3);
-  const result = start + times * add;
-  return {
-    text: `x = ${start}
-повторить ${times} раз:
-  x = x + ${add}
-x = ?`,
-    answer: result,
-    hint: "Цикл: прибавляй снова и снова",
-    op: "CODE",
-    a: times,
-    b: add,
-  };
+  const bank = CODE_QUIZ[kind] || CODE_QUIZ.folders;
+  return { kind, item: bank[rand(0, bank.length - 1)] };
 }
 
 function generateCodeProblem(level) {
   const cfg = levelCfg(level, MODE_CODE);
   const kind = cfg.code || "mixed";
-  if (kind === "seq") return generateCodeSeq();
-  if (kind === "vars") return generateCodeVars();
-  if (kind === "if") return generateCodeIf();
-  if (kind === "loop") return generateCodeLoop();
-  const fns = [generateCodeSeq, generateCodeVars, generateCodeIf, generateCodeLoop];
-  return fns[rand(0, fns.length - 1)]();
+  const { item } = pickCodeQuizItem(kind);
+  const q = shuffleChoices(item.ok, item.choices);
+  return {
+    text: item.q,
+    hint: item.hint || "Вспомни мини-урок перед стартом",
+    choices: q.choices,
+    answer: q.answer,
+    choice: true,
+    op: "PC",
+    a: item.q,
+    b: item.ok,
+  };
 }
 
 function generateProblem(level) {
@@ -3789,6 +3951,50 @@ function showDivIntro() {
   });
 }
 
+function showCodeIntro(level) {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById("codeIntro");
+    const countEl = document.getElementById("codeCountdown");
+    const titleEl = document.getElementById("codeIntroTitle");
+    const leadEl = document.getElementById("codeIntroLead");
+    const bodyEl = document.getElementById("codeIntroBody");
+    const tipEl = document.getElementById("codeIntroTip");
+    const skipBtn = document.getElementById("codeIntroSkip");
+    if (!overlay || !countEl || !bodyEl) {
+      resolve();
+      return;
+    }
+    const cfg = levelCfg(level, MODE_CODE);
+    const lesson = CODE_LESSONS[cfg.code] || CODE_LESSONS.folders;
+    if (titleEl) titleEl.textContent = lesson.title;
+    if (leadEl) leadEl.textContent = lesson.lead;
+    if (tipEl) tipEl.textContent = lesson.tip || "";
+    bodyEl.innerHTML = (lesson.points || []).map((p) =>
+      `<div class="code-lesson-row"><span class="code-lesson-ico">${p.ico}</span><span>${escapeHtml(p.text)}</span></div>`
+    ).join("");
+    let left = Math.round(CODE_INTRO_MS / 1000);
+    countEl.textContent = String(left);
+    overlay.classList.remove("hidden");
+    overlay.setAttribute("aria-hidden", "false");
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      clearInterval(tick);
+      if (skipBtn) skipBtn.removeEventListener("click", finish);
+      overlay.classList.add("hidden");
+      overlay.setAttribute("aria-hidden", "true");
+      resolve();
+    };
+    const tick = setInterval(() => {
+      left -= 1;
+      countEl.textContent = String(Math.max(0, left));
+      if (left <= 0) finish();
+    }, 1000);
+    if (skipBtn) skipBtn.addEventListener("click", finish);
+  });
+}
+
 async function startGame() {
   if (startGame.busy) return;
   startGame.busy = true;
@@ -3816,6 +4022,10 @@ async function startGame() {
     if (selectedMode === MODE_DIV && !isBattle && (cfg.intro || cfg.div === "intro")) {
       showScreen("home");
       await showDivIntro();
+    }
+    if (selectedMode === MODE_CODE && !isBattle) {
+      showScreen("home");
+      await showCodeIntro(startLevel);
     }
     const battleFx = isBattle ? equippedBattlePassives() : {};
     const heroBase = (bcfg && bcfg.heroHp) || BATTLE_HERO_HP;
@@ -5589,32 +5799,32 @@ ACHIEVEMENTS.push(
   {
     id: "code_open",
     icon: "💻",
-    name: "Первый код",
-    desc: "Пройди любой этап программирования",
+    name: "Первый ПК-урок",
+    desc: "Пройди любой этап про ПК",
     check: (s) => s.runs.some((r) => r.mode === MODE_CODE),
     progress: (s) => ({ current: s.runs.filter((r) => r.mode === MODE_CODE).length, target: 1 }),
   },
   {
     id: "code_seq",
-    icon: "1️⃣",
-    name: "Шаг за шагом",
-    desc: "10/10 на этапе «Шаги»",
+    icon: "📁",
+    name: "Сундуки-папки",
+    desc: "10/10 на этапе «Папки»",
     check: (s) => s.runs.some((r) => r.mode === MODE_CODE && (r.level || 1) === 1 && r.correct === 10),
     progress: (s) => ({ current: s.runs.filter((r) => r.mode === MODE_CODE && (r.level || 1) === 1).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }),
   },
   {
     id: "code_all",
-    icon: "🏛️",
-    name: "Вся лестница кода",
-    desc: "10/10 на всех 5 этапах кода",
+    icon: "🖥️",
+    name: "Вся лестница ПК",
+    desc: "10/10 на всех 5 этапах ПК",
     check: (s) => [1, 2, 3, 4, 5].every((lvl) => s.runs.some((r) => r.mode === MODE_CODE && (r.level || 1) === lvl && r.correct === 10)),
     progress: (s) => ({ current: [1, 2, 3, 4, 5].filter((lvl) => s.runs.some((r) => r.mode === MODE_CODE && (r.level || 1) === lvl && r.correct === 10)).length, target: 5 }),
   },
   {
     id: "code_arch",
-    icon: "👨‍💻",
-    name: "Архитектор",
-    desc: "Получи профессию «Архитектор кода»",
+    icon: "🎮",
+    name: "Админ игрового ПК",
+    desc: "Получи профессию «Админ игрового ПК»",
     check: () => professionUnlocked("code_arch"),
     progress: () => {
       const p = professionFor(THEME_CODE);

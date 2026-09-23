@@ -3940,3 +3940,37 @@ body.choice-mode .keypad .key[data-key="9"] {
   font-size: clamp(16px, 4.4vw, 22px);
   line-height: 1.35;
 }
+
+
+/* ПК-уроки перед викториной */
+.code-intro-card {
+  width: min(480px, 100%);
+  max-height: min(92vh, 720px);
+  overflow: auto;
+}
+.code-intro-body {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.code-lesson-row {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 8px;
+  align-items: start;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  font-weight: 800;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.code-lesson-ico {
+  font-size: 22px;
+  line-height: 1.1;
+  text-align: center;
+}
+#codeIntroSkip {
+  width: 100%;
+  margin-top: 10px;
+}
