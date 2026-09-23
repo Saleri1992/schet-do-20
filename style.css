@@ -1832,7 +1832,7 @@ body[data-theme="hard"] .wallet-item.coins { color: #6a3d00; }
   padding: 20px 12px 22px;
   border-radius: 8px;
   overflow: hidden;
-  min-height: 240px;
+  min-height: calc(120px + var(--map-rows, 4) * 108px);
   border: 4px solid #3a2f24;
   box-shadow:
     inset 0 0 0 2px #6b5344,
@@ -1877,6 +1877,13 @@ body[data-theme="hard"] .wallet-item.coins { color: #6a3d00; }
   background-size: 16px 16px;
 }
 .map-path { display: none; }
+.map-trails {
+  position: absolute;
+  inset: 12px 8px 18px;
+  z-index: 0;
+  pointer-events: none;
+  overflow: visible;
+}
 .map-nodes {
   position: relative;
   z-index: 1;
@@ -1885,7 +1892,121 @@ body[data-theme="hard"] .wallet-item.coins { color: #6a3d00; }
   gap: 22px 10px;
   padding-top: 6px;
 }
+.map-nodes.nonlinear {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-auto-rows: minmax(100px, auto);
+  gap: 18px 6px;
+  align-items: end;
+}
 
+.map-token.mc-mascot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 6;
+  width: 32px;
+  height: 42px;
+  pointer-events: none;
+  transition: transform 0.4s cubic-bezier(0.2, 1.2, 0.4, 1);
+  filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.35));
+  animation: map-idle-bounce 0.7s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+.map-token.mc-mascot .mc-hat {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  line-height: 1;
+  z-index: 2;
+}
+.map-token.mc-mascot .mc-weapon {
+  position: absolute;
+  right: -6px;
+  top: 16px;
+  font-size: 11px;
+  line-height: 1;
+  z-index: 2;
+  filter: drop-shadow(0 1px 0 rgba(0,0,0,.3));
+}
+.map-token.mc-mascot .mc-head {
+  display: block;
+  width: 16px;
+  height: 16px;
+  margin: 2px auto 0;
+  background: var(--skin, #ffd166);
+  box-shadow: inset -3px 0 0 rgba(0,0,0,.18), inset 0 -3px 0 rgba(0,0,0,.12);
+  border: 2px solid #2b2118;
+  position: relative;
+  image-rendering: pixelated;
+}
+.map-token.mc-mascot .mc-head::before,
+.map-token.mc-mascot .mc-head::after {
+  content: "";
+  position: absolute;
+  top: 5px;
+  width: 3px;
+  height: 3px;
+  background: #1a120c;
+}
+.map-token.mc-mascot .mc-head::before { left: 2px; }
+.map-token.mc-mascot .mc-head::after { right: 2px; }
+.map-token.mc-mascot .mc-torso {
+  display: block;
+  width: 14px;
+  height: 12px;
+  margin: 0 auto;
+  background: var(--inner, #f07167);
+  border: 2px solid #2b2118;
+  border-top: 0;
+  box-shadow: inset -3px 0 0 rgba(0,0,0,.2);
+}
+.map-token.mc-mascot .mc-legs {
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+  margin-top: -1px;
+}
+.map-token.mc-mascot .mc-legs i {
+  display: block;
+  width: 5px;
+  height: 8px;
+  background: var(--skin, #ffd166);
+  border: 2px solid #2b2118;
+  border-top: 0;
+  box-sizing: border-box;
+}
+.map-token.mc-mascot.form-cat .mc-ear {
+  position: absolute;
+  top: 0;
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-bottom: 7px solid var(--skin, #ffb4a2);
+  z-index: 1;
+}
+.map-token.mc-mascot.form-cat .mc-ear.l { left: 4px; }
+.map-token.mc-mascot.form-cat .mc-ear.r { right: 4px; }
+.map-token.mc-mascot.form-hedgehog .mc-head {
+  box-shadow:
+    inset -3px 0 0 rgba(0,0,0,.18),
+    -2px -3px 0 var(--inner, #8d6e63),
+    2px -3px 0 var(--inner, #8d6e63),
+    0 -4px 0 var(--inner, #8d6e63);
+}
+.map-token.mc-mascot.travel {
+  animation: map-travel-hop 0.5s steps(6);
+}
+.map-token.mc-mascot.travel .mc-legs i:first-child {
+  transform: rotate(-18deg);
+}
+.map-token.mc-mascot.travel .mc-legs i:last-child {
+  transform: rotate(18deg);
+}
+
+/* legacy steve kept harmless */
 .map-token.mc-steve {
   position: absolute;
   top: 0;
@@ -1947,10 +2068,16 @@ body[data-theme="hard"] .wallet-item.coins { color: #6a3d00; }
   color: #1e1a14;
 }
 .map-node.mc-block.zig { margin-top: 12px; }
+.map-node.mc-block.fork { transform: scale(0.98); }
+.map-node.mc-block.arena {
+  min-height: 122px;
+}
+.map-node.mc-block.arena .mc-cube .mc-top { background: #c45c26; }
+.map-node.mc-block.arena .mc-cube .mc-left { background: #8a3d18; }
+.map-node.mc-block.arena .mc-cube .mc-right { background: #a84a1c; }
 .map-node.mc-block.boss {
-  grid-column: 1 / -1;
   margin-top: 0;
-  min-height: 128px;
+  min-height: 122px;
 }
 
 .mc-cube {
@@ -2151,6 +2278,19 @@ body[data-theme="hard"] .wallet-item.coins { color: #6a3d00; }
 @keyframes map-hop {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
+}
+@keyframes map-idle-bounce {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -4px; }
+}
+@keyframes map-travel-hop {
+  0% { translate: 0 0; }
+  15% { translate: 0 -14px; }
+  30% { translate: 0 -2px; }
+  45% { translate: 0 -12px; }
+  60% { translate: 0 0; }
+  75% { translate: 0 -8px; }
+  100% { translate: 0 0; }
 }
 
 

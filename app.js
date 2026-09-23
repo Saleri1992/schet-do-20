@@ -1820,6 +1820,100 @@ function xpInfo() {
   };
 }
 
+function mapLayoutForMode(mode = selectedMode) {
+  // Нелинейная карта: старт линейный, дальше развилки и арена боёв.
+  if (mode === MODE_UNITS) {
+    return [
+      { id: 1, kind: "level", col: 2, row: 1 },
+      { id: 2, kind: "level", col: 4, row: 1 },
+      { id: 7, kind: "boss", col: 1, row: 2 },
+      { id: 8, kind: "boss", col: 3, row: 3 },
+      { id: 9, kind: "boss", col: 5, row: 2 },
+    ];
+  }
+  if (mode === MODE_MUL || mode === MODE_DIV) {
+    return [
+      { id: 1, kind: "level", col: 2, row: 1 },
+      { id: 2, kind: "level", col: 4, row: 1 },
+      { id: 3, kind: "level", col: 3, row: 2 },
+      { id: 4, kind: "level", col: 1, row: 3 },
+      { id: 5, kind: "level", col: 5, row: 3 },
+      { id: 7, kind: "boss", col: 2, row: 4 },
+      { id: 8, kind: "boss", col: 4, row: 5 },
+      { id: 9, kind: "boss", col: 3, row: 6 },
+    ];
+  }
+  // База / 2 действия: старт → развилка → секрет сбоку → арена боёв
+  return [
+    { id: 1, kind: "level", col: 2, row: 1 },
+    { id: 2, kind: "level", col: 4, row: 1 },
+    { id: 3, kind: "level", col: 3, row: 2 },
+    { id: 4, kind: "level", col: 1, row: 3 },
+    { id: 5, kind: "level", col: 5, row: 3 },
+    { id: SECRET_LEVEL, kind: "secret", col: 6, row: 4 },
+    { id: 7, kind: "boss", col: 2, row: 5 },
+    { id: 8, kind: "boss", col: 4, row: 4 },
+    { id: 9, kind: "boss", col: 3, row: 6 },
+  ];
+}
+
+function mapTokenHtml() {
+  const shop = state.shop || emptyShop();
+  const skin = SKINS[shop.skin] || SKINS.honey;
+  const eq = shop.equip || emptyEquip();
+  const hat = eq.head && eq.head !== "none" ? (HATS[eq.head]?.icon || "") : "";
+  const form = skin.form || "blob";
+  const weapon = eq.weapon && eq.weapon !== "none" ? (WEAPONS[eq.weapon]?.icon || "") : "";
+  return `<div class="map-token mc-mascot form-${form}" id="mapToken" aria-hidden="true"
+      style="--skin:${skin.body};--inner:${skin.inner};">
+      ${hat ? `<span class="mc-hat">${hat}</span>` : ""}
+      ${form === "cat" ? '<span class="mc-ear l"></span><span class="mc-ear r"></span>' : ""}
+      <span class="mc-head"></span>
+      <span class="mc-torso"></span>
+      <span class="mc-legs"><i></i><i></i></span>
+      ${weapon ? `<span class="mc-weapon">${weapon}</span>` : ""}
+    </div>`;
+}
+
+function mapPathSvg(layout) {
+  // Простые «тропинки» между соседними по прогрессии узлами
+  const byId = Object.fromEntries(layout.map((n) => [n.id, n]));
+  const links = [];
+  const normals = layout.filter((n) => n.kind === "level").map((n) => n.id).sort((a, b) => a - b);
+  for (let i = 0; i < normals.length - 1; i += 1) links.push([normals[i], normals[i + 1]]);
+  if (byId[SECRET_LEVEL] && byId[5]) links.push([5, SECRET_LEVEL]);
+  if (byId[5] && byId[7]) links.push([5, 7]);
+  else if (byId[2] && byId[7] && !byId[5]) links.push([2, 7]);
+  else if (byId[normals[normals.length - 1]] && byId[7]) links.push([normals[normals.length - 1], 7]);
+  if (byId[7] && byId[8]) links.push([7, 8]);
+  if (byId[8] && byId[9]) links.push([8, 9]);
+  // Также короткая развилка 3→4 и 3→5
+  if (byId[3] && byId[4]) links.push([3, 4]);
+  if (byId[3] && byId[5]) links.push([3, 5]);
+
+  const cellW = 100 / 6;
+  const maxRow = Math.max(...layout.map((n) => n.row));
+  const cellH = 100 / Math.max(maxRow, 1);
+  const center = (n) => ({
+    x: (n.col - 0.5) * cellW,
+    y: (n.row - 0.35) * cellH,
+  });
+  const d = links.map(([a, b]) => {
+    const A = byId[a];
+    const B = byId[b];
+    if (!A || !B) return "";
+    const p = center(A);
+    const q = center(B);
+    const mx = (p.x + q.x) / 2;
+    const my = (p.y + q.y) / 2 - 4;
+    return `M ${p.x} ${p.y} Q ${mx} ${my} ${q.x} ${q.y}`;
+  }).filter(Boolean).join(" ");
+  return `<svg class="map-trails" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+    <path d="${d}" fill="none" stroke="#5a3d1e" stroke-width="1.8" stroke-linecap="round" opacity=".55"/>
+    <path d="${d}" fill="none" stroke="#c4a574" stroke-width="0.9" stroke-linecap="round" stroke-dasharray="2 2" opacity=".9"/>
+  </svg>`;
+}
+
 function renderLevels() {
   if (!isBattleLevel(selectedLevel) && selectedLevel !== SECRET_LEVEL && !isLevelOpen(selectedLevel)) {
     selectedLevel = maxOpenLevel();
@@ -1827,13 +1921,13 @@ function renderLevels() {
   const modeInfo = MODE_META[selectedMode] || MODE_META[MODE_BASIC];
   const root = document.getElementById("levels");
   if (!root) return;
-  const maxNormal = normalMaxLevel();
-  const nodes = [];
-  for (let id = 1; id <= maxNormal; id += 1) nodes.push({ id, kind: "level" });
-  if (modeHasSecret()) nodes.push({ id: SECRET_LEVEL, kind: "secret" });
-  BATTLE_LEVELS.forEach((id) => nodes.push({ id, kind: "boss" }));
+  const layout = mapLayoutForMode().filter((n) => {
+    if (n.kind === "secret") return modeHasSecret();
+    if (n.kind === "level") return n.id <= normalMaxLevel();
+    return true;
+  });
 
-  const dots = nodes.map((node, i) => {
+  const dots = layout.map((node) => {
     const id = node.id;
     const open = isLevelOpen(id);
     const cfg = levelCfg(id);
@@ -1870,8 +1964,8 @@ function renderLevels() {
     const ico = node.kind === "boss"
       ? (foeIco[battleCfg(id).foe] || "🐉")
       : node.kind === "secret" ? "🗝️" : (done ? "⭐" : "⛏️");
-    const zig = i % 2 === 1 ? " zig" : "";
-    return `<button type="button" class="map-node mc-block ${theme}${selected}${locked}${done}${zig}" data-level="${id}">
+    const branch = node.kind === "boss" ? " arena" : (node.row >= 3 && node.kind === "level" ? " fork" : "");
+    return `<button type="button" class="map-node mc-block ${theme}${selected}${locked}${done}${branch}" data-level="${id}" style="grid-column:${node.col};grid-row:${node.row}">
       <span class="mc-cube" aria-hidden="true">
         <span class="mc-top"></span>
         <span class="mc-left"></span>
@@ -1885,16 +1979,14 @@ function renderLevels() {
     </button>`;
   }).join("");
 
+  const maxRow = Math.max(...layout.map((n) => n.row), 1);
   root.innerHTML = `
-    <div class="adventure-map mc-world" id="adventureMap">
+    <div class="adventure-map mc-world" id="adventureMap" style="--map-rows:${maxRow}">
       <div class="mc-sky" aria-hidden="true"></div>
       <div class="mc-ground" aria-hidden="true"></div>
-      <div class="map-path" aria-hidden="true"></div>
-      <div class="map-nodes">${dots}</div>
-      <div class="map-token mc-steve" id="mapToken" aria-hidden="true">
-        <span class="steve-head"></span>
-        <span class="steve-body"></span>
-      </div>
+      ${mapPathSvg(layout)}
+      <div class="map-nodes nonlinear">${dots}</div>
+      ${mapTokenHtml()}
     </div>`;
   requestAnimationFrame(() => placeMapToken(selectedLevel, false));
   document.querySelectorAll("#modeTabs .filter-btn").forEach((btn) => {
@@ -1912,11 +2004,11 @@ function placeMapToken(levelId, animate) {
   if (!token || !node || !map) return;
   const mr = map.getBoundingClientRect();
   const nr = node.getBoundingClientRect();
-  const x = nr.left - mr.left + nr.width / 2 - 14;
-  const y = nr.top - mr.top - 18;
-  if (animate) token.classList.add("travel");
+  const x = nr.left - mr.left + nr.width / 2 - 16;
+  const y = nr.top - mr.top - 10;
+  token.classList.toggle("travel", !!animate);
   token.style.transform = `translate(${x}px, ${y}px)`;
-  if (animate) setTimeout(() => token.classList.remove("travel"), 450);
+  if (animate) setTimeout(() => token.classList.remove("travel"), 520);
 }
 
 function formatTime(ms) {
