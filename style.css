@@ -3411,9 +3411,9 @@ body.fw-perfect .fw-canvas {
   #game .answer-box { min-height: 32px; font-size: 20px; }
 }
 
-#shopTabs { grid-template-columns: repeat(4, 1fr); }
+#shopTabs { grid-template-columns: repeat(3, 1fr); }
 @media (min-width: 560px) {
-  #shopTabs { grid-template-columns: repeat(7, 1fr); }
+  #shopTabs { grid-template-columns: repeat(5, 1fr); }
 }
 
 .shop-card.locked-rank { opacity: 0.75; filter: saturate(0.86); }
@@ -3565,3 +3565,133 @@ body.fw-perfect .fw-canvas {
 body[data-sky="secretNight"] .sky {
   background: linear-gradient(180deg, rgba(20, 12, 40, 0.35), transparent 55%);
 }
+
+/* RPG paper-doll */
+.paper-doll-wrap { margin: 0 0 12px; }
+.paper-doll {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+.paper-slots {
+  display: grid;
+  gap: 6px;
+}
+.paper-slot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 12px;
+  padding: 8px 10px;
+  background: var(--hist);
+  font-family: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  color: var(--ink);
+}
+.paper-slot.on {
+  background: var(--coral);
+  color: #fff;
+}
+.paper-ico { font-size: 18px; min-width: 28px; text-align: center; }
+.paper-lbl { font-size: 13px; }
+.paper-preview { display: flex; justify-content: center; min-width: 110px; }
+.shop-section {
+  grid-column: 1 / -1;
+  font-weight: 900;
+  font-size: 14px;
+  margin: 6px 0 2px;
+  opacity: 0.7;
+}
+
+/* Battle arena + bolts */
+.battle-arena {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: end;
+  gap: 6px;
+  margin: 0 0 8px;
+  min-height: 96px;
+  padding: 6px 4px 2px;
+}
+.battle-arena.hidden { display: none; }
+.arena-fighter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.arena-tag {
+  font-size: 11px;
+  font-weight: 900;
+  opacity: 0.75;
+}
+.arena-vs {
+  font-weight: 900;
+  font-size: 14px;
+  opacity: 0.45;
+  padding-bottom: 28px;
+}
+.arena-bolts {
+  position: absolute;
+  inset: 20% 18% 30%;
+  pointer-events: none;
+  overflow: visible;
+}
+.battle-bolt {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  top: 40%;
+  left: 0;
+  box-shadow: 0 0 10px currentColor;
+}
+.battle-bolt.hero-hit {
+  background: radial-gradient(circle at 30% 30%, #fff, #4ecdc4 55%, #2a9d8f);
+  color: #4ecdc4;
+  animation: bolt-right 0.45s ease-out forwards;
+}
+.battle-bolt.foe-hit {
+  background: radial-gradient(circle at 30% 30%, #fff, #ff7a59 55%, #c95a3f);
+  color: #ff7a59;
+  left: auto;
+  right: 0;
+  animation: bolt-left 0.45s ease-out forwards;
+}
+.arena-fighter.hit-shake {
+  animation: hit-shake 0.45s ease;
+}
+#gameStage.hidden-by-battle { display: none; }
+
+@keyframes bolt-right {
+  0% { left: 8%; transform: scale(0.6); opacity: 0; }
+  20% { opacity: 1; }
+  100% { left: 82%; transform: scale(1.15); opacity: 0; }
+}
+@keyframes bolt-left {
+  0% { right: 8%; left: auto; transform: scale(0.6); opacity: 0; }
+  20% { opacity: 1; }
+  100% { right: 82%; left: auto; transform: scale(1.15); opacity: 0; }
+}
+@keyframes hit-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px) rotate(-3deg); }
+  50% { transform: translateX(5px) rotate(3deg); }
+  75% { transform: translateX(-3px); }
+}
+
+@media (max-height: 720px) {
+  .battle-arena { min-height: 72px; margin-bottom: 4px; }
+  .arena-mascot svg { width: 56px !important; height: 56px !important; }
+  .paper-doll { grid-template-columns: 1fr; }
+  .paper-preview { display: none; }
+}
+

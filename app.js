@@ -14,9 +14,34 @@ const MODE_MUL = "mul";
 const MODE_DIV = "div";
 const SECRET_LEVEL = 6;
 const BATTLE_LEVEL = 7;
+const BATTLE_LEVELS = [7, 8, 9];
 const EXTRA_MAX_PER_RUN = 2;
 const BATTLE_HERO_HP = 5;
 const BATTLE_BOSS_HP = 10;
+const ACCESSORY_MAX = 2;
+const BATTLE_CFG = {
+  7: {
+    id: 7, name: "Бой 1", theme: "boss", coin: 12,
+    heroHp: 5, bossHp: 8, rewardMul: 1, roundFrac: 0.6,
+    foe: "slime", foeName: "Слизень",
+    balloons: ["🟢", "⚔️", "🟢"],
+    subtitle: "Первый бой: короче раунды, 5 HP у тебя, 8 у Задания.",
+  },
+  8: {
+    id: 8, name: "Бой 2", theme: "boss", coin: 16,
+    heroHp: 5, bossHp: 12, rewardMul: 1.4, roundFrac: 1,
+    foe: "rock", foeName: "Камень",
+    balloons: ["🪨", "⚔️", "🪨"],
+    subtitle: "Второй бой: все уровни, 5 HP у тебя, 12 у Задания.",
+  },
+  9: {
+    id: 9, name: "Бой 3", theme: "boss", coin: 22,
+    heroHp: 6, bossHp: 15, rewardMul: 1.8, roundFrac: 1,
+    foe: "storm", foeName: "Гроза",
+    balloons: ["⛈️", "⚔️", "⛈️"],
+    subtitle: "Финал: 6 HP у тебя, 15 у Задания. Будь осторожен!",
+  },
+};
 const HOME_ACH_PREVIEW = 8;
 
 const SUPABASE_URL = "https://edetrdhgardsvhoomwto.supabase.co";
@@ -369,14 +394,19 @@ const LEVELS = {
     subtitle: "Секрет: числа до 30. Без таймера. Открывается за скорость во всех режимах.",
   },
   7: {
-    id: 7,
-    name: "Босс",
-    theme: "boss",
-    coin: 12,
-    limit: null,
-    battle: true,
-    balloons: ["🐉", "⚔️", "🐉"],
-    subtitle: "Сражение: все уровни подряд. 5 HP у тебя, 10 у Задания.",
+    id: 7, name: "Бой 1", theme: "boss", coin: 12, limit: null, battle: true, battleTier: 1,
+    balloons: ["🟢", "⚔️", "🟢"],
+    subtitle: "Первый бой: короче раунды, 5 HP у тебя, 8 у Задания.",
+  },
+  8: {
+    id: 8, name: "Бой 2", theme: "boss", coin: 16, limit: null, battle: true, battleTier: 2,
+    balloons: ["🪨", "⚔️", "🪨"],
+    subtitle: "Второй бой: все уровни, 5 HP у тебя, 12 у Задания.",
+  },
+  9: {
+    id: 9, name: "Бой 3", theme: "boss", coin: 22, limit: null, battle: true, battleTier: 3,
+    balloons: ["⛈️", "⚔️", "⛈️"],
+    subtitle: "Финал: 6 HP у тебя, 15 у Задания.",
   },
 };
 
@@ -621,11 +651,48 @@ const SKINS = {
 };
 
 const HATS = {
-  none: { id: "none", name: "Без шляпы", price: 0, icon: "🙂" },
-  party: { id: "party", name: "Праздник", price: 100, icon: "🎉" },
-  crown: { id: "crown", name: "Корона", price: 250, icon: "👑" },
-  wizard: { id: "wizard", name: "Волшебник", price: 180, icon: "🧙" },
-  hero: { id: "hero", name: "Шлем", price: 160, icon: "🛡️" },
+  none: { id: "none", name: "Без шляпы", price: 0, icon: "🙂", slot: "head" },
+  party: { id: "party", name: "Праздник", price: 100, icon: "🎉", slot: "head" },
+  crown: { id: "crown", name: "Корона", price: 250, icon: "👑", slot: "head" },
+  wizard: { id: "wizard", name: "Волшебник", price: 180, icon: "🧙", slot: "head" },
+  hero: { id: "hero", name: "Шлем", price: 160, icon: "🛡️", slot: "head" },
+  knightHelm: { id: "knightHelm", name: "Шлем рыцаря", price: 220, icon: "⛑️", slot: "head" },
+  gnomeCap: { id: "gnomeCap", name: "Шапка гнома", price: 140, icon: "🎩", slot: "head" },
+  mapleLeaf: { id: "mapleLeaf", name: "Кленовый лист", price: 110, icon: "🍁", slot: "head" },
+};
+
+const BODIES = {
+  none: { id: "none", name: "Без брони", price: 0, icon: "👕", slot: "body", desc: "Обычная одёжка." },
+  clothVest: { id: "clothVest", name: "Тканевый жилет", price: 150, icon: "🧥", slot: "body", desc: "Лёгкая защита для новичка." },
+  leatherVest: {
+    id: "leatherVest", name: "Кожаный жилет", price: 280, icon: "🦺", slot: "body",
+    rankMin: 42, rank: "Считальщик", battle: { maxHpBonus: 1 },
+    desc: "Для боёв: +1 HP в старте.",
+  },
+  mageCloak: {
+    id: "mageCloak", name: "Плащ мага", price: 420, icon: "🧙‍♂️", slot: "body",
+    rankMin: 110, rank: "Отличник", battle: { firstHitFree: true },
+    desc: "Для боёв: первый удар по тебе не считается.",
+  },
+};
+
+const WEAPONS = {
+  none: { id: "none", name: "Без оружия", price: 0, icon: "✋", slot: "weapon", desc: "Бьёшь кулачками знаний." },
+  woodSword: {
+    id: "woodSword", name: "Деревянный меч", price: 280, icon: "⚔️", slot: "weapon",
+    rankMin: 72, rank: "Знаток", battle: { dmgBonus: 1 },
+    desc: "Для боёв: верный ответ бьёт на 2 HP.",
+  },
+  sparkWand: {
+    id: "sparkWand", name: "Палочка искры", price: 360, icon: "🪄", slot: "weapon",
+    rankMin: 110, rank: "Отличник", battle: { dmgBonus: 1 },
+    desc: "Для боёв: +1 урон. Красивые искры.",
+  },
+  mathHammer: {
+    id: "mathHammer", name: "Молот счёта", price: 520, icon: "🔨", slot: "weapon",
+    rankMin: 160, rank: "Мастер", battle: { dmgBonus: 2 },
+    desc: "Для боёв: верный ответ бьёт на 3 HP.",
+  },
 };
 
 const TOYS = {
@@ -642,6 +709,9 @@ const TOYS = {
   starpin: { id: "starpin", name: "Звёздная булавка", price: 260, icon: "⭐" },
   rocket: { id: "rocket", name: "Мини-ракета", price: 340, icon: "🚀" },
   donut: { id: "donut", name: "Пончик", price: 180, icon: "🍩" },
+  badgeStar: { id: "badgeStar", name: "Значок ★", price: 90, icon: "🌟" },
+  bell: { id: "bell", name: "Колокольчик", price: 130, icon: "🔔" },
+  scarf: { id: "scarf", name: "Шарфик", price: 170, icon: "🧣" },
   secretKey: { id: "secretKey", name: "Ключ тайны", price: 0, icon: "🗝️", secret: true },
 };
 
@@ -659,26 +729,6 @@ const RELICS = {
   heroFlame: { id: "heroFlame", name: "Пламя героя", icon: "🔥", rank: "Герой", rankMin: 520, price: 1200, desc: "Огонёк смелости за спиной." },
   legendSeal: { id: "legendSeal", name: "Печать легенды", icon: "💎", rank: "Легенда", rankMin: 660, price: 1500, desc: "Редкая печать легендарных." },
   archCrown: { id: "archCrown", name: "Корона архимага", icon: "👑", rank: "Архимаг", rankMin: 850, price: 2000, desc: "Самый крутой артефакт." },
-  woodSword: {
-    id: "woodSword",
-    name: "Деревянный меч",
-    icon: "⚔️",
-    rank: "Знаток",
-    rankMin: 72,
-    price: 280,
-    battle: { dmgBonus: 1 },
-    desc: "Для босса: верный ответ бьёт на 2 HP.",
-  },
-  ironShield: {
-    id: "ironShield",
-    name: "Железный щит",
-    icon: "🛡️",
-    rank: "Отличник",
-    rankMin: 110,
-    price: 360,
-    battle: { maxHpBonus: 1 },
-    desc: "Для босса: старт с +1 сердцем.",
-  },
   luckyAmulet: {
     id: "luckyAmulet",
     name: "Амулет удачи",
@@ -686,8 +736,9 @@ const RELICS = {
     rank: "Мастер",
     rankMin: 160,
     price: 420,
+    slot: "relic",
     battle: { firstHitFree: true },
-    desc: "Для босса: первый удар по тебе не считается.",
+    desc: "Для боёв: первый удар по тебе не считается.",
   },
   bossBadge: {
     id: "bossBadge",
@@ -696,8 +747,20 @@ const RELICS = {
     rank: "Чемпион",
     rankMin: 300,
     price: 520,
+    slot: "relic",
     battle: { rewardBonus: 0.2 },
-    desc: "Для босса: +20% монет за победу.",
+    desc: "Для боёв: +20% монет за победу.",
+  },
+  ironShield: {
+    id: "ironShield",
+    name: "Железный щит",
+    icon: "🛡️",
+    rank: "Отличник",
+    rankMin: 110,
+    price: 360,
+    slot: "body",
+    battle: { maxHpBonus: 1 },
+    desc: "Для боёв: старт с +1 сердцем. Надевается в слот тела.",
   },
 };
 
@@ -1086,6 +1149,7 @@ let run = null;
 let tickId = null;
 let sessionFilter = "all";
 let shopTab = "boosts";
+let shopEquipFilter = "";
 let boardFilter = "all";
 let boardMode = MODE_BASIC;
 let selectedMode = (() => {
@@ -1137,10 +1201,16 @@ function rand(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+function emptyEquip() {
+  return { head: "none", body: "none", weapon: "none", accessory: [], relic: "none" };
+}
+
 function emptyShop() {
   return {
     skins: ["honey"],
     hats: ["none"],
+    bodies: ["none"],
+    weapons: ["none"],
     toys: [],
     fxOwned: ["classic"],
     relics: [],
@@ -1152,6 +1222,7 @@ function emptyShop() {
     sky: "none",
     skill: "none",
     toysOn: [],
+    equip: emptyEquip(),
     fx: "classic",
     slow: 0,
     extra: 0,
@@ -1163,13 +1234,75 @@ function emptyShop() {
   };
 }
 
+function syncEquipMirrors(shop) {
+  const eq = shop.equip || emptyEquip();
+  shop.hat = HATS[eq.head] ? eq.head : "none";
+  shop.relic = RELICS[eq.relic] ? eq.relic : "none";
+  shop.toysOn = Array.isArray(eq.accessory)
+    ? eq.accessory.filter((id) => TOYS[id]).slice(0, ACCESSORY_MAX)
+    : [];
+  eq.accessory = shop.toysOn.slice();
+  shop.equip = eq;
+  return shop;
+}
+
+function migrateEquip(raw, shop) {
+  const eq = emptyEquip();
+  if (raw && raw.equip && typeof raw.equip === "object") {
+    eq.head = HATS[raw.equip.head] ? raw.equip.head : "none";
+    eq.body = (BODIES[raw.equip.body] || (raw.equip.body === "ironShield" && RELICS.ironShield))
+      ? raw.equip.body
+      : "none";
+    if (eq.body === "ironShield" && !BODIES.ironShield) {
+      /* keep as owned body via relics map */ 
+    }
+    eq.weapon = WEAPONS[raw.equip.weapon] ? raw.equip.weapon : "none";
+    eq.accessory = Array.isArray(raw.equip.accessory)
+      ? raw.equip.accessory.filter((id) => TOYS[id]).slice(0, ACCESSORY_MAX)
+      : [];
+    eq.relic = RELICS[raw.equip.relic] ? raw.equip.relic : "none";
+  } else {
+    eq.head = HATS[shop.hat] ? shop.hat : "none";
+    eq.accessory = Array.isArray(shop.toysOn)
+      ? shop.toysOn.filter((id) => TOYS[id]).slice(0, ACCESSORY_MAX)
+      : [];
+    const oldRelic = shop.relic;
+    if (oldRelic === "woodSword" && WEAPONS.woodSword) {
+      eq.weapon = "woodSword";
+      eq.relic = "none";
+    } else if (oldRelic === "ironShield") {
+      eq.body = "ironShield";
+      eq.relic = "none";
+    } else if (RELICS[oldRelic]) {
+      eq.relic = oldRelic;
+    }
+  }
+  // If player owned woodSword in relics, ensure weapons inventory
+  if ((shop.relics || []).includes("woodSword") && !(shop.weapons || []).includes("woodSword")) {
+    shop.weapons = [...(shop.weapons || ["none"]), "woodSword"];
+  }
+  if ((shop.relics || []).includes("ironShield") && !(shop.bodies || []).includes("ironShield")) {
+    shop.bodies = [...(shop.bodies || ["none"]), "ironShield"];
+  }
+  shop.equip = eq;
+  return syncEquipMirrors(shop);
+}
+
 function normalizeShop(raw) {
   const base = emptyShop();
   if (!raw || typeof raw !== "object") return base;
   const skins = Array.isArray(raw.skins) ? raw.skins : base.skins;
   const hats = Array.isArray(raw.hats) ? raw.hats : base.hats;
+  let bodies = Array.isArray(raw.bodies) ? raw.bodies.filter((id) => BODIES[id] || id === "ironShield" || id === "none") : ["none"];
+  if (!bodies.includes("none")) bodies = ["none", ...bodies];
+  let weapons = Array.isArray(raw.weapons) ? raw.weapons.filter((id) => WEAPONS[id] || id === "none") : ["none"];
+  if (!weapons.includes("none")) weapons = ["none", ...weapons];
   const toys = Array.isArray(raw.toys) ? raw.toys : base.toys;
-  const relics = Array.isArray(raw.relics) ? raw.relics.filter((id) => RELICS[id]) : [];
+  let relics = Array.isArray(raw.relics) ? raw.relics.filter((id) => RELICS[id] || id === "woodSword" || id === "ironShield") : [];
+  // migrate weapon/body out of relics list into inventories
+  if (relics.includes("woodSword") && !weapons.includes("woodSword")) weapons.push("woodSword");
+  if (relics.includes("ironShield") && !bodies.includes("ironShield")) bodies.push("ironShield");
+  relics = relics.filter((id) => RELICS[id]);
   const skills = Array.isArray(raw.skills) ? raw.skills.filter((id) => SKILLS[id]) : [];
   let skies = Array.isArray(raw.skies) ? raw.skies.filter((id) => SKIES[id]) : ["none"];
   if (!skies.includes("none")) skies = ["none", ...skies];
@@ -1178,9 +1311,11 @@ function normalizeShop(raw) {
   const fx = FX[raw.fx] ? raw.fx : "classic";
   const sky = SKIES[raw.sky] ? raw.sky : "none";
   const skill = SKILLS[raw.skill] ? raw.skill : "none";
-  return {
+  const shop = {
     skins: skins.includes("honey") ? skins : ["honey", ...skins],
     hats: hats.includes("none") ? hats : ["none", ...hats],
+    bodies,
+    weapons,
     toys,
     relics,
     skills,
@@ -1188,10 +1323,11 @@ function normalizeShop(raw) {
     fxOwned,
     skin: SKINS[raw.skin] ? raw.skin : "honey",
     hat: HATS[raw.hat] ? raw.hat : "none",
-    relic: RELICS[raw.relic] ? raw.relic : "none",
+    relic: RELICS[raw.relic] ? raw.relic : (raw.relic === "woodSword" || raw.relic === "ironShield" ? "none" : "none"),
     sky: skies.includes(sky) ? sky : "none",
     skill: skills.includes(skill) ? skill : "none",
     toysOn: Array.isArray(raw.toysOn) ? raw.toysOn.filter((id) => TOYS[id]) : [],
+    equip: emptyEquip(),
     fx: fxOwned.includes(fx) ? fx : "classic",
     slow: Number(raw.slow) || 0,
     extra: Number(raw.extra) || 0,
@@ -1208,6 +1344,7 @@ function normalizeShop(raw) {
       shieldScroll: Number(raw.boostUsed && raw.boostUsed.shieldScroll) || 0,
     },
   };
+  return migrateEquip(raw, shop);
 }
 
 function loadState() {
@@ -1405,6 +1542,11 @@ function claimDailyBox() {
 }
 
 function levelCfg(level, mode = selectedMode) {
+  if (isBattleLevel(level)) {
+    const base = LEVELS[level] || LEVELS[BATTLE_LEVEL];
+    const extra = BATTLE_CFG[level] || {};
+    return { ...base, ...extra, battle: true };
+  }
   if (mode === MODE_UNITS) return UNIT_LEVELS[level] || UNIT_LEVELS[1];
   if (mode === MODE_MUL) return MUL_LEVELS[level] || MUL_LEVELS[1];
   if (mode === MODE_DIV) return DIV_LEVELS[level] || DIV_LEVELS[1];
@@ -1461,7 +1603,12 @@ function grantSecretReward() {
   let changed = false;
   if (!state.shop.toys.includes("secretKey")) {
     state.shop.toys.push("secretKey");
-    if (state.shop.toysOn.length < 4) state.shop.toysOn.push("secretKey");
+    const eq = state.shop.equip || emptyEquip();
+    if ((eq.accessory || []).length < ACCESSORY_MAX && !eq.accessory.includes("secretKey")) {
+      eq.accessory.push("secretKey");
+      state.shop.equip = eq;
+      syncEquipMirrors(state.shop);
+    }
     changed = true;
   }
   if (!state.shop.skies.includes("secretNight")) {
@@ -1488,20 +1635,80 @@ function equippedSkill() {
   return id && SKILLS[id] && state.shop.skills.includes(id) ? SKILLS[id] : null;
 }
 
+function isBattleLevel(id) {
+  return BATTLE_LEVELS.includes(Number(id));
+}
+
+function battleCfg(id = selectedLevel) {
+  return BATTLE_CFG[id] || BATTLE_CFG[BATTLE_LEVEL];
+}
+
+function hasBattleWin(levelId, mode = selectedMode) {
+  return state.runs.some((r) =>
+    (r.mode || MODE_BASIC) === mode && Number(r.level) === Number(levelId) && r.battleWin
+  );
+}
+
+function bodyItem(id) {
+  if (id === "ironShield") return RELICS.ironShield || null;
+  return BODIES[id] || null;
+}
+
+function weaponItem(id) {
+  return WEAPONS[id] || null;
+}
+
+function equippedBattlePassives() {
+  const eq = (state.shop && state.shop.equip) || emptyEquip();
+  const parts = [];
+  const w = weaponItem(eq.weapon);
+  if (w && w.battle) parts.push(w.battle);
+  const b = bodyItem(eq.body);
+  if (b && b.battle) parts.push(b.battle);
+  const r = RELICS[eq.relic];
+  if (r && r.battle) parts.push(r.battle);
+  const out = { dmgBonus: 0, maxHpBonus: 0, firstHitFree: false, rewardBonus: 0 };
+  parts.forEach((p) => {
+    out.dmgBonus += p.dmgBonus || 0;
+    out.maxHpBonus += p.maxHpBonus || 0;
+    if (p.firstHitFree) out.firstHitFree = true;
+    out.rewardBonus += p.rewardBonus || 0;
+  });
+  return out;
+}
+
 function equippedBattleRelic() {
-  const id = state.shop && state.shop.relic;
-  const r = id && RELICS[id] ? RELICS[id] : null;
-  return r && r.battle ? r : null;
+  // compat alias
+  return equippedBattlePassives();
 }
 
-function battleRoundsForMode(mode = selectedMode) {
-  if (mode === MODE_UNITS) return [1, 2];
-  if (mode === MODE_MUL || mode === MODE_DIV) return [1, 2, 3, 4, 5];
-  return [1, 2, 3, 4, 5];
+function battleRoundsForMode(mode = selectedMode, battleId = selectedLevel) {
+  let all;
+  if (mode === MODE_UNITS) all = [1, 2];
+  else if (mode === MODE_MUL || mode === MODE_DIV) all = [1, 2, 3, 4, 5];
+  else all = [1, 2, 3, 4, 5];
+  const frac = (battleCfg(battleId).roundFrac != null) ? battleCfg(battleId).roundFrac : 1;
+  const n = Math.max(1, Math.ceil(all.length * frac));
+  return all.slice(0, n);
 }
 
-function isBossOpen() {
-  return battleRoundsForMode().every((id) => hasPerfect(id));
+function isBossLadderReady() {
+  return battleRoundsForMode(selectedMode, BATTLE_LEVEL).length
+    ? battleRoundsForMode(selectedMode, 8).every((id) => hasPerfect(id))
+    : false;
+}
+
+function isBossOpen(id = BATTLE_LEVEL) {
+  const bid = Number(id);
+  if (!isBattleLevel(bid)) return false;
+  const allReady = (selectedMode === MODE_UNITS
+    ? [1, 2]
+    : [1, 2, 3, 4, 5]
+  ).every((lvl) => hasPerfect(lvl));
+  if (bid === 7) return allReady;
+  if (bid === 8) return hasBattleWin(7);
+  if (bid === 9) return hasBattleWin(8);
+  return false;
 }
 
 function normalMaxLevel() {
@@ -1535,7 +1742,7 @@ function hasPerfect(levelId) {
 }
 
 function isLevelOpen(id) {
-  if (id === BATTLE_LEVEL) return isBossOpen();
+  if (isBattleLevel(id)) return isBossOpen(id);
   const modeInfo = MODE_META[selectedMode] || MODE_META[MODE_BASIC];
   const max = modeInfo.maxLevel || 5;
   if (id < 1 || id > max) return false;
@@ -1614,7 +1821,7 @@ function xpInfo() {
 }
 
 function renderLevels() {
-  if (selectedLevel !== BATTLE_LEVEL && selectedLevel !== SECRET_LEVEL && !isLevelOpen(selectedLevel)) {
+  if (!isBattleLevel(selectedLevel) && selectedLevel !== SECRET_LEVEL && !isLevelOpen(selectedLevel)) {
     selectedLevel = maxOpenLevel();
   }
   const modeInfo = MODE_META[selectedMode] || MODE_META[MODE_BASIC];
@@ -1624,7 +1831,7 @@ function renderLevels() {
   const nodes = [];
   for (let id = 1; id <= maxNormal; id += 1) nodes.push({ id, kind: "level" });
   if (modeHasSecret()) nodes.push({ id: SECRET_LEVEL, kind: "secret" });
-  nodes.push({ id: BATTLE_LEVEL, kind: "boss" });
+  BATTLE_LEVELS.forEach((id) => nodes.push({ id, kind: "boss" }));
 
   const dots = nodes.map((node, i) => {
     const id = node.id;
@@ -1635,15 +1842,20 @@ function renderLevels() {
       : ((modeInfo.themes && modeInfo.themes[id - 1]) || cfg.theme || "easy");
     const selected = selectedLevel === id ? " selected" : "";
     const locked = open ? "" : " locked";
-    const done = (id !== BATTLE_LEVEL && hasPerfect(id))
-      || (id === BATTLE_LEVEL && state.runs.some((r) => (r.mode || MODE_BASIC) === selectedMode && r.level === BATTLE_LEVEL && r.battleWin))
+    const done = (!isBattleLevel(id) && hasPerfect(id))
+      || (isBattleLevel(id) && hasBattleWin(id))
       ? " done"
       : "";
     let name;
     let need = "";
     if (node.kind === "boss") {
-      name = "Босс";
-      if (!open) need = "Все уровни 10/10";
+      const bcfg = battleCfg(id);
+      name = bcfg.name || `Бой ${id - 6}`;
+      if (!open) {
+        if (id === 7) need = "Все уровни 10/10";
+        else if (id === 8) need = "Победи Бой 1";
+        else need = "Победи Бой 2";
+      }
     } else if (node.kind === "secret") {
       name = open ? (modeInfo.levelNames[id - 1] || "Секрет") : "???";
       if (!open) need = "Скорость везде";
@@ -1654,7 +1866,10 @@ function renderLevels() {
         else if (modeInfo.levelNames[id - 2]) need = `10/10 «${modeInfo.levelNames[id - 2]}»`;
       }
     }
-    const ico = node.kind === "boss" ? "🐉" : node.kind === "secret" ? "🗝️" : (done ? "⭐" : "⛏️");
+    const foeIco = { slime: "🟢", rock: "🪨", storm: "⛈️" };
+    const ico = node.kind === "boss"
+      ? (foeIco[battleCfg(id).foe] || "🐉")
+      : node.kind === "secret" ? "🗝️" : (done ? "⭐" : "⛏️");
     const zig = i % 2 === 1 ? " zig" : "";
     return `<button type="button" class="map-node mc-block ${theme}${selected}${locked}${done}${zig}" data-level="${id}">
       <span class="mc-cube" aria-hidden="true">
@@ -1686,7 +1901,7 @@ function renderLevels() {
     btn.classList.toggle("selected", btn.dataset.mode === selectedMode);
   });
   if (els.startBtn) {
-    els.startBtn.textContent = selectedLevel === BATTLE_LEVEL ? "В бой!" : "Старт";
+    els.startBtn.textContent = isBattleLevel(selectedLevel) ? "В бой!" : "Старт";
   }
 }
 
@@ -2262,11 +2477,12 @@ function showScreen(name) {
 }
 
 function applyTheme(level) {
-  const cfg = levelCfg(level === BATTLE_LEVEL ? BATTLE_LEVEL : level);
+  const cfg = levelCfg(isBattleLevel(level) ? level : level);
   document.body.dataset.theme = cfg.theme === "boss" ? "exam" : cfg.theme;
   const modeInfo = MODE_META[selectedMode] || MODE_META[MODE_BASIC];
-  if (level === BATTLE_LEVEL) {
-    els.homeSubtitle.textContent = `Босс режима «${modeInfo.name}»: все уровни подряд, следи за HP!`;
+  if (isBattleLevel(level)) {
+    const bcfg = battleCfg(level);
+    els.homeSubtitle.textContent = `${bcfg.name} «${modeInfo.name}»: ${bcfg.subtitle}`;
   } else if (selectedMode === MODE_UNITS) {
     els.homeSubtitle.textContent = `Режим «Меры»: ${modeInfo.levelDescs[(level || 1) - 1] || cfg.subtitle}`;
   } else if (selectedMode === MODE_CHAIN || selectedMode === MODE_MUL || selectedMode === MODE_DIV) {
@@ -2412,6 +2628,15 @@ function hatSVG(id) {
   if (id === "hero") {
     return `<path d="M46 38 Q80 4 114 38 L114 54 Q80 46 46 54 Z" fill="#7a8fa0"/><rect x="70" y="28" width="20" height="8" rx="3" fill="#cfe4ff"/>`;
   }
+  if (id === "knightHelm") {
+    return `<path d="M48 36 Q80 2 112 36 L112 56 Q80 48 48 56 Z" fill="#8a9aab"/><rect x="62" y="40" width="36" height="10" rx="3" fill="#2d3640" opacity=".55"/>`;
+  }
+  if (id === "gnomeCap") {
+    return `<polygon points="80,-8 54,40 106,40" fill="#e76f51"/><ellipse cx="80" cy="40" rx="28" ry="6" fill="#c45c26"/>`;
+  }
+  if (id === "mapleLeaf") {
+    return `<text x="80" y="28" text-anchor="middle" font-size="28">🍁</text>`;
+  }
   return "";
 }
 
@@ -2477,9 +2702,14 @@ function unlockSkiesByRank() {
 
 function mascotMarkup(size, mood = "neutral", look = null) {
   const shop = look || state.shop || emptyShop();
+  const eq = shop.equip || emptyEquip();
   const skin = SKINS[shop.skin] || SKINS.honey;
   const form = skin.form || "blob";
-  const toys = look ? [] : (shop.toysOn || []);
+  const toys = look ? [] : (eq.accessory || shop.toysOn || []);
+  const hatId = look ? (look.hat || "none") : (eq.head || shop.hat || "none");
+  const relicId = look ? (look.relic || "none") : (eq.relic || shop.relic || "none");
+  const bodyId = look ? "none" : (eq.body || "none");
+  const weaponId = look ? "none" : (eq.weapon || "none");
   const moodKey = mood === true ? "happy" : mood === false ? "neutral" : mood;
   const mouth = mouthPath(moodKey, form);
   const brows = eyeExtras(moodKey);
@@ -2565,11 +2795,24 @@ function mascotMarkup(size, mood = "neutral", look = null) {
     body += glasses + shades;
   }
 
+  const bodyCape = (bodyId === "clothVest")
+    ? `<path d="M40 100 Q80 130 120 100 L110 140 Q80 155 50 140 Z" fill="#8ecae6" opacity=".85"/>`
+    : (bodyId === "leatherVest" || bodyId === "ironShield")
+      ? `<path d="M42 95 Q80 125 118 95 L112 138 Q80 152 48 138 Z" fill="#c4a484"/><path d="M70 100 H90 V130 H70 Z" fill="#8d6e63"/>`
+      : (bodyId === "mageCloak")
+        ? `<path d="M36 90 Q80 140 124 90 L118 150 Q80 168 42 150 Z" fill="#7b5ea7" opacity=".9"/><circle cx="80" cy="120" r="6" fill="#ffd166"/>`
+        : "";
+  const weaponIcon = weaponId && weaponId !== "none" && WEAPONS[weaponId]
+    ? `<text x="132" y="110" font-size="28">${WEAPONS[weaponId].icon}</text>`
+    : "";
+
   return `<svg viewBox="0 -12 160 172" width="${size}" height="${size}">
-    ${relicSVG(shop.relic)}
-    ${hatSVG(shop.hat)}
+    ${relicSVG(relicId)}
+    ${hatSVG(hatId)}
     <ellipse cx="80" cy="145" rx="42" ry="8" fill="#000" opacity=".08"/>
     ${body}
+    ${bodyCape}
+    ${weaponIcon}
   </svg>`;
 }
 
@@ -2629,7 +2872,8 @@ function paintStage(stageId, mascotEl, size, mood, speechText = "") {
   if (moodKey === "sad") {
     stage.insertAdjacentHTML("beforeend", stormOverlayHtml());
   }
-  (state.shop.toysOn || []).forEach((id) => {
+  const acc = ((state.shop.equip && state.shop.equip.accessory) || state.shop.toysOn || []);
+  acc.forEach((id) => {
     if (!TOYS[id] || TOYS[id].svg) return;
     stage.appendChild(toyNode(id));
   });
@@ -2738,13 +2982,13 @@ function renderNickCard(forceEdit = false) {
 }
 
 function renderHome() {
-  if (selectedMode === MODE_MUL && (selectedLevel === SECRET_LEVEL || (selectedLevel > 5 && selectedLevel !== BATTLE_LEVEL))) {
+  if (selectedMode === MODE_MUL && (selectedLevel === SECRET_LEVEL || (selectedLevel > 5 && !isBattleLevel(selectedLevel)))) {
     selectedLevel = maxOpenLevel();
   }
-  if (selectedMode === MODE_DIV && (selectedLevel === SECRET_LEVEL || (selectedLevel > 5 && selectedLevel !== BATTLE_LEVEL))) {
+  if (selectedMode === MODE_DIV && (selectedLevel === SECRET_LEVEL || (selectedLevel > 5 && !isBattleLevel(selectedLevel)))) {
     selectedLevel = maxOpenLevel();
   }
-  if (selectedLevel !== BATTLE_LEVEL && !isLevelOpen(selectedLevel)) selectedLevel = maxOpenLevel();
+  if (!isBattleLevel(selectedLevel) && !isLevelOpen(selectedLevel)) selectedLevel = maxOpenLevel();
   if (unlockSkiesByRank()) saveState();
   applyTheme(selectedLevel);
   applySkyDecor();
@@ -2778,10 +3022,12 @@ function renderHome() {
       const next = [2, 3, 4, 5].find((id) => !isLevelOpen(id));
       const prev = next - 1;
       els.unlockHint.textContent = `10/10 на «${modeInfo.levelNames[prev - 1]}» откроет «${modeInfo.levelNames[next - 1]}»`;
-    } else if (!isBossOpen()) {
-      els.unlockHint.textContent = "Все этапы умножения открыты. Пройди их на 10/10 — откроется босс.";
+    } else if (!isBossOpen(7)) {
+      els.unlockHint.textContent = "Все этапы умножения открыты. Пройди их на 10/10 — откроется Бой 1.";
+    } else if (!isBossOpen(9)) {
+      els.unlockHint.textContent = "Бои открыты — побеждай Бой 1 → 2 → 3!";
     } else {
-      els.unlockHint.textContent = "Лестница умножения пройдена — можно бить босса!";
+      els.unlockHint.textContent = "Лестница умножения и все бои пройдены!";
     }
   } else if (selectedMode === MODE_DIV) {
     if (!isLevelOpen(2)) {
@@ -2790,10 +3036,12 @@ function renderHome() {
       const next = [2, 3, 4, 5].find((id) => !isLevelOpen(id));
       const prev = next - 1;
       els.unlockHint.textContent = `10/10 на «${modeInfo.levelNames[prev - 1]}» откроет «${modeInfo.levelNames[next - 1]}»`;
-    } else if (!isBossOpen()) {
-      els.unlockHint.textContent = "Все этапы деления открыты. Пройди их на 10/10 — откроется босс.";
+    } else if (!isBossOpen(7)) {
+      els.unlockHint.textContent = "Все этапы деления открыты. Пройди их на 10/10 — откроется Бой 1.";
+    } else if (!isBossOpen(9)) {
+      els.unlockHint.textContent = "Бои открыты — побеждай Бой 1 → 2 → 3!";
     } else {
-      els.unlockHint.textContent = "Лестница деления пройдена — можно бить босса!";
+      els.unlockHint.textContent = "Лестница деления и все бои пройдены!";
     }
   } else if (!isLevelOpen(2)) {
     els.unlockHint.textContent = `10/10 на «${modeInfo.levelNames[0]}» откроет «${modeInfo.levelNames[1]}»`;
@@ -2968,11 +3216,13 @@ async function startGame() {
     stopFireworks();
     stopFxLayer();
     ensureNickFromInput();
-    if (selectedLevel !== BATTLE_LEVEL && !isLevelOpen(selectedLevel)) selectedLevel = maxOpenLevel();
-    if (selectedLevel === BATTLE_LEVEL && !isBossOpen()) selectedLevel = maxOpenLevel();
+    if (!isBattleLevel(selectedLevel) && !isLevelOpen(selectedLevel)) selectedLevel = maxOpenLevel();
+    if (isBattleLevel(selectedLevel) && !isBossOpen(selectedLevel)) selectedLevel = maxOpenLevel();
     renderLevels();
-    const isBattle = selectedLevel === BATTLE_LEVEL;
-    const rounds = isBattle ? battleRoundsForMode() : null;
+    const isBattle = isBattleLevel(selectedLevel);
+    const battleId = isBattle ? selectedLevel : BATTLE_LEVEL;
+    const bcfg = isBattle ? battleCfg(battleId) : null;
+    const rounds = isBattle ? battleRoundsForMode(selectedMode, battleId) : null;
     const startLevel = isBattle ? rounds[0] : selectedLevel;
     const cfg = levelCfg(startLevel);
     if (selectedMode === MODE_UNITS && !isBattle) {
@@ -2987,8 +3237,9 @@ async function startGame() {
       showScreen("home");
       await showDivIntro();
     }
-    const relic = equippedBattleRelic();
-    const battleFx = (relic && relic.battle) || {};
+    const battleFx = isBattle ? equippedBattlePassives() : {};
+    const heroBase = (bcfg && bcfg.heroHp) || BATTLE_HERO_HP;
+    const bossBase = (bcfg && bcfg.bossHp) || BATTLE_BOSS_HP;
     const startedAt = Date.now();
     run = {
       items: generateRun(cfg.id),
@@ -2997,7 +3248,7 @@ async function startGame() {
       answers: [],
       startedAt,
       startedIso: new Date(startedAt).toISOString(),
-      level: isBattle ? BATTLE_LEVEL : cfg.id,
+      level: isBattle ? battleId : cfg.id,
       roundLevel: cfg.id,
       limit: cfg.limit,
       done: false,
@@ -3015,15 +3266,19 @@ async function startGame() {
       skillActiveUntil: 0,
       skillHintUsedOn: -1,
       battle: isBattle,
+      battleId: isBattle ? battleId : 0,
       rounds: rounds || [],
       roundIndex: 0,
-      heroMaxHp: BATTLE_HERO_HP + (battleFx.maxHpBonus || 0),
-      heroHp: BATTLE_HERO_HP + (battleFx.maxHpBonus || 0),
-      bossHp: BATTLE_BOSS_HP,
-      bossMaxHp: BATTLE_BOSS_HP,
+      heroMaxHp: heroBase + (battleFx.maxHpBonus || 0),
+      heroHp: heroBase + (battleFx.maxHpBonus || 0),
+      bossHp: bossBase,
+      bossMaxHp: bossBase,
       firstHitFree: !!battleFx.firstHitFree,
       dmgBonus: battleFx.dmgBonus || 0,
       rewardBonus: battleFx.rewardBonus || 0,
+      rewardMul: (bcfg && bcfg.rewardMul) || 1,
+      foe: (bcfg && bcfg.foe) || "slime",
+      foeName: (bcfg && bcfg.foeName) || "Задание",
       fireNext: false,
       shieldCharges: 0,
       potionUsed: 0,
@@ -3037,7 +3292,7 @@ async function startGame() {
     document.body.classList.toggle("in-battle", isBattle);
     const modeInfo = MODE_META[selectedMode] || MODE_META[MODE_BASIC];
     if (isBattle) {
-      els.gameLevel.textContent = `Босс · раунд 1/${rounds.length}${modeLabelShort(selectedMode)}`;
+      els.gameLevel.textContent = `${bcfg.name} · раунд 1/${rounds.length}${modeLabelShort(selectedMode)}`;
     } else {
       els.gameLevel.textContent = `${modeInfo.levelNames[cfg.id - 1] || cfg.name}${modeLabelShort(selectedMode)}`;
     }
@@ -3045,6 +3300,7 @@ async function startGame() {
     els.timer.classList.remove("danger");
     showScreen("game");
     paintMascots();
+    renderBattleArena();
     renderBattleHud();
     renderBoostBar();
     renderProblem();
@@ -3263,6 +3519,75 @@ function captureCurrent(emptyMark) {
   });
 }
 
+function foeMarkup(foe, size = 72) {
+  const skins = {
+    slime: { body: "#7dce82", eye: "#2d5a32", blush: "#c5f0c8" },
+    rock: { body: "#9aa3ad", eye: "#3d4450", blush: "#cfd5dc" },
+    storm: { body: "#6b7fd7", eye: "#1e2450", blush: "#c8d0ff" },
+  };
+  const s = skins[foe] || skins.slime;
+  const blush = foe === "rock" ? "#cfd5dc" : s.blush;
+  return `<svg viewBox="0 0 120 120" width="${size}" height="${size}" aria-hidden="true">
+    <ellipse cx="60" cy="105" rx="32" ry="6" fill="#000" opacity=".08"/>
+    <circle cx="60" cy="62" r="40" fill="${s.body}"/>
+    ${foe === "storm" ? '<path d="M70 18 L58 48 H70 L52 78" fill="#ffe066" stroke="#e8a317" stroke-width="2"/>' : ""}
+    ${foe === "rock" ? '<path d="M40 50 L50 35 L70 38 L80 55 L72 78 L48 76 Z" fill="#7f8894" opacity=".35"/>' : ""}
+    <ellipse cx="46" cy="58" rx="6" ry="8" fill="${s.eye}"/>
+    <ellipse cx="74" cy="58" rx="6" ry="8" fill="${s.eye}"/>
+    <circle cx="48" cy="55" r="2" fill="#fff"/>
+    <circle cx="76" cy="55" r="2" fill="#fff"/>
+    <ellipse cx="60" cy="78" rx="10" ry="5" fill="${blush}"/>
+    <path d="M48 72 Q60 82 72 72" fill="none" stroke="${s.eye}" stroke-width="3" stroke-linecap="round"/>
+  </svg>`;
+}
+
+function renderBattleArena() {
+  const arena = document.getElementById("battleArena");
+  if (!arena) return;
+  if (!run || !run.battle) {
+    arena.classList.add("hidden");
+    arena.innerHTML = "";
+    document.getElementById("gameStage")?.classList.remove("hidden-by-battle");
+    return;
+  }
+  document.getElementById("gameStage")?.classList.add("hidden-by-battle");
+  arena.classList.remove("hidden");
+  const foe = run.foe || "slime";
+  arena.innerHTML = `
+    <div class="arena-fighter hero" id="arenaHero">
+      <div class="arena-mascot" id="arenaHeroMascot"></div>
+      <div class="arena-tag">Ты</div>
+    </div>
+    <div class="arena-vs" aria-hidden="true">VS</div>
+    <div class="arena-fighter foe" id="arenaFoe">
+      <div class="arena-mascot" id="arenaFoeMascot">${foeMarkup(foe, 78)}</div>
+      <div class="arena-tag">${run.foeName || "Задание"}</div>
+    </div>
+    <div class="arena-bolts" id="arenaBolts" aria-hidden="true"></div>
+  `;
+  const heroEl = document.getElementById("arenaHeroMascot");
+  if (heroEl) heroEl.innerHTML = mascotMarkup(78, "happy");
+}
+
+function playBattleBolt(ok) {
+  const layer = document.getElementById("arenaBolts");
+  const hero = document.getElementById("arenaHero");
+  const foe = document.getElementById("arenaFoe");
+  if (!layer || !hero || !foe) return;
+  const bolt = document.createElement("span");
+  bolt.className = `battle-bolt ${ok ? "hero-hit" : "foe-hit"}`;
+  layer.appendChild(bolt);
+  const target = ok ? foe : hero;
+  target.classList.remove("hit-shake");
+  // reflow
+  void target.offsetWidth;
+  target.classList.add("hit-shake");
+  setTimeout(() => {
+    bolt.remove();
+    target.classList.remove("hit-shake");
+  }, 480);
+}
+
 function renderBattleHud() {
   const hud = document.getElementById("battleHud");
   if (!hud) return;
@@ -3274,14 +3599,15 @@ function renderBattleHud() {
   hud.classList.remove("hidden");
   const heroPct = Math.max(0, Math.round((run.heroHp / run.heroMaxHp) * 100));
   const bossPct = Math.max(0, Math.round((run.bossHp / run.bossMaxHp) * 100));
+  const bName = battleCfg(run.battleId || run.level).name || "Бой";
   hud.innerHTML = `
     <div class="hp-side hero">
       <div class="hp-label">Ты ${"❤".repeat(Math.max(0, run.heroHp))}${"🖤".repeat(Math.max(0, run.heroMaxHp - run.heroHp))}</div>
       <div class="hp-bar"><i style="width:${heroPct}%"></i></div>
     </div>
-    <div class="hp-round">Раунд ${run.roundIndex + 1}/${run.rounds.length}</div>
+    <div class="hp-round">${bName}<br>Раунд ${run.roundIndex + 1}/${run.rounds.length}</div>
     <div class="hp-side boss">
-      <div class="hp-label">Задание ${run.bossHp}/${run.bossMaxHp}</div>
+      <div class="hp-label">${run.foeName || "Задание"} ${run.bossHp}/${run.bossMaxHp}</div>
       <div class="hp-bar"><i style="width:${bossPct}%"></i></div>
     </div>
   `;
@@ -3289,6 +3615,7 @@ function renderBattleHud() {
 
 function applyBattleOutcome(ok) {
   if (!run || !run.battle) return;
+  playBattleBolt(ok);
   if (ok) {
     let dmg = 1 + (run.dmgBonus || 0);
     if (run.fireNext) {
@@ -3328,7 +3655,7 @@ function advanceBattleRound() {
   run.realMs = 0;
   run.roundBase = run.answers.length;
   run.lastTick = Date.now();
-  els.gameLevel.textContent = `Босс · раунд ${run.roundIndex + 1}/${run.rounds.length} · ${modeInfo.levelNames[nextLevel - 1] || cfg.name}`;
+  els.gameLevel.textContent = `${battleCfg(run.battleId || run.level).name || "Бой"} · раунд ${run.roundIndex + 1}/${run.rounds.length} · ${modeInfo.levelNames[nextLevel - 1] || cfg.name}`;
   els.timer.classList.toggle("countdown", Boolean(cfg.limit));
   els.timer.classList.remove("danger");
   showToasts([{ plain: true, icon: "⚔️", name: `Раунд ${run.roundIndex + 1}`, desc: modeInfo.levelNames[nextLevel - 1] || cfg.name }]);
@@ -3444,7 +3771,7 @@ function finishRun({ timedOut = false } = {}) {
   gameElapsed();
   let ms = Math.max(0, Math.round(run.scoreMs || run.gameMs || 0));
   const correct = run.answers.filter((a) => a.ok).length;
-  const cfg = levelCfg(run.battle ? BATTLE_LEVEL : run.level);
+  const cfg = levelCfg(run.battle ? (run.battleId || run.level) : run.level);
   const grade = (!run.battle && cfg.school) ? schoolGrade(correct, run.forgive || 0) : null;
   const openBefore = maxOpenLevel();
   const rankBefore = rankIndexOf(state.stars);
@@ -3452,8 +3779,13 @@ function finishRun({ timedOut = false } = {}) {
   let gainedCoins;
   if (run.battle) {
     const win = !!run.battleWin;
-    gainedStars = win ? 15 + Math.floor(correct / 5) : Math.max(1, Math.floor(correct / 4));
-    gainedCoins = win ? Math.round((40 + correct) * (1 + (run.rewardBonus || 0))) : Math.max(2, Math.floor(correct / 2));
+    const mul = run.rewardMul || 1;
+    gainedStars = win
+      ? Math.round((15 + Math.floor(correct / 5)) * mul)
+      : Math.max(1, Math.floor(correct / 4));
+    gainedCoins = win
+      ? Math.round((40 + correct) * (1 + (run.rewardBonus || 0)) * mul)
+      : Math.max(2, Math.floor(correct / 2));
   } else {
     gainedStars = grade?.failed ? Math.max(0, Math.floor(correct / 2)) : correct;
     gainedCoins = coinsFor(run.level, correct, timedOut, grade);
@@ -3462,14 +3794,16 @@ function finishRun({ timedOut = false } = {}) {
   state.coins += gainedCoins;
   const openAfter = maxOpenLevel();
   const rankAfter = rankIndexOf(state.stars);
-  state.lastLevel = run.battle ? BATTLE_LEVEL : (isLevelOpen(run.level) ? run.level : maxOpenLevel());
+  state.lastLevel = run.battle
+    ? (run.battleId || run.level)
+    : (isLevelOpen(run.level) ? run.level : maxOpenLevel());
   state.runs.unshift({
     startedAt: run.startedIso,
     date: new Date().toISOString(),
     correct,
     total: run.answers.length || TOTAL,
     ms,
-    level: run.battle ? BATTLE_LEVEL : run.level,
+    level: run.battle ? (run.battleId || run.level) : run.level,
     mode: selectedMode,
     timedOut,
     coins: gainedCoins,
@@ -3497,9 +3831,15 @@ function finishRun({ timedOut = false } = {}) {
   saveState();
 
   document.body.classList.remove("in-battle");
+  const arenaEl = document.getElementById("battleArena");
+  if (arenaEl) {
+    arenaEl.classList.add("hidden");
+    arenaEl.innerHTML = "";
+  }
+  document.getElementById("gameStage")?.classList.remove("hidden-by-battle");
   const msg = run.battle
     ? (run.battleWin
-      ? { title: "Босс повержен!", text: "Задание побеждено — ты герой!" }
+      ? { title: `${battleCfg(run.battleId || run.level).name || "Бой"} пройден!`, text: "Задание побеждено — ты герой!" }
       : { title: "Поражение…", text: "HP кончились. Подлечись в магазине и попробуй снова!" })
     : encouragement(correct, timedOut, grade);
   els.resultTitle.textContent = msg.title;
@@ -3531,7 +3871,8 @@ function finishRun({ timedOut = false } = {}) {
     extraBanners.push(`<div class="ach-banner"><span class="rank-medal r${rankAfter} on">${RANKS[rankAfter].icon}</span><div>${RANKS[rankAfter].name}<small>Новый ранг за опыт</small></div></div>`);
   }
   if (run.battle && run.battleWin) {
-    extraBanners.push(`<div class="ach-banner"><span class="ico">🐉</span><div>Победа над боссом!<small>Жирная награда за сражение</small></div></div>`);
+    const bn = battleCfg(run.battleId || run.level).name || "Бой";
+    extraBanners.push(`<div class="ach-banner"><span class="ico">⚔️</span><div>Победа: ${bn}!<small>Жирная награда за сражение</small></div></div>`);
   }
   if (run.level === SECRET_LEVEL && correct === 10) {
     extraBanners.push(`<div class="ach-banner"><span class="ico">🗝️</span><div>Награда тайны<small>Ключ тайны + небо «Тайная ночь»</small></div></div>`);
@@ -4160,9 +4501,50 @@ function useBoost(id) {
   renderHome();
 }
 
+function renderPaperDoll() {
+  const host = document.getElementById("paperDoll");
+  if (!host) return;
+  const eq = state.shop.equip || emptyEquip();
+  const slotIcon = (slot, id) => {
+    if (slot === "head") return (HATS[id] && HATS[id].icon) || "🙂";
+    if (slot === "body") return (bodyItem(id) && bodyItem(id).icon) || "👕";
+    if (slot === "weapon") return (WEAPONS[id] && WEAPONS[id].icon) || "✋";
+    if (slot === "relic") return (RELICS[id] && RELICS[id].icon) || "✦";
+    if (slot === "accessory") {
+      const a = eq.accessory || [];
+      return a.length ? a.map((x) => (TOYS[x] && TOYS[x].icon) || "•").join("") : "🎒";
+    }
+    return "·";
+  };
+  const slots = [
+    ["head", "Голова", eq.head],
+    ["body", "Тело", eq.body],
+    ["weapon", "Оружие", eq.weapon],
+    ["accessory", "Штучки", (eq.accessory || []).join(",") || "none"],
+    ["relic", "Реликвия", eq.relic],
+  ];
+  host.innerHTML = `
+    <div class="paper-doll">
+      <div class="paper-slots">
+        ${slots.map(([slot, label, id]) => `
+          <button type="button" class="paper-slot ${shopEquipFilter === slot ? "on" : ""}" data-equip-slot="${slot}">
+            <span class="paper-ico">${slotIcon(slot, id)}</span>
+            <span class="paper-lbl">${label}</span>
+          </button>`).join("")}
+      </div>
+      <div class="paper-preview" id="paperPreview"></div>
+    </div>`;
+  const prev = document.getElementById("paperPreview");
+  if (prev) prev.innerHTML = mascotMarkup(110, "happy");
+}
+
 function renderShop() {
+  syncEquipMirrors(state.shop);
   els.shopCoins.textContent = String(state.coins);
   paintMascots();
+  renderPaperDoll();
+  const eq = state.shop.equip || emptyEquip();
+
   if (shopTab === "boosts") {
     els.shopList.innerHTML = BOOSTS.map((b) => {
       const n = state.shop[b.id] || 0;
@@ -4171,7 +4553,7 @@ function renderShop() {
     }).join("");
     return;
   }
-  if (shopTab === "looks") {
+  if (shopTab === "looks" || shopEquipFilter === "head") {
     const skins = Object.values(SKINS).map((s) => {
       const owned = state.shop.skins.includes(s.id);
       const on = state.shop.skin === s.id;
@@ -4183,12 +4565,40 @@ function renderShop() {
     });
     const hats = Object.values(HATS).map((h) => {
       const owned = state.shop.hats.includes(h.id);
-      const on = state.shop.hat === h.id;
+      const on = eq.head === h.id;
       const action = owned ? (on ? "on" : "equip-hat") : "buy-hat";
       const label = on ? "Надета" : owned ? "Надеть" : "Купить";
-      return shopCard(h.icon, h.name, "Шляпа и шлем", h.price, owned || state.coins >= h.price, action, h.id, label, on);
+      return shopCard(h.icon, h.name, "Слот: голова", h.price, owned || state.coins >= h.price, action, h.id, label, on);
     });
-    els.shopList.innerHTML = skins.join("") + hats.join("");
+    els.shopList.innerHTML = (shopTab === "looks" ? skins.join("") : "") + hats.join("");
+    return;
+  }
+  if (shopTab === "gear" || shopEquipFilter === "body" || shopEquipFilter === "weapon") {
+    const bodies = Object.values(BODIES).concat(RELICS.ironShield ? [RELICS.ironShield] : []).map((b) => {
+      const id = b.id;
+      const owned = (state.shop.bodies || []).includes(id) || id === "none";
+      const on = eq.body === id;
+      const rankMin = b.rankMin || 0;
+      const rankOpen = state.stars >= rankMin;
+      const action = owned ? (on ? "on" : "equip-body") : "buy-body";
+      const label = on ? "Надето" : owned ? "Надеть" : "Купить";
+      const can = owned || (rankOpen && state.coins >= (b.price || 0));
+      return shopCard(b.icon, b.name, `${b.desc || "Слот: тело"}${b.battle ? " · бой" : ""}`, b.price || 0, can, action, id, label, on);
+    });
+    const weapons = Object.values(WEAPONS).map((w) => {
+      const owned = (state.shop.weapons || []).includes(w.id) || w.id === "none";
+      const on = eq.weapon === w.id;
+      const rankMin = w.rankMin || 0;
+      const rankOpen = state.stars >= rankMin;
+      const action = owned ? (on ? "on" : "equip-weapon") : "buy-weapon";
+      const label = on ? "В руках" : owned ? "Взять" : "Купить";
+      const can = owned || (rankOpen && state.coins >= (w.price || 0));
+      return shopCard(w.icon, w.name, `${w.desc || "Слот: оружие"}${w.battle ? " · бой" : ""}`, w.price || 0, can, action, w.id, label, on);
+    });
+    let html = "";
+    if (shopTab === "gear" || shopEquipFilter === "body") html += `<div class="shop-section">Броня / тело</div>` + bodies.join("");
+    if (shopTab === "gear" || shopEquipFilter === "weapon") html += `<div class="shop-section">Оружие</div>` + weapons.join("");
+    els.shopList.innerHTML = html;
     return;
   }
   if (shopTab === "fx") {
@@ -4199,25 +4609,15 @@ function renderShop() {
       const label = on ? "Включено" : owned ? "Включить" : "Купить";
       const ico = `<span class="fx-shop-ico fx-ico-${f.id}"></span>`;
       const priceNote = f.price >= 200 ? " · супердорого" : f.price >= 80 ? " · дорого" : "";
-      return shopCard(
-        ico,
-        f.name,
-        `${f.desc}${priceNote}`,
-        f.price,
-        owned || state.coins >= f.price,
-        action,
-        f.id,
-        label,
-        on
-      );
+      return shopCard(ico, f.name, `${f.desc}${priceNote}`, f.price, owned || state.coins >= f.price, action, f.id, label, on);
     }).join("");
     return;
   }
-  if (shopTab === "relics") {
+  if (shopTab === "relics" || shopEquipFilter === "relic") {
     const myRank = rankFor(state.stars);
-    els.shopList.innerHTML = Object.values(RELICS).map((r) => {
+    els.shopList.innerHTML = Object.values(RELICS).filter((r) => r.slot !== "body" && r.id !== "ironShield").map((r) => {
       const owned = state.shop.relics.includes(r.id);
-      const on = state.shop.relic === r.id;
+      const on = eq.relic === r.id;
       const rankOpen = state.stars >= r.rankMin;
       const canBuy = rankOpen && (owned || state.coins >= r.price);
       const action = owned ? (on ? "on" : "equip-relic") : "buy-relic";
@@ -4228,7 +4628,7 @@ function renderShop() {
         <div class="ico"><span class="relic-ico">${r.icon}</span></div>
         <div class="name">${r.name}${rankNeed}</div>
         <button type="button" class="buy ${(!canBuy && !owned) || !rankOpen ? "ghost" : ""}" data-act="${action}" data-id="${r.id}" ${(!canBuy && !owned) || !rankOpen || action === "on" ? "disabled" : ""}>${label}${price ? ` · ${price}&nbsp;<span class="coin sm" aria-hidden="true"></span>` : ""}</button>
-        <div class="desc">${r.desc}${r.battle ? " · бой" : ""} · звание + монеты</div>
+        <div class="desc">${r.desc}${r.battle ? " · бой" : ""} · слот реликвии</div>
       </article>`;
     }).join("");
     return;
@@ -4303,9 +4703,38 @@ function renderShop() {
     }).join("");
     return;
   }
+  if (shopTab === "inventory") {
+    const rows = [];
+    (state.shop.hats || []).filter((id) => id !== "none").forEach((id) => {
+      const h = HATS[id]; if (!h) return;
+      rows.push(shopCard(h.icon, h.name, "Инвентарь · голова", 0, true, eq.head === id ? "on" : "equip-hat", id, eq.head === id ? "Надето" : "Надеть", eq.head === id));
+    });
+    (state.shop.bodies || []).filter((id) => id !== "none").forEach((id) => {
+      const b = bodyItem(id); if (!b) return;
+      rows.push(shopCard(b.icon, b.name, "Инвентарь · тело", 0, true, eq.body === id ? "on" : "equip-body", id, eq.body === id ? "Надето" : "Надеть", eq.body === id));
+    });
+    (state.shop.weapons || []).filter((id) => id !== "none").forEach((id) => {
+      const w = WEAPONS[id]; if (!w) return;
+      rows.push(shopCard(w.icon, w.name, "Инвентарь · оружие", 0, true, eq.weapon === id ? "on" : "equip-weapon", id, eq.weapon === id ? "В руках" : "Взять", eq.weapon === id));
+    });
+    (state.shop.toys || []).forEach((id) => {
+      const t = TOYS[id]; if (!t) return;
+      const on = (eq.accessory || []).includes(id);
+      rows.push(shopCard(t.icon, t.name, "Инвентарь · штучка", 0, true, on ? "off-toy" : "equip-toy", id, on ? "Снять" : "Надеть", on));
+    });
+    (state.shop.relics || []).forEach((id) => {
+      const r = RELICS[id]; if (!r) return;
+      rows.push(shopCard(r.icon, r.name, "Инвентарь · реликвия", 0, true, eq.relic === id ? "on" : "equip-relic", id, eq.relic === id ? "Активен" : "Включить", eq.relic === id));
+    });
+    els.shopList.innerHTML = rows.length
+      ? rows.join("")
+      : `<article class="shop-card"><div class="name">Пусто</div><div class="desc">Купи вещи во вкладках — они появятся здесь.</div></article>`;
+    return;
+  }
+  // toys / accessory
   els.shopList.innerHTML = Object.values(TOYS).filter((t) => !t.secret || state.shop.toys.includes(t.id)).map((t) => {
     const owned = state.shop.toys.includes(t.id);
-    const on = state.shop.toysOn.includes(t.id);
+    const on = (eq.accessory || []).includes(t.id);
     const action = owned ? (on ? "off-toy" : "equip-toy") : "buy-toy";
     const label = on ? "Снять" : owned ? "Надеть" : "Купить";
     let ico = t.icon;
@@ -4318,7 +4747,7 @@ function renderShop() {
     return shopCard(
       ico,
       t.name,
-      `${on ? "На персонаже" : "Безделушка"}${rarity}`,
+      `${on ? "На персонаже" : "Слот: штучки (макс. 2)"}${rarity}`,
       t.price,
       owned || state.coins >= t.price,
       action,
@@ -4365,26 +4794,70 @@ function shopAction(act, id) {
     if (!item || state.coins < item.price) return notEnough();
     state.coins -= item.price;
     if (!state.shop.hats.includes(id)) state.shop.hats.push(id);
-    state.shop.hat = id;
+    state.shop.equip = state.shop.equip || emptyEquip();
+    state.shop.equip.head = id;
+    syncEquipMirrors(state.shop);
     pingBuy(item.icon, item.name);
   } else if (act === "equip-hat") {
-    state.shop.hat = id;
+    state.shop.equip = state.shop.equip || emptyEquip();
+    state.shop.equip.head = id;
+    syncEquipMirrors(state.shop);
+  } else if (act === "buy-body") {
+    const item = bodyItem(id);
+    if (!item || id === "none") return;
+    if ((item.rankMin || 0) > state.stars) return;
+    if (state.coins < (item.price || 0)) return notEnough();
+    state.coins -= item.price || 0;
+    if (!state.shop.bodies.includes(id)) state.shop.bodies.push(id);
+    state.shop.equip = state.shop.equip || emptyEquip();
+    state.shop.equip.body = id;
+    syncEquipMirrors(state.shop);
+    pingBuy(item.icon, item.name);
+  } else if (act === "equip-body") {
+    state.shop.equip = state.shop.equip || emptyEquip();
+    state.shop.equip.body = id;
+    syncEquipMirrors(state.shop);
+  } else if (act === "buy-weapon") {
+    const item = WEAPONS[id];
+    if (!item || id === "none") return;
+    if ((item.rankMin || 0) > state.stars) return;
+    if (state.coins < (item.price || 0)) return notEnough();
+    state.coins -= item.price || 0;
+    if (!state.shop.weapons.includes(id)) state.shop.weapons.push(id);
+    state.shop.equip = state.shop.equip || emptyEquip();
+    state.shop.equip.weapon = id;
+    syncEquipMirrors(state.shop);
+    pingBuy(item.icon, item.name);
+  } else if (act === "equip-weapon") {
+    state.shop.equip = state.shop.equip || emptyEquip();
+    state.shop.equip.weapon = id;
+    syncEquipMirrors(state.shop);
   } else if (act === "buy-toy") {
     const item = TOYS[id];
     if (!item || state.coins < item.price) return notEnough();
     state.coins -= item.price;
     if (!state.shop.toys.includes(id)) state.shop.toys.push(id);
-    if (state.shop.toysOn.length < 4 && !state.shop.toysOn.includes(id)) state.shop.toysOn.push(id);
+    state.shop.equip = state.shop.equip || emptyEquip();
+    if ((state.shop.equip.accessory || []).length < ACCESSORY_MAX && !state.shop.equip.accessory.includes(id)) {
+      state.shop.equip.accessory.push(id);
+    }
+    syncEquipMirrors(state.shop);
     pingBuy(item.icon, item.name);
   } else if (act === "equip-toy") {
-    if (state.shop.toysOn.includes(id)) return;
-    if (state.shop.toysOn.length >= 4) {
-      showToasts([{ plain: true, icon: "🎒", name: "Много штучек", desc: "Сними одну, чтобы надеть новую (макс. 4)." }]);
+    state.shop.equip = state.shop.equip || emptyEquip();
+    const acc = state.shop.equip.accessory || [];
+    if (acc.includes(id)) return;
+    if (acc.length >= ACCESSORY_MAX) {
+      showToasts([{ plain: true, icon: "🎒", name: "Много штучек", desc: `Сними одну (макс. ${ACCESSORY_MAX}).` }]);
       return;
     }
-    state.shop.toysOn.push(id);
+    acc.push(id);
+    state.shop.equip.accessory = acc;
+    syncEquipMirrors(state.shop);
   } else if (act === "off-toy") {
-    state.shop.toysOn = state.shop.toysOn.filter((t) => t !== id);
+    state.shop.equip = state.shop.equip || emptyEquip();
+    state.shop.equip.accessory = (state.shop.equip.accessory || []).filter((t) => t !== id);
+    syncEquipMirrors(state.shop);
   } else if (act === "buy-fx") {
     const item = FX[id];
     if (!item || state.coins < item.price) return notEnough();
@@ -4402,11 +4875,15 @@ function shopAction(act, id) {
     if (item.price > 0 && state.coins < item.price) return notEnough();
     if (item.price > 0) state.coins -= item.price;
     if (!state.shop.relics.includes(id)) state.shop.relics.push(id);
-    state.shop.relic = id;
+    state.shop.equip = state.shop.equip || emptyEquip();
+    state.shop.equip.relic = id;
+    syncEquipMirrors(state.shop);
     pingBuy(item.icon, item.name);
   } else if (act === "equip-relic") {
     if (!state.shop.relics.includes(id)) return;
-    state.shop.relic = id;
+    state.shop.equip = state.shop.equip || emptyEquip();
+    state.shop.equip.relic = id;
+    syncEquipMirrors(state.shop);
   } else if (act === "claim-sky") {
     const item = SKIES[id];
     if (!item) return;
@@ -4520,8 +4997,10 @@ document.getElementById("levels").addEventListener("click", (e) => {
     card.classList.add("shake");
     const meta = MODE_META[selectedMode] || MODE_META[MODE_BASIC];
     let desc = "Ещё рано";
-    if (id === BATTLE_LEVEL) {
-      desc = "Сначала пройди все обычные уровни на 10/10";
+    if (isBattleLevel(id)) {
+      if (id === 8) desc = "Сначала победи в Бою 1";
+      else if (id === 9) desc = "Сначала победи в Бою 2";
+      else desc = "Сначала пройди все обычные уровни на 10/10";
     } else if (selectedMode === MODE_UNITS && id === 1) {
       desc = "Сначала 10/10 на «Сложный» в Базе или 2 действиях";
     } else if (id === SECRET_LEVEL) {
@@ -4535,9 +5014,9 @@ document.getElementById("levels").addEventListener("click", (e) => {
     return;
   }
   selectedLevel = id;
-  state.lastLevel = selectedLevel === BATTLE_LEVEL ? maxOpenLevel() : selectedLevel;
+  state.lastLevel = isBattleLevel(selectedLevel) ? maxOpenLevel() : selectedLevel;
   saveState();
-  applyTheme(selectedLevel === BATTLE_LEVEL ? 5 : selectedLevel);
+  applyTheme(isBattleLevel(selectedLevel) ? 5 : selectedLevel);
   renderLevels();
   placeMapToken(id, true);
 });
@@ -4603,7 +5082,23 @@ document.getElementById("shopTabs").addEventListener("click", (e) => {
   const btn = e.target.closest("[data-tab]");
   if (!btn) return;
   shopTab = btn.dataset.tab;
+  shopEquipFilter = "";
   document.querySelectorAll("#shopTabs .filter-btn").forEach((b) => b.classList.toggle("selected", b === btn));
+  renderShop();
+});
+
+document.getElementById("shop")?.addEventListener("click", (e) => {
+  const slotBtn = e.target.closest("[data-equip-slot]");
+  if (!slotBtn) return;
+  const slot = slotBtn.dataset.equipSlot;
+  shopEquipFilter = shopEquipFilter === slot ? "" : slot;
+  if (slot === "head") shopTab = "looks";
+  else if (slot === "body" || slot === "weapon") shopTab = "gear";
+  else if (slot === "accessory") shopTab = "toys";
+  else if (slot === "relic") shopTab = "relics";
+  document.querySelectorAll("#shopTabs .filter-btn").forEach((b) => {
+    b.classList.toggle("selected", b.dataset.tab === shopTab);
+  });
   renderShop();
 });
 

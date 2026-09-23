@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=19" />
+  <link rel="stylesheet" href="style.css?v=20" />
 </head>
 <body data-theme="easy">
   <div class="sky">
@@ -171,6 +171,8 @@
 
       <div class="battle-hud hidden" id="battleHud" aria-live="polite"></div>
 
+      <div class="battle-arena hidden" id="battleArena" aria-hidden="true"></div>
+
       <div class="mascot-stage tiny" id="gameStage">
         <div class="mascot tiny bounce-soft" id="gameMascot" aria-hidden="true"></div>
       </div>
@@ -306,13 +308,16 @@
         <span class="coin md"></span>
         <strong id="shopCoins">0</strong>
       </div>
-      <div class="mascot-stage shop-preview" id="shopStage">
+      <div class="mascot-stage shop-preview hidden" id="shopStage" aria-hidden="true">
         <div class="mascot bounce-soft" id="shopMascot" aria-hidden="true"></div>
       </div>
+      <div id="paperDoll" class="paper-doll-wrap"></div>
       <div class="filters shop-tabs" id="shopTabs">
         <button type="button" class="filter-btn selected" data-tab="boosts">Бусты</button>
         <button type="button" class="filter-btn" data-tab="looks">Облик</button>
+        <button type="button" class="filter-btn" data-tab="gear">Экип</button>
         <button type="button" class="filter-btn" data-tab="toys">Штучки</button>
+        <button type="button" class="filter-btn" data-tab="inventory">Инвентарь</button>
         <button type="button" class="filter-btn" data-tab="relics">Артефакты</button>
         <button type="button" class="filter-btn" data-tab="skies">Небо</button>
         <button type="button" class="filter-btn" data-tab="skills">Скиллы</button>
@@ -405,6 +410,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=19"></script>
+  <script src="app.js?v=20"></script>
 </body>
 </html>
