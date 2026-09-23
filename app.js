@@ -1933,6 +1933,7 @@ function showScreen(name) {
   Object.entries(screens).forEach(([key, node]) => {
     node.classList.toggle("hidden", key !== name);
   });
+  document.body.classList.toggle("screen-game", name === "game");
 }
 
 function applyTheme(level) {
