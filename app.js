@@ -1385,7 +1385,7 @@ function renderLevels() {
   if (modeHasSecret()) nodes.push({ id: SECRET_LEVEL, kind: "secret" });
   nodes.push({ id: BATTLE_LEVEL, kind: "boss" });
 
-  const dots = nodes.map((node) => {
+  const dots = nodes.map((node, i) => {
     const id = node.id;
     const open = isLevelOpen(id);
     const cfg = levelCfg(id);
@@ -1413,15 +1413,33 @@ function renderLevels() {
         else if (modeInfo.levelNames[id - 2]) need = `10/10 «${modeInfo.levelNames[id - 2]}»`;
       }
     }
-    const ico = node.kind === "boss" ? "🐉" : node.kind === "secret" ? "🗝️" : (done ? "⭐" : "📍");
-    return `<button type="button" class="map-node ${theme}${selected}${locked}${done}" data-level="${id}">
-      <span class="map-ico">${ico}</span>
-      <span class="map-name">${name}</span>
-      ${need ? `<span class="map-need">${need}</span>` : ""}
+    const ico = node.kind === "boss" ? "🐉" : node.kind === "secret" ? "🗝️" : (done ? "⭐" : "⛏️");
+    const zig = i % 2 === 1 ? " zig" : "";
+    return `<button type="button" class="map-node mc-block ${theme}${selected}${locked}${done}${zig}" data-level="${id}">
+      <span class="mc-cube" aria-hidden="true">
+        <span class="mc-top"></span>
+        <span class="mc-left"></span>
+        <span class="mc-right"></span>
+      </span>
+      <span class="map-face">
+        <span class="map-ico">${ico}</span>
+        <span class="map-name">${name}</span>
+        ${need ? `<span class="map-need">${need}</span>` : ""}
+      </span>
     </button>`;
   }).join("");
 
-  root.innerHTML = `<div class="adventure-map" id="adventureMap"><div class="map-token" id="mapToken" aria-hidden="true">🐾</div>${dots}</div>`;
+  root.innerHTML = `
+    <div class="adventure-map mc-world" id="adventureMap">
+      <div class="mc-sky" aria-hidden="true"></div>
+      <div class="mc-ground" aria-hidden="true"></div>
+      <div class="map-path" aria-hidden="true"></div>
+      <div class="map-nodes">${dots}</div>
+      <div class="map-token mc-steve" id="mapToken" aria-hidden="true">
+        <span class="steve-head"></span>
+        <span class="steve-body"></span>
+      </div>
+    </div>`;
   requestAnimationFrame(() => placeMapToken(selectedLevel, false));
   document.querySelectorAll("#modeTabs .filter-btn").forEach((btn) => {
     btn.classList.toggle("selected", btn.dataset.mode === selectedMode);
@@ -1438,8 +1456,8 @@ function placeMapToken(levelId, animate) {
   if (!token || !node || !map) return;
   const mr = map.getBoundingClientRect();
   const nr = node.getBoundingClientRect();
-  const x = nr.left - mr.left + nr.width / 2 - 12;
-  const y = nr.top - mr.top - 10;
+  const x = nr.left - mr.left + nr.width / 2 - 14;
+  const y = nr.top - mr.top - 18;
   if (animate) token.classList.add("travel");
   token.style.transform = `translate(${x}px, ${y}px)`;
   if (animate) setTimeout(() => token.classList.remove("travel"), 450);
