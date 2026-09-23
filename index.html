@@ -55,6 +55,7 @@
       <div class="filters mode-tabs" id="modeTabs">
         <button type="button" class="filter-btn selected" data-mode="basic">База</button>
         <button type="button" class="filter-btn" data-mode="chain">2 действия</button>
+        <button type="button" class="filter-btn" data-mode="mul">Умножение</button>
         <button type="button" class="filter-btn" data-mode="units">Меры</button>
       </div>
 
@@ -146,6 +147,8 @@
       </header>
 
       <div class="boost-bar" id="boostBar"></div>
+
+      <div class="battle-hud hidden" id="battleHud" aria-live="polite"></div>
 
       <div class="mascot-stage tiny" id="gameStage">
         <div class="mascot tiny bounce-soft" id="gameMascot" aria-hidden="true"></div>
@@ -255,6 +258,7 @@
       <div class="filters mode-tabs" id="boardModeFilters">
         <button type="button" class="filter-btn selected" data-board-mode="basic">База</button>
         <button type="button" class="filter-btn" data-board-mode="chain">2 действия</button>
+        <button type="button" class="filter-btn" data-board-mode="mul">Умножение</button>
         <button type="button" class="filter-btn" data-board-mode="units">Меры</button>
       </div>
       <div class="filters" id="boardFilters">
@@ -321,6 +325,35 @@
     </div>
   </div>
 
-  <script src="app.js?v=11"></script>
+  <div class="units-intro mul-intro hidden" id="mulIntro" aria-hidden="true">
+    <div class="units-intro-card">
+      <h2>Что такое умножение?</h2>
+      <p class="units-intro-lead">Это сложение одинаковых чисел. Время просмотра не идёт в зачёт.</p>
+      <div class="mul-intro-examples">
+        <div class="mul-ex">
+          <strong>3 × 4</strong>
+          <span>значит</span>
+          <em>4 + 4 + 4</em>
+          <span>= 12</span>
+        </div>
+        <div class="mul-ex">
+          <strong>2 × 5</strong>
+          <span>значит</span>
+          <em>5 + 5</em>
+          <span>= 10</span>
+        </div>
+        <div class="mul-ex">
+          <strong>5 × 3</strong>
+          <span>значит</span>
+          <em>3 + 3 + 3 + 3 + 3</em>
+          <span>= 15</span>
+        </div>
+      </div>
+      <p class="units-note">Сначала считаем суммы, потом переходим к знаку ×.</p>
+      <p class="units-countdown">Старт через <strong id="mulCountdown">12</strong>…</p>
+    </div>
+  </div>
+
+  <script src="app.js?v=12"></script>
 </body>
 </html>

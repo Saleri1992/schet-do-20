@@ -1,7 +1,7 @@
 const STORAGE_KEY = "schet-do-20";
 const NICK_KEY = "schet-do-20-nick";
 const SCORE_QUEUE_KEY = "schet-do-20-score-queue";
-const DATA_VERSION = 7;
+const DATA_VERSION = 8;
 const TOTAL = 10;
 const HARD_LIMIT_MS = 60 * 1000;
 const SECRET_SPEED_MS = 40 * 1000;
@@ -10,7 +10,12 @@ const ARCHMAGE_MIN = 850;
 const MODE_BASIC = "basic";
 const MODE_CHAIN = "chain";
 const MODE_UNITS = "units";
+const MODE_MUL = "mul";
 const SECRET_LEVEL = 6;
+const BATTLE_LEVEL = 7;
+const EXTRA_MAX_PER_RUN = 2;
+const BATTLE_HERO_HP = 5;
+const BATTLE_BOSS_HP = 10;
 const HOME_ACH_PREVIEW = 8;
 
 const SUPABASE_URL = "https://edetrdhgardsvhoomwto.supabase.co";
@@ -44,6 +49,7 @@ async function fetchScores(levelFilter, modeFilter = "all", { limit = BOARD_FETC
     if (withMode && modeFilter === MODE_CHAIN) params.set("mode", `eq.${MODE_CHAIN}`);
     if (withMode && modeFilter === MODE_BASIC) params.set("or", "(mode.eq.basic,mode.is.null)");
     if (withMode && modeFilter === MODE_UNITS) params.set("mode", `eq.${MODE_UNITS}`);
+    if (withMode && modeFilter === MODE_MUL) params.set("mode", `eq.${MODE_MUL}`);
     return params;
   };
 
@@ -86,6 +92,7 @@ async function fetchScores(levelFilter, modeFilter = "all", { limit = BOARD_FETC
   const list = (Array.isArray(rows) ? rows : []).filter(isBoardScore);
   if (modeFilter === MODE_CHAIN) return list.filter((r) => r.mode === MODE_CHAIN);
   if (modeFilter === MODE_UNITS) return list.filter((r) => r.mode === MODE_UNITS);
+  if (modeFilter === MODE_MUL) return list.filter((r) => r.mode === MODE_MUL);
   if (modeFilter === MODE_BASIC) return list.filter((r) => !r.mode || r.mode === MODE_BASIC);
   return list;
 }
@@ -348,7 +355,7 @@ const LEVELS = {
     balloons: ["📕", "✏️", "📕"],
     subtitle: "Минута + школьная оценка. Буст «Читер» прощает ошибки (до 4).",
   },
-  6: {
+    6: {
     id: 6,
     name: "Секрет",
     theme: "secret",
@@ -357,6 +364,16 @@ const LEVELS = {
     secret: true,
     balloons: ["🗝️", "✨", "🗝️"],
     subtitle: "Секрет: числа до 30. Без таймера. Открывается за скорость во всех режимах.",
+  },
+  7: {
+    id: 7,
+    name: "Босс",
+    theme: "boss",
+    coin: 12,
+    limit: null,
+    battle: true,
+    balloons: ["🐉", "⚔️", "🐉"],
+    subtitle: "Сражение: все уровни подряд. 5 HP у тебя, 10 у Задания.",
   },
 };
 
@@ -382,6 +399,63 @@ const UNIT_LEVELS = {
     subtitle: "Что больше? Ответ: 1, 2 или 0 если равно. Сначала таблица мер 10 сек.",
   },
 };
+
+/** Умножение — своя лестница, не как База/Хард. */
+const MUL_LEVELS = {
+  1: {
+    id: 1,
+    name: "Суть",
+    theme: "easy",
+    coin: 2,
+    limit: null,
+    mul: "intro",
+    intro: true,
+    balloons: ["💡", "✖️", "💡"],
+    subtitle: "Умножение — это сложение одинаковых чисел. Сначала учимся понимать.",
+  },
+  2: {
+    id: 2,
+    name: "×2 и ×3",
+    theme: "medium",
+    coin: 2,
+    limit: null,
+    mul: "t23",
+    balloons: ["2️⃣", "3️⃣", "⭐"],
+    subtitle: "Только таблица на 2 и на 3.",
+  },
+  3: {
+    id: 3,
+    name: "×4 и ×5",
+    theme: "sharp",
+    coin: 3,
+    limit: null,
+    mul: "t45",
+    balloons: ["4️⃣", "5️⃣", "⚡"],
+    subtitle: "Таблица на 4 и на 5.",
+  },
+  4: {
+    id: 4,
+    name: "×6–×9",
+    theme: "hard",
+    coin: 4,
+    limit: null,
+    mul: "t69",
+    balloons: ["6️⃣", "9️⃣", "🔥"],
+    subtitle: "Таблица на 6, 7, 8 и 9.",
+  },
+  5: {
+    id: 5,
+    name: "Смешанно",
+    theme: "exam",
+    coin: 5,
+    limit: null,
+    mul: "mixed",
+    balloons: ["🎲", "✖️", "🎲"],
+    subtitle: "Вперемешку вся таблица 2–9 и примеры «? × 4 = 12».",
+  },
+};
+
+const MUL_INTRO_MS = 12 * 1000;
 
 const MODE_META = {
   [MODE_BASIC]: {
@@ -427,6 +501,21 @@ const MODE_META = {
       "Сравни длины или объёмы: 1 / 2 / 0=равно",
     ],
     themes: ["units", "unitsCmp"],
+  },
+  [MODE_MUL]: {
+    id: MODE_MUL,
+    name: "Умножение",
+    unlockText: "Лестница умножения",
+    maxLevel: 5,
+    levelNames: ["Суть", "×2 и ×3", "×4 и ×5", "×6–×9", "Смешанно"],
+    levelDescs: [
+      "Что значит умножить: сумма одинаковых слагаемых",
+      "Только ×2 и ×3",
+      "Только ×4 и ×5",
+      "Таблица ×6, ×7, ×8, ×9",
+      "Всё вместе + найти множитель",
+    ],
+    themes: ["easy", "medium", "sharp", "hard", "exam"],
   },
 };
 
@@ -496,6 +585,46 @@ const RELICS = {
   heroFlame: { id: "heroFlame", name: "Пламя героя", icon: "🔥", rank: "Герой", rankMin: 520, price: 1200, desc: "Огонёк смелости за спиной." },
   legendSeal: { id: "legendSeal", name: "Печать легенды", icon: "💎", rank: "Легенда", rankMin: 660, price: 1500, desc: "Редкая печать легендарных." },
   archCrown: { id: "archCrown", name: "Корона архимага", icon: "👑", rank: "Архимаг", rankMin: 850, price: 2000, desc: "Самый крутой артефакт." },
+  woodSword: {
+    id: "woodSword",
+    name: "Деревянный меч",
+    icon: "⚔️",
+    rank: "Знаток",
+    rankMin: 72,
+    price: 280,
+    battle: { dmgBonus: 1 },
+    desc: "Для босса: верный ответ бьёт на 2 HP.",
+  },
+  ironShield: {
+    id: "ironShield",
+    name: "Железный щит",
+    icon: "🛡️",
+    rank: "Отличник",
+    rankMin: 110,
+    price: 360,
+    battle: { maxHpBonus: 1 },
+    desc: "Для босса: старт с +1 сердцем.",
+  },
+  luckyAmulet: {
+    id: "luckyAmulet",
+    name: "Амулет удачи",
+    icon: "🧿",
+    rank: "Мастер",
+    rankMin: 160,
+    price: 420,
+    battle: { firstHitFree: true },
+    desc: "Для босса: первый удар по тебе не считается.",
+  },
+  bossBadge: {
+    id: "bossBadge",
+    name: "Знак победителя",
+    icon: "🏅",
+    rank: "Чемпион",
+    rankMin: 300,
+    price: 520,
+    battle: { rewardBonus: 0.2 },
+    desc: "Для босса: +20% монет за победу.",
+  },
 };
 
 /* Небо / декор фона: только за звание, монеты не нужны. */
@@ -541,6 +670,43 @@ const SKILLS = {
     cooldownMs: 30 * 1000,
     desc: "Подсказка: один правильный ответ. Раз в 30 сек. Кнопка в любой игре.",
   },
+  fireBolt: {
+    id: "fireBolt",
+    name: "Огненный удар",
+    icon: "🔥",
+    price: 900,
+    rankMin: 72,
+    rank: "Знаток",
+    battleOnly: true,
+    durationMs: 0,
+    cooldownMs: 25 * 1000,
+    desc: "Только босс: следующий верный ответ +1 урон. КД 25 сек.",
+  },
+  mend: {
+    id: "mend",
+    name: "Исцеление",
+    icon: "💚",
+    price: 1100,
+    rankMin: 110,
+    rank: "Отличник",
+    battleOnly: true,
+    durationMs: 0,
+    cooldownMs: 40 * 1000,
+    oncePerBattle: true,
+    desc: "Только босс: +1 HP. Один раз за бой, КД 40 сек.",
+  },
+  frostWard: {
+    id: "frostWard",
+    name: "Ледяной щит",
+    icon: "❄️",
+    price: 1000,
+    rankMin: 72,
+    rank: "Знаток",
+    battleOnly: true,
+    durationMs: 0,
+    cooldownMs: 35 * 1000,
+    desc: "Только босс: блок одной ошибки. КД 35 сек.",
+  },
 };
 
 const FX = {
@@ -549,7 +715,7 @@ const FX = {
     name: "Классика",
     price: 0,
     icon: "🎆",
-    desc: "Обычный салют при хорошем результате",
+    desc: "Лёгкий салют при хорошем результате",
   },
   rainbow: {
     id: "rainbow",
@@ -577,21 +743,24 @@ const FX = {
     name: "Северное сияние",
     price: 280,
     icon: "✨",
-    desc: "Переливающееся небо — супердорогой эффект",
+    desc: "Мягкое переливающееся небо",
   },
   golden: {
     id: "golden",
     name: "Золотой шторм",
     price: 360,
     icon: "👑",
-    desc: "Золотой ливень и мега-салют",
+    desc: "Золотой дождь при победе",
   },
 };
 
 const BOOSTS = [
-  { id: "slow", icon: "🐌", name: "Улитка-время", desc: "На харде и реальном харде таймер ползёт в 2 раза медленнее. Один забег.", price: 800 },
-  { id: "extra", icon: "⏳", name: "+15 секунд", desc: "Добавляет 15 секунд к харду / реальному харду. Один забег.", price: 100 },
+  { id: "slow", icon: "🐌", name: "Улитка-время", desc: "Учётные секунды ползут в 2 раза медленнее (для топа). Лимит харда идёт как обычно. Один забег.", price: 800 },
+  { id: "extra", icon: "⏳", name: "−15 секунд", desc: "Вычитает 15 сек из учётного времени (для топа). До 2 раз за забег. Лимит не растёт.", price: 100 },
   { id: "cheat", icon: "🕵️", name: "Читер", desc: "Только реальный хард: 1 ошибка не считается для оценки. Можно до 4 за забег. Один заряд = одна ошибка.", price: 1000 },
+  { id: "potion", icon: "🧪", name: "Малое зелье", desc: "Только босс: +1 HP. До 2 раз за бой.", price: 120, battle: true },
+  { id: "megaPotion", icon: "🧴", name: "Большое зелье", desc: "Только босс: +2 HP. 1 раз за бой.", price: 220, battle: true },
+  { id: "shieldScroll", icon: "📜", name: "Свиток щита", desc: "Только босс: блок следующей ошибки. 1 раз за бой.", price: 180, battle: true },
 ];
 
 const CHEAT_MAX_PER_RUN = 4;
@@ -680,7 +849,11 @@ const ACHIEVEMENTS = [
   { id: "boost_any_10", icon: "⚡", name: "Буст-мастер", desc: "Используй любые бусты суммарно 10 раз", check: (s) => ((s.shop?.boostUsed?.slow || 0) + (s.shop?.boostUsed?.extra || 0) + (s.shop?.boostUsed?.cheat || 0)) >= 10, progress: (s) => ({ current: (s.shop?.boostUsed?.slow || 0) + (s.shop?.boostUsed?.extra || 0) + (s.shop?.boostUsed?.cheat || 0), target: 10 }) },
   { id: "units_convert", icon: "📏", name: "Переводчик", desc: "10/10 на конвертации мер", check: (s) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_UNITS && (r.level || 1) === 1 && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_UNITS && (r.level || 1) === 1).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
   { id: "units_compare", icon: "⚖️", name: "Весы", desc: "10/10 на сравнении мер", check: (s) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_UNITS && r.level === 2 && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_UNITS && r.level === 2).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
-  { id: "speed_gate", icon: "⏱️", name: "Спринтер режимов", desc: "Все обычные уровни Базы, 2 действий и Мер — 10/10 быстрее 40 сек", check: () => isSecretGateReady(), progress: () => ({ current: secretGateProgress().current, target: secretGateProgress().target }) },
+  { id: "mul_easy", icon: "💡", name: "Понял суть", desc: "10/10 на этапе «Суть» умножения", check: (s) => s.runs.some((r) => r.mode === MODE_MUL && (r.level || 1) === 1 && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => r.mode === MODE_MUL && (r.level || 1) === 1).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
+  { id: "mul_table", icon: "2️⃣", name: "Двойки и тройки", desc: "10/10 на этапе «×2 и ×3»", check: (s) => s.runs.some((r) => r.mode === MODE_MUL && r.level === 2 && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => r.mode === MODE_MUL && r.level === 2).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
+  { id: "mul_hard", icon: "🎲", name: "Смешанный мастер", desc: "10/10 на этапе «Смешанно»", check: (s) => s.runs.some((r) => r.mode === MODE_MUL && r.level === 5 && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => r.mode === MODE_MUL && r.level === 5).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
+  { id: "mul_secret", icon: "✖️", name: "Вся лестница ×", desc: "Пройди все 5 этапов умножения на 10/10", check: (s) => [1, 2, 3, 4, 5].every((lvl) => s.runs.some((r) => r.mode === MODE_MUL && (r.level || 1) === lvl && r.correct === 10)), progress: (s) => ({ current: [1, 2, 3, 4, 5].filter((lvl) => s.runs.some((r) => r.mode === MODE_MUL && (r.level || 1) === lvl && r.correct === 10)).length, target: 5 }) },
+  { id: "speed_gate", icon: "⏱️", name: "Спринтер режимов", desc: "Все обычные уровни Базы, 2 действий, Умножения и Мер — 10/10 быстрее 40 сек", check: () => isSecretGateReady(), progress: () => ({ current: secretGateProgress().current, target: secretGateProgress().target }) },
   { id: "secret_open", icon: "🔓", name: "Дверь приоткрыта", desc: "Открой секретный уровень", check: () => isSecretUnlocked(), progress: () => ({ current: isSecretUnlocked() ? 1 : 0, target: 1 }) },
   { id: "secret_basic", icon: "🗝️", name: "Секрет базы", desc: "10/10 на секретном уровне Базы", check: (s) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_BASIC && r.level === SECRET_LEVEL && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_BASIC && r.level === SECRET_LEVEL).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
   { id: "secret_chain", icon: "🔐", name: "Секрет цепочки", desc: "10/10 на секретном уровне 2 действий", check: (s) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_CHAIN && r.level === SECRET_LEVEL && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_CHAIN && r.level === SECRET_LEVEL).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
@@ -832,12 +1005,13 @@ let selectedMode = (() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}-mode`);
     if (saved === MODE_CHAIN) return MODE_CHAIN;
     if (saved === MODE_UNITS) return MODE_UNITS;
+    if (saved === MODE_MUL) return MODE_MUL;
     return MODE_BASIC;
   } catch {
     return MODE_BASIC;
   }
 })();
-boardMode = selectedMode === MODE_CHAIN ? MODE_CHAIN : MODE_BASIC;
+boardMode = selectedMode === MODE_BASIC ? MODE_BASIC : selectedMode;
 let playerNick = loadNick();
 
 function loadNick() {
@@ -893,7 +1067,10 @@ function emptyShop() {
     slow: 0,
     extra: 0,
     cheat: 0,
-    boostUsed: { slow: 0, extra: 0, cheat: 0 },
+    potion: 0,
+    megaPotion: 0,
+    shieldScroll: 0,
+    boostUsed: { slow: 0, extra: 0, cheat: 0, potion: 0, megaPotion: 0, shieldScroll: 0 },
   };
 }
 
@@ -930,10 +1107,16 @@ function normalizeShop(raw) {
     slow: Number(raw.slow) || 0,
     extra: Number(raw.extra) || 0,
     cheat: Number(raw.cheat) || 0,
+    potion: Number(raw.potion) || 0,
+    megaPotion: Number(raw.megaPotion) || 0,
+    shieldScroll: Number(raw.shieldScroll) || 0,
     boostUsed: {
       slow: Number(raw.boostUsed && raw.boostUsed.slow) || 0,
       extra: Number(raw.boostUsed && raw.boostUsed.extra) || 0,
       cheat: Number(raw.boostUsed && raw.boostUsed.cheat) || 0,
+      potion: Number(raw.boostUsed && raw.boostUsed.potion) || 0,
+      megaPotion: Number(raw.boostUsed && raw.boostUsed.megaPotion) || 0,
+      shieldScroll: Number(raw.boostUsed && raw.boostUsed.shieldScroll) || 0,
     },
   };
 }
@@ -945,7 +1128,7 @@ function loadState() {
     if (!raw) return empty;
     const data = JSON.parse(raw);
     const ver = Number(data.version);
-    if (ver !== 2 && ver !== 3 && ver !== 4 && ver !== 5 && ver !== 6 && ver !== DATA_VERSION) {
+    if (ver !== 2 && ver !== 3 && ver !== 4 && ver !== 5 && ver !== 6 && ver !== 7 && ver !== DATA_VERSION) {
       return { ...empty, lastLevel: 1 };
     }
     let runs = Array.isArray(data.runs) ? data.runs : [];
@@ -987,12 +1170,14 @@ function rankIndexOf(stars) {
 
 function levelCfg(level, mode = selectedMode) {
   if (mode === MODE_UNITS) return UNIT_LEVELS[level] || UNIT_LEVELS[1];
+  if (mode === MODE_MUL) return MUL_LEVELS[level] || MUL_LEVELS[1];
   return LEVELS[level] || LEVELS[1];
 }
 
 function modeLabelShort(mode) {
   if (mode === MODE_CHAIN) return " · 2ш";
   if (mode === MODE_UNITS) return " · меры";
+  if (mode === MODE_MUL) return " · ×";
   return "";
 }
 
@@ -1013,6 +1198,7 @@ function secretGateNeeds() {
     need.push({ mode: MODE_BASIC, level: l });
     need.push({ mode: MODE_CHAIN, level: l });
   }
+  for (let l = 1; l <= 5; l += 1) need.push({ mode: MODE_MUL, level: l });
   need.push({ mode: MODE_UNITS, level: 1 });
   need.push({ mode: MODE_UNITS, level: 2 });
   return need;
@@ -1054,12 +1240,39 @@ function hasSecretPerfect(modeId) {
 
 function skillGateOpen(skill) {
   if (!skill) return false;
+  if (skill.battleOnly) return state.stars >= (skill.rankMin || 0);
   return hasSecretPerfect(skill.secretMode);
 }
 
 function equippedSkill() {
   const id = state.shop && state.shop.skill;
   return id && SKILLS[id] && state.shop.skills.includes(id) ? SKILLS[id] : null;
+}
+
+function equippedBattleRelic() {
+  const id = state.shop && state.shop.relic;
+  const r = id && RELICS[id] ? RELICS[id] : null;
+  return r && r.battle ? r : null;
+}
+
+function battleRoundsForMode(mode = selectedMode) {
+  if (mode === MODE_UNITS) return [1, 2];
+  if (mode === MODE_MUL) return [1, 2, 3, 4, 5];
+  return [1, 2, 3, 4, 5];
+}
+
+function isBossOpen() {
+  return battleRoundsForMode().every((id) => hasPerfect(id));
+}
+
+function normalMaxLevel() {
+  const modeInfo = MODE_META[selectedMode] || MODE_META[MODE_BASIC];
+  if (selectedMode === MODE_UNITS || selectedMode === MODE_MUL) return modeInfo.maxLevel || 2;
+  return Math.min(modeInfo.maxLevel || 5, SECRET_LEVEL - 1);
+}
+
+function modeHasSecret() {
+  return selectedMode === MODE_BASIC || selectedMode === MODE_CHAIN;
 }
 
 function skillReadyAt(runObj = run) {
@@ -1081,12 +1294,17 @@ function hasPerfect(levelId) {
 }
 
 function isLevelOpen(id) {
+  if (id === BATTLE_LEVEL) return isBossOpen();
   const modeInfo = MODE_META[selectedMode] || MODE_META[MODE_BASIC];
   const max = modeInfo.maxLevel || 5;
   if (id < 1 || id > max) return false;
   if (selectedMode === MODE_UNITS) {
     if (id === 1) return modeProgress(MODE_BASIC, 3) || modeProgress(MODE_CHAIN, 3);
     return hasPerfect(1);
+  }
+  if (selectedMode === MODE_MUL) {
+    if (id <= 1) return true;
+    return hasPerfect(id - 1);
   }
   if (id === SECRET_LEVEL) return isSecretUnlocked();
   if (id <= 1) return true;
@@ -1155,40 +1373,76 @@ function xpInfo() {
 }
 
 function renderLevels() {
-  if (!isLevelOpen(selectedLevel)) selectedLevel = maxOpenLevel();
+  if (selectedLevel !== BATTLE_LEVEL && selectedLevel !== SECRET_LEVEL && !isLevelOpen(selectedLevel)) {
+    selectedLevel = maxOpenLevel();
+  }
   const modeInfo = MODE_META[selectedMode] || MODE_META[MODE_BASIC];
   const root = document.getElementById("levels");
   if (!root) return;
-  const max = modeInfo.maxLevel || 5;
-  root.innerHTML = Array.from({ length: max }, (_, i) => {
-    const id = i + 1;
+  const maxNormal = normalMaxLevel();
+  const nodes = [];
+  for (let id = 1; id <= maxNormal; id += 1) nodes.push({ id, kind: "level" });
+  if (modeHasSecret()) nodes.push({ id: SECRET_LEVEL, kind: "secret" });
+  nodes.push({ id: BATTLE_LEVEL, kind: "boss" });
+
+  const dots = nodes.map((node) => {
+    const id = node.id;
     const open = isLevelOpen(id);
     const cfg = levelCfg(id);
-    const theme = (modeInfo.themes && modeInfo.themes[i]) || cfg.theme || "easy";
+    const theme = node.kind === "boss"
+      ? "boss"
+      : ((modeInfo.themes && modeInfo.themes[id - 1]) || cfg.theme || "easy");
     const selected = selectedLevel === id ? " selected" : "";
     const locked = open ? "" : " locked";
-    const secret = cfg.secret || id === SECRET_LEVEL ? " secret-level" : "";
-    const prevName = modeInfo.levelNames[id - 2];
+    const done = (id !== BATTLE_LEVEL && hasPerfect(id))
+      || (id === BATTLE_LEVEL && state.runs.some((r) => (r.mode || MODE_BASIC) === selectedMode && r.level === BATTLE_LEVEL && r.battleWin))
+      ? " done"
+      : "";
+    let name;
     let need = "";
-    if (!open) {
-      if (selectedMode === MODE_UNITS && id === 1) need = "🔒 Сначала 10/10 на «Сложный» (База или 2ш)";
-      else if (id === SECRET_LEVEL) need = "🔒 Все режимы 10/10 быстрее 40 сек";
-      else if (prevName) need = `🔒 10/10 «${prevName}»`;
+    if (node.kind === "boss") {
+      name = "Босс";
+      if (!open) need = "Все уровни 10/10";
+    } else if (node.kind === "secret") {
+      name = open ? (modeInfo.levelNames[id - 1] || "Секрет") : "???";
+      if (!open) need = "Скорость везде";
+    } else {
+      name = modeInfo.levelNames[id - 1] || cfg.name;
+      if (!open) {
+        if (selectedMode === MODE_UNITS && id === 1) need = "Сначала «Сложный»";
+        else if (modeInfo.levelNames[id - 2]) need = `10/10 «${modeInfo.levelNames[id - 2]}»`;
+      }
     }
-    const name = id === SECRET_LEVEL && !open ? "???" : (modeInfo.levelNames[i] || cfg.name);
-    const desc = id === SECRET_LEVEL && !open
-      ? "Секретный уровень. Условие: скорость во всех режимах."
-      : (modeInfo.levelDescs[i] || cfg.subtitle || "");
-    return `<button type="button" class="level-card ${theme}${selected}${locked}${secret}" data-level="${id}">
-      <span class="lvl-medal m${Math.min(id, 6)}"></span>
-      <span class="lvl-name">${name}</span>
-      <span class="lvl-desc">${desc}</span>
-      <span class="lvl-need">${need}</span>
+    const ico = node.kind === "boss" ? "🐉" : node.kind === "secret" ? "🗝️" : (done ? "⭐" : "📍");
+    return `<button type="button" class="map-node ${theme}${selected}${locked}${done}" data-level="${id}">
+      <span class="map-ico">${ico}</span>
+      <span class="map-name">${name}</span>
+      ${need ? `<span class="map-need">${need}</span>` : ""}
     </button>`;
   }).join("");
+
+  root.innerHTML = `<div class="adventure-map" id="adventureMap"><div class="map-token" id="mapToken" aria-hidden="true">🐾</div>${dots}</div>`;
+  requestAnimationFrame(() => placeMapToken(selectedLevel, false));
   document.querySelectorAll("#modeTabs .filter-btn").forEach((btn) => {
     btn.classList.toggle("selected", btn.dataset.mode === selectedMode);
   });
+  if (els.startBtn) {
+    els.startBtn.textContent = selectedLevel === BATTLE_LEVEL ? "В бой!" : "Старт";
+  }
+}
+
+function placeMapToken(levelId, animate) {
+  const token = document.getElementById("mapToken");
+  const node = document.querySelector(`.map-node[data-level="${levelId}"]`);
+  const map = document.getElementById("adventureMap");
+  if (!token || !node || !map) return;
+  const mr = map.getBoundingClientRect();
+  const nr = node.getBoundingClientRect();
+  const x = nr.left - mr.left + nr.width / 2 - 12;
+  const y = nr.top - mr.top - 10;
+  if (animate) token.classList.add("travel");
+  token.style.transform = `translate(${x}px, ${y}px)`;
+  if (animate) setTimeout(() => token.classList.remove("travel"), 450);
 }
 
 function formatTime(ms) {
@@ -1453,6 +1707,79 @@ function generateSharpFocus() {
   return Math.random() < 0.5 ? generateCrossingAdd() : generateCrossingSub();
 }
 
+function repeatedSum(n, times) {
+  return Array.from({ length: times }, () => String(n)).join(" + ");
+}
+
+function generateMulIntro() {
+  const n = rand(2, 5);
+  const times = rand(2, 5);
+  const product = n * times;
+  const roll = Math.random();
+  if (roll < 0.4) {
+    // Понять: сумма одинаковых → ответ
+    return {
+      a: n,
+      b: times,
+      op: "×",
+      answer: product,
+      text: `${repeatedSum(n, times)} = ?`,
+      hint: `${times} раз по ${n}`,
+    };
+  }
+  if (roll < 0.7) {
+    // С подсказкой суммы рядом
+    return {
+      a: n,
+      b: times,
+      op: "×",
+      answer: product,
+      text: `${times} × ${n} = ?`,
+      hint: `${repeatedSum(n, times)}`,
+    };
+  }
+  // Явная связка
+  return {
+    a: n,
+    b: times,
+    op: "×",
+    answer: product,
+    text: `${times} × ${n}  (= ${repeatedSum(n, times)})  = ?`,
+  };
+}
+
+function generateMulByTables(tables, secondMax = 10) {
+  const a = tables[rand(0, tables.length - 1)];
+  const b = rand(1, secondMax);
+  return { a, b, op: "×", answer: a * b, text: `${a} × ${b} = ?` };
+}
+
+function generateMulMissing(tables) {
+  const a = tables[rand(0, tables.length - 1)];
+  const b = rand(2, 9);
+  const product = a * b;
+  if (Math.random() < 0.5) {
+    return { a, b, op: "×", answer: b, text: `${a} × ? = ${product}`, missing: "b" };
+  }
+  return { a, b, op: "×", answer: a, text: `? × ${b} = ${product}`, missing: "a" };
+}
+
+function generateMulMixed() {
+  const tables = [2, 3, 4, 5, 6, 7, 8, 9];
+  if (Math.random() < 0.7) return generateMulByTables(tables, 9);
+  return generateMulMissing(tables);
+}
+
+function generateMulProblem(level) {
+  const cfg = levelCfg(level, MODE_MUL);
+  const kind = cfg.mul || "mixed";
+  if (kind === "intro") return generateMulIntro();
+  if (kind === "t23") return generateMulByTables([2, 3], 10);
+  if (kind === "t45") return generateMulByTables([4, 5], 10);
+  if (kind === "t69") return generateMulByTables([6, 7, 8, 9], 9);
+  return generateMulMixed();
+}
+
 function generateProblem(level) {
   if (selectedMode === MODE_UNITS) {
     const cfg = levelCfg(level);
@@ -1460,6 +1787,7 @@ function generateProblem(level) {
     if (cfg.units === "compare") return generateUnitsCompare(kind);
     return generateUnitsConvert(kind);
   }
+  if (selectedMode === MODE_MUL) return generateMulProblem(level);
   if (level === SECRET_LEVEL) {
     return selectedMode === MODE_CHAIN ? generateSecretChain() : generateSecretBasic();
   }
@@ -1527,7 +1855,10 @@ function generateRun(level) {
   if (level === SECRET_LEVEL) {
     const items = [];
     const seen = new Set();
-    const make = () => (selectedMode === MODE_CHAIN ? generateSecretChain() : generateSecretBasic());
+    const make = () => {
+      if (selectedMode === MODE_CHAIN) return generateSecretChain();
+      return generateSecretBasic();
+    };
     let guard = 0;
     while (items.length < TOTAL && guard < 160) {
       const p = make();
@@ -1539,6 +1870,22 @@ function generateRun(level) {
       guard += 1;
     }
     while (items.length < TOTAL) items.push(make());
+    return items;
+  }
+  if (selectedMode === MODE_MUL) {
+    const items = [];
+    const seen = new Set();
+    let guard = 0;
+    while (items.length < TOTAL && guard < 200) {
+      const p = generateMulProblem(level);
+      const key = p.text || `${p.a}×${p.b}=${p.answer}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        items.push(p);
+      }
+      guard += 1;
+    }
+    while (items.length < TOTAL) items.push(generateMulProblem(level));
     return items;
   }
   if (selectedMode === MODE_CHAIN) {
@@ -1571,12 +1918,14 @@ function showScreen(name) {
 }
 
 function applyTheme(level) {
-  const cfg = levelCfg(level);
-  document.body.dataset.theme = cfg.theme;
+  const cfg = levelCfg(level === BATTLE_LEVEL ? BATTLE_LEVEL : level);
+  document.body.dataset.theme = cfg.theme === "boss" ? "exam" : cfg.theme;
   const modeInfo = MODE_META[selectedMode] || MODE_META[MODE_BASIC];
-  if (selectedMode === MODE_UNITS) {
+  if (level === BATTLE_LEVEL) {
+    els.homeSubtitle.textContent = `Босс режима «${modeInfo.name}»: все уровни подряд, следи за HP!`;
+  } else if (selectedMode === MODE_UNITS) {
     els.homeSubtitle.textContent = `Режим «Меры»: ${modeInfo.levelDescs[(level || 1) - 1] || cfg.subtitle}`;
-  } else if (selectedMode === MODE_CHAIN) {
+  } else if (selectedMode === MODE_CHAIN || selectedMode === MODE_MUL) {
     els.homeSubtitle.textContent = `Режим «${modeInfo.name}»: ${modeInfo.levelDescs[(level || 1) - 1] || cfg.subtitle}`;
   } else {
     els.homeSubtitle.textContent = cfg.subtitle;
@@ -1584,8 +1933,8 @@ function applyTheme(level) {
   [els.balloon1, els.balloon2, els.balloon3].forEach((node, i) => {
     node.textContent = cfg.balloons[i];
   });
-  document.querySelectorAll(".level-card").forEach((card) => {
-    card.classList.toggle("selected", Number(card.dataset.level) === cfg.id);
+  document.querySelectorAll(".map-node, .level-card").forEach((card) => {
+    card.classList.toggle("selected", Number(card.dataset.level) === selectedLevel);
   });
   paintMascots();
 }
@@ -2045,7 +2394,10 @@ function renderNickCard(forceEdit = false) {
 }
 
 function renderHome() {
-  if (!isLevelOpen(selectedLevel)) selectedLevel = maxOpenLevel();
+  if (selectedMode === MODE_MUL && (selectedLevel === SECRET_LEVEL || (selectedLevel > 5 && selectedLevel !== BATTLE_LEVEL))) {
+    selectedLevel = maxOpenLevel();
+  }
+  if (selectedLevel !== BATTLE_LEVEL && !isLevelOpen(selectedLevel)) selectedLevel = maxOpenLevel();
   if (unlockSkiesByRank()) saveState();
   applyTheme(selectedLevel);
   applySkyDecor();
@@ -2071,6 +2423,18 @@ function renderHome() {
       els.unlockHint.textContent = "10/10 на «Конвертация» откроет «Сравнение».";
     } else {
       els.unlockHint.textContent = "Оба уровня мер открыты. Перед стартом — таблица на 10 сек.";
+    }
+  } else if (selectedMode === MODE_MUL) {
+    if (!isLevelOpen(2)) {
+      els.unlockHint.textContent = "Сначала «Суть»: пойми, что умножение — это сложение одинаковых.";
+    } else if (!isLevelOpen(5)) {
+      const next = [2, 3, 4, 5].find((id) => !isLevelOpen(id));
+      const prev = next - 1;
+      els.unlockHint.textContent = `10/10 на «${modeInfo.levelNames[prev - 1]}» откроет «${modeInfo.levelNames[next - 1]}»`;
+    } else if (!isBossOpen()) {
+      els.unlockHint.textContent = "Все этапы умножения открыты. Пройди их на 10/10 — откроется босс.";
+    } else {
+      els.unlockHint.textContent = "Лестница умножения пройдена — можно бить босса!";
     }
   } else if (!isLevelOpen(2)) {
     els.unlockHint.textContent = `10/10 на «${modeInfo.levelNames[0]}» откроет «${modeInfo.levelNames[1]}»`;
@@ -2187,6 +2551,31 @@ function showUnitsIntro() {
   });
 }
 
+function showMulIntro() {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById("mulIntro");
+    const countEl = document.getElementById("mulCountdown");
+    if (!overlay || !countEl) {
+      resolve();
+      return;
+    }
+    let left = Math.round(MUL_INTRO_MS / 1000);
+    countEl.textContent = String(left);
+    overlay.classList.remove("hidden");
+    overlay.setAttribute("aria-hidden", "false");
+    const tick = setInterval(() => {
+      left -= 1;
+      countEl.textContent = String(Math.max(0, left));
+      if (left <= 0) {
+        clearInterval(tick);
+        overlay.classList.add("hidden");
+        overlay.setAttribute("aria-hidden", "true");
+        resolve();
+      }
+    }, 1000);
+  });
+}
+
 async function startGame() {
   if (startGame.busy) return;
   startGame.busy = true;
@@ -2194,13 +2583,23 @@ async function startGame() {
     stopFireworks();
     stopFxLayer();
     ensureNickFromInput();
-    if (!isLevelOpen(selectedLevel)) selectedLevel = maxOpenLevel();
+    if (selectedLevel !== BATTLE_LEVEL && !isLevelOpen(selectedLevel)) selectedLevel = maxOpenLevel();
+    if (selectedLevel === BATTLE_LEVEL && !isBossOpen()) selectedLevel = maxOpenLevel();
     renderLevels();
-    const cfg = levelCfg(selectedLevel);
-    if (selectedMode === MODE_UNITS) {
+    const isBattle = selectedLevel === BATTLE_LEVEL;
+    const rounds = isBattle ? battleRoundsForMode() : null;
+    const startLevel = isBattle ? rounds[0] : selectedLevel;
+    const cfg = levelCfg(startLevel);
+    if (selectedMode === MODE_UNITS && !isBattle) {
       showScreen("home");
       await showUnitsIntro();
     }
+    if (selectedMode === MODE_MUL && !isBattle && (cfg.intro || cfg.mul === "intro")) {
+      showScreen("home");
+      await showMulIntro();
+    }
+    const relic = equippedBattleRelic();
+    const battleFx = (relic && relic.battle) || {};
     const startedAt = Date.now();
     run = {
       items: generateRun(cfg.id),
@@ -2209,26 +2608,55 @@ async function startGame() {
       answers: [],
       startedAt,
       startedIso: new Date(startedAt).toISOString(),
-      level: cfg.id,
+      level: isBattle ? BATTLE_LEVEL : cfg.id,
+      roundLevel: cfg.id,
       limit: cfg.limit,
       done: false,
       gameMs: 0,
+      realMs: 0,
+      scoreMs: 0,
       lastTick: Date.now(),
       timeScale: 1,
+      scoreScale: 1,
+      realScale: 1,
       slowOn: false,
-      extraOn: false,
+      extraUsed: 0,
       forgive: 0,
       skillReadyAt: 0,
       skillActiveUntil: 0,
       skillHintUsedOn: -1,
+      battle: isBattle,
+      rounds: rounds || [],
+      roundIndex: 0,
+      heroMaxHp: BATTLE_HERO_HP + (battleFx.maxHpBonus || 0),
+      heroHp: BATTLE_HERO_HP + (battleFx.maxHpBonus || 0),
+      bossHp: BATTLE_BOSS_HP,
+      bossMaxHp: BATTLE_BOSS_HP,
+      firstHitFree: !!battleFx.firstHitFree,
+      dmgBonus: battleFx.dmgBonus || 0,
+      rewardBonus: battleFx.rewardBonus || 0,
+      fireNext: false,
+      shieldCharges: 0,
+      potionUsed: 0,
+      megaPotionUsed: 0,
+      shieldScrollUsed: 0,
+      mendUsed: 0,
+      battleWin: false,
+      roundBase: 0,
     };
     document.body.classList.remove("slow-mo");
+    document.body.classList.toggle("in-battle", isBattle);
     const modeInfo = MODE_META[selectedMode] || MODE_META[MODE_BASIC];
-    els.gameLevel.textContent = `${modeInfo.levelNames[cfg.id - 1] || cfg.name}${modeLabelShort(selectedMode)}`;
+    if (isBattle) {
+      els.gameLevel.textContent = `Босс · раунд 1/${rounds.length}${modeLabelShort(selectedMode)}`;
+    } else {
+      els.gameLevel.textContent = `${modeInfo.levelNames[cfg.id - 1] || cfg.name}${modeLabelShort(selectedMode)}`;
+    }
     els.timer.classList.toggle("countdown", Boolean(cfg.limit));
     els.timer.classList.remove("danger");
     showScreen("game");
     paintMascots();
+    renderBattleHud();
     renderBoostBar();
     renderProblem();
     startTimer();
@@ -2237,11 +2665,21 @@ async function startGame() {
   }
 }
 
-function gameElapsed() {
+function realElapsed() {
   const now = Date.now();
-  run.gameMs += (now - run.lastTick) * run.timeScale;
+  const dt = now - run.lastTick;
   run.lastTick = now;
-  return run.gameMs;
+  const realScale = run.realScale != null ? run.realScale : 1;
+  const scoreScale = run.scoreScale != null ? run.scoreScale : 1;
+  run.realMs = (run.realMs || 0) + dt * realScale;
+  run.scoreMs = (run.scoreMs || 0) + dt * scoreScale;
+  run.gameMs = run.scoreMs;
+  return run.realMs;
+}
+
+function gameElapsed() {
+  realElapsed();
+  return run.scoreMs || 0;
 }
 
 function startTimer() {
@@ -2251,10 +2689,13 @@ function startTimer() {
     if (!run || run.done) return;
     tickSkillEffects();
     if (run.limit) {
-      const left = Math.max(0, run.limit - gameElapsed());
+      const left = Math.max(0, run.limit - realElapsed());
       els.timer.textContent = formatTime(left);
       els.timer.classList.toggle("danger", left <= 15000);
-      if (left <= 0) finishRun({ timedOut: true });
+      if (left <= 0) {
+        if (run.battle) finishBattleRoundTimeout();
+        else finishRun({ timedOut: true });
+      }
     } else {
       els.timer.textContent = formatTime(gameElapsed());
     }
@@ -2269,15 +2710,21 @@ function tickSkillEffects() {
   if (Date.now() < run.skillActiveUntil) return;
   gameElapsed();
   run.skillActiveUntil = 0;
+  run.realScale = 1;
   if (!run.slowOn) {
+    run.scoreScale = 1;
     run.timeScale = 1;
     document.body.classList.remove("slow-mo");
+  } else {
+    run.scoreScale = 0.5;
   }
 }
 
 function skillButtonHtml() {
   const skill = equippedSkill();
   if (!skill || !run) return "";
+  if (skill.battleOnly && !run.battle) return "";
+  if (!skill.battleOnly && run.battle && skill.id !== "timeLord" && skill.id !== "sageHint") return "";
   const now = Date.now();
   const active = skillIsActive();
   const cd = skillCooldownLeft();
@@ -2327,6 +2774,7 @@ function useSkill(id) {
     const now = Date.now();
     run.skillActiveUntil = now + skill.durationMs;
     run.skillReadyAt = run.skillActiveUntil + skill.cooldownMs;
+    run.realScale = 0.5;
     run.timeScale = 0.5;
     document.body.classList.add("slow-mo");
     showToasts([{ plain: true, icon: skill.icon, name: skill.name, desc: "Время замедлено на 10 секунд!" }]);
@@ -2338,6 +2786,21 @@ function useSkill(id) {
     run.input = String(item.answer);
     drawAnswer();
     showToasts([{ plain: true, icon: skill.icon, name: "Подсказка мудреца", desc: `Правильный ответ: ${item.answer}` }]);
+  } else if (id === "fireBolt" && run.battle) {
+    run.skillReadyAt = Date.now() + skill.cooldownMs;
+    run.fireNext = true;
+    showToasts([{ plain: true, icon: skill.icon, name: skill.name, desc: "Следующий верный ответ сильнее!" }]);
+  } else if (id === "mend" && run.battle) {
+    if (run.mendUsed) return;
+    run.mendUsed = 1;
+    run.skillReadyAt = Date.now() + skill.cooldownMs;
+    run.heroHp = Math.min(run.heroMaxHp, run.heroHp + 1);
+    renderBattleHud();
+    showToasts([{ plain: true, icon: skill.icon, name: skill.name, desc: "+1 HP" }]);
+  } else if (id === "frostWard" && run.battle) {
+    run.skillReadyAt = Date.now() + skill.cooldownMs;
+    run.shieldCharges = (run.shieldCharges || 0) + 1;
+    showToasts([{ plain: true, icon: skill.icon, name: skill.name, desc: "Следующая ошибка заблокирована" }]);
   }
   refreshSkillButton();
 }
@@ -2357,6 +2820,23 @@ function renderProblem() {
   els.problem.textContent = item.text || `${item.a}  ${item.op}  ${item.b}  =  ?`;
   // Только сравнение мер — многострочный блок; обычные примеры всегда по центру.
   els.problem.classList.toggle("units-cmp", Boolean(item.compare));
+  els.problem.classList.toggle("mul-long", Boolean(item.hint) || (item.text && item.text.length > 22));
+  let hintEl = document.getElementById("mulHint");
+  if (!hintEl && els.problemCard) {
+    hintEl = document.createElement("div");
+    hintEl.id = "mulHint";
+    hintEl.className = "mul-hint";
+    els.problemCard.appendChild(hintEl);
+  }
+  if (hintEl) {
+    if (item.hint) {
+      hintEl.textContent = `подсказка: ${item.hint}`;
+      hintEl.classList.remove("hidden");
+    } else {
+      hintEl.textContent = "";
+      hintEl.classList.add("hidden");
+    }
+  }
   els.problemCard.classList.remove("pop");
   void els.problemCard.offsetWidth;
   els.problemCard.classList.add("pop");
@@ -2394,9 +2874,127 @@ function captureCurrent(emptyMark) {
   });
 }
 
+function renderBattleHud() {
+  const hud = document.getElementById("battleHud");
+  if (!hud) return;
+  if (!run || !run.battle) {
+    hud.classList.add("hidden");
+    hud.innerHTML = "";
+    return;
+  }
+  hud.classList.remove("hidden");
+  const heroPct = Math.max(0, Math.round((run.heroHp / run.heroMaxHp) * 100));
+  const bossPct = Math.max(0, Math.round((run.bossHp / run.bossMaxHp) * 100));
+  hud.innerHTML = `
+    <div class="hp-side hero">
+      <div class="hp-label">Ты ${"❤".repeat(Math.max(0, run.heroHp))}${"🖤".repeat(Math.max(0, run.heroMaxHp - run.heroHp))}</div>
+      <div class="hp-bar"><i style="width:${heroPct}%"></i></div>
+    </div>
+    <div class="hp-round">Раунд ${run.roundIndex + 1}/${run.rounds.length}</div>
+    <div class="hp-side boss">
+      <div class="hp-label">Задание ${run.bossHp}/${run.bossMaxHp}</div>
+      <div class="hp-bar"><i style="width:${bossPct}%"></i></div>
+    </div>
+  `;
+}
+
+function applyBattleOutcome(ok) {
+  if (!run || !run.battle) return;
+  if (ok) {
+    let dmg = 1 + (run.dmgBonus || 0);
+    if (run.fireNext) {
+      dmg += 1;
+      run.fireNext = false;
+    }
+    run.bossHp = Math.max(0, run.bossHp - dmg);
+  } else {
+    if (run.shieldCharges > 0) {
+      run.shieldCharges -= 1;
+      showToasts([{ plain: true, icon: "🛡️", name: "Щит!", desc: "Урон заблокирован" }]);
+    } else if (run.firstHitFree) {
+      run.firstHitFree = false;
+      showToasts([{ plain: true, icon: "🧿", name: "Амулет!", desc: "Первый удар не засчитан" }]);
+    } else {
+      run.heroHp = Math.max(0, run.heroHp - 1);
+    }
+  }
+  renderBattleHud();
+}
+
+function advanceBattleRound() {
+  const modeInfo = MODE_META[selectedMode] || MODE_META[MODE_BASIC];
+  run.roundIndex += 1;
+  if (run.roundIndex >= run.rounds.length) {
+    run.battleWin = run.heroHp > 0;
+    finishRun({ timedOut: false });
+    return;
+  }
+  const nextLevel = run.rounds[run.roundIndex];
+  const cfg = levelCfg(nextLevel);
+  run.roundLevel = nextLevel;
+  run.items = generateRun(nextLevel);
+  run.index = 0;
+  run.input = "";
+  run.limit = cfg.limit;
+  run.realMs = 0;
+  run.roundBase = run.answers.length;
+  run.lastTick = Date.now();
+  els.gameLevel.textContent = `Босс · раунд ${run.roundIndex + 1}/${run.rounds.length} · ${modeInfo.levelNames[nextLevel - 1] || cfg.name}`;
+  els.timer.classList.toggle("countdown", Boolean(cfg.limit));
+  els.timer.classList.remove("danger");
+  showToasts([{ plain: true, icon: "⚔️", name: `Раунд ${run.roundIndex + 1}`, desc: modeInfo.levelNames[nextLevel - 1] || cfg.name }]);
+  renderBoostBar();
+  renderProblem();
+  startTimer();
+}
+
+function finishBattleRoundTimeout() {
+  if (!run || run.done || !run.battle) return;
+  if (run.answers.length === (run.roundBase || 0) + run.index) captureCurrent("—");
+  const target = (run.roundBase || 0) + TOTAL;
+  while (run.answers.length < target) {
+    const item = run.items[run.answers.length - (run.roundBase || 0)];
+    if (!item) break;
+    run.answers.push({ ...item, given: "—", ok: false });
+  }
+  applyBattleOutcome(false);
+  if (run.heroHp <= 0) {
+    run.battleWin = false;
+    finishRun({ timedOut: true });
+    return;
+  }
+  if (run.bossHp <= 0) {
+    run.battleWin = true;
+    finishRun({ timedOut: false });
+    return;
+  }
+  advanceBattleRound();
+}
+
 function goNext() {
   if (!run || run.done) return;
   captureCurrent("—");
+  const last = run.answers[run.answers.length - 1];
+  if (run.battle) {
+    applyBattleOutcome(!!(last && last.ok));
+    if (run.heroHp <= 0) {
+      run.battleWin = false;
+      finishRun({ timedOut: false });
+      return;
+    }
+    if (run.bossHp <= 0) {
+      run.battleWin = true;
+      finishRun({ timedOut: false });
+      return;
+    }
+    if (run.index + 1 >= TOTAL) {
+      advanceBattleRound();
+      return;
+    }
+    run.index += 1;
+    renderProblem();
+    return;
+  }
   if (run.index + 1 >= TOTAL) {
     finishRun({ timedOut: false });
     return;
@@ -2428,6 +3026,7 @@ function coinsFor(level, correct, timedOut, grade) {
   if (level === 5 && grade?.mark === 5 && !timedOut) coins += 5;
   if (level === SECRET_LEVEL && correct === 10) coins += 20;
   if (selectedMode === MODE_UNITS && correct === 10) coins += 5;
+  if (selectedMode === MODE_MUL && correct === 10) coins += 5;
   return coins;
 }
 
@@ -2444,7 +3043,7 @@ function finishRun({ timedOut = false } = {}) {
   run.done = true;
   stopTimer();
 
-  if (timedOut && run.answers.length < TOTAL) {
+  if (timedOut && !run.battle && run.answers.length < TOTAL) {
     if (run.answers.length === run.index) captureCurrent("—");
     while (run.answers.length < TOTAL) {
       const item = run.items[run.answers.length];
@@ -2452,32 +3051,42 @@ function finishRun({ timedOut = false } = {}) {
     }
   }
 
-  const ms = Math.max(0, Math.round(run.gameMs || (Date.now() - run.startedAt)));
+  gameElapsed();
+  let ms = Math.max(0, Math.round(run.scoreMs || run.gameMs || 0));
   const correct = run.answers.filter((a) => a.ok).length;
-  const cfg = levelCfg(run.level);
-  const grade = cfg.school ? schoolGrade(correct, run.forgive || 0) : null;
+  const cfg = levelCfg(run.battle ? BATTLE_LEVEL : run.level);
+  const grade = (!run.battle && cfg.school) ? schoolGrade(correct, run.forgive || 0) : null;
   const openBefore = maxOpenLevel();
   const rankBefore = rankIndexOf(state.stars);
-  const gainedStars = grade?.failed ? Math.max(0, Math.floor(correct / 2)) : correct;
-  const gainedCoins = coinsFor(run.level, correct, timedOut, grade);
+  let gainedStars;
+  let gainedCoins;
+  if (run.battle) {
+    const win = !!run.battleWin;
+    gainedStars = win ? 15 + Math.floor(correct / 5) : Math.max(1, Math.floor(correct / 4));
+    gainedCoins = win ? Math.round((40 + correct) * (1 + (run.rewardBonus || 0))) : Math.max(2, Math.floor(correct / 2));
+  } else {
+    gainedStars = grade?.failed ? Math.max(0, Math.floor(correct / 2)) : correct;
+    gainedCoins = coinsFor(run.level, correct, timedOut, grade);
+  }
   state.stars += gainedStars;
   state.coins += gainedCoins;
   const openAfter = maxOpenLevel();
   const rankAfter = rankIndexOf(state.stars);
-  state.lastLevel = isLevelOpen(run.level) ? run.level : maxOpenLevel();
+  state.lastLevel = run.battle ? BATTLE_LEVEL : (isLevelOpen(run.level) ? run.level : maxOpenLevel());
   state.runs.unshift({
     startedAt: run.startedIso,
     date: new Date().toISOString(),
     correct,
-    total: TOTAL,
+    total: run.answers.length || TOTAL,
     ms,
-    level: run.level,
+    level: run.battle ? BATTLE_LEVEL : run.level,
     mode: selectedMode,
     timedOut,
     coins: gainedCoins,
     grade: grade ? grade.mark : undefined,
     failed: grade ? grade.failed : undefined,
     forgive: grade && grade.forgiven ? grade.forgiven : undefined,
+    battleWin: run.battle ? !!run.battleWin : undefined,
     answers: run.answers.map((a) => ({
       a: a.a,
       op: a.op,
@@ -2497,9 +3106,15 @@ function finishRun({ timedOut = false } = {}) {
   const fresh = unlockAchievements();
   saveState();
 
-  const msg = encouragement(correct, timedOut, grade);
+  document.body.classList.remove("in-battle");
+  const msg = run.battle
+    ? (run.battleWin
+      ? { title: "Босс повержен!", text: "Задание побеждено — ты герой!" }
+      : { title: "Поражение…", text: "HP кончились. Подлечись в магазине и попробуй снова!" })
+    : encouragement(correct, timedOut, grade);
   els.resultTitle.textContent = msg.title;
   els.rewardLine.textContent = `${msg.text}  +${gainedStars} опыта  +${gainedCoins} монет`;
+  renderBattleHud();
   els.correctCount.textContent = String(correct);
   els.resultTime.textContent = timedOut ? `${formatTime(ms)} (время)` : formatTime(ms);
   els.coinsGain.textContent = String(gainedCoins);
@@ -2525,6 +3140,9 @@ function finishRun({ timedOut = false } = {}) {
   if (rankAfter > rankBefore) {
     extraBanners.push(`<div class="ach-banner"><span class="rank-medal r${rankAfter} on">${RANKS[rankAfter].icon}</span><div>${RANKS[rankAfter].name}<small>Новый ранг за опыт</small></div></div>`);
   }
+  if (run.battle && run.battleWin) {
+    extraBanners.push(`<div class="ach-banner"><span class="ico">🐉</span><div>Победа над боссом!<small>Жирная награда за сражение</small></div></div>`);
+  }
   if (run.level === SECRET_LEVEL && correct === 10) {
     extraBanners.push(`<div class="ach-banner"><span class="ico">🗝️</span><div>Награда тайны<small>Ключ тайны + небо «Тайная ночь»</small></div></div>`);
     if (selectedMode === MODE_BASIC) {
@@ -2539,8 +3157,12 @@ function finishRun({ timedOut = false } = {}) {
     .join("");
   els.reviewList.innerHTML = answersReviewHtml(run.answers);
 
-  const celebrate = grade ? !grade.failed && grade.mark >= 3 : correct >= 5 || correct === 10;
-  const perfectWin = grade ? grade.mark === 5 && !timedOut : correct === 10;
+  const celebrate = run.battle
+    ? !!run.battleWin
+    : (grade ? !grade.failed && grade.mark >= 3 : correct >= 5 || correct === 10);
+  const perfectWin = run.battle
+    ? !!run.battleWin
+    : (grade ? grade.mark === 5 && !timedOut : correct === 10);
   spawnConfetti(celebrate);
   spawnLoot(gainedStars, gainedCoins);
   spawnVictoryFx(celebrate, perfectWin);
@@ -2567,19 +3189,23 @@ function finishRun({ timedOut = false } = {}) {
   }
   showScreen("result");
   renderHome();
-  submitOnlineScore({
-    level: run.level,
-    correct,
-    ms,
-    grade: grade ? grade.mark : null,
-    timedOut,
-    mode: selectedMode,
-    localId: run.startedIso,
-  });
+  if (!run.battle) {
+    submitOnlineScore({
+      level: run.level,
+      correct,
+      ms,
+      grade: grade ? grade.mark : null,
+      timedOut,
+      mode: selectedMode,
+      localId: run.startedIso,
+    });
+  }
 }
 
 const FW_COLORS = ["#ffd166", "#ff7a59", "#4ecdc4", "#6bcb77", "#c084fc", "#ff6b9d"];
-const FW_GOLD = ["#fff6c2", "#ffd24a", "#ffe566", "#ffb703", "#fff", "#ff9f1c"];
+const FW_GOLD = ["#fff6c2", "#ffd24a", "#ffe566", "#ffb703", "#ff9f1c"];
+const FW_MAX_SPARKS = 40;
+const FW_SCALE = 0.4;
 
 const fw = {
   canvas: document.getElementById("fireworks"),
@@ -2591,11 +3217,15 @@ const fw = {
   perfect: false,
   nextLaunch: 0,
   launched: 0,
+  w: 0,
+  h: 0,
 };
 
 function fwResize() {
-  fw.canvas.width = window.innerWidth;
-  fw.canvas.height = window.innerHeight;
+  fw.w = Math.max(1, Math.floor(window.innerWidth * FW_SCALE));
+  fw.h = Math.max(1, Math.floor(window.innerHeight * FW_SCALE));
+  fw.canvas.width = fw.w;
+  fw.canvas.height = fw.h;
 }
 
 function ensureNickFromInput() {
@@ -2774,9 +3404,9 @@ function spawnFireworks(perfect) {
   fw.sparks = [];
   fw.launched = 0;
   fw.nextLaunch = 0;
-  fw.stopAt = Date.now() + (perfect ? 5000 : 2200);
+  fw.stopAt = Date.now() + (perfect ? 2000 : 1200);
   fwResize();
-  fw.ctx = fw.canvas.getContext("2d");
+  fw.ctx = fw.canvas.getContext("2d", { alpha: true });
   fw.canvas.classList.add("on");
   document.body.classList.toggle("fw-perfect", perfect);
   fwTick();
@@ -2791,11 +3421,9 @@ function stopFxLayer() {
   els.fxLayer.innerHTML = "";
 }
 
-function fxBits(kind, count, make) {
+function fxBits(count, make) {
   const parts = [];
-  for (let i = 0; i < count; i += 1) {
-    parts.push(make(i));
-  }
+  for (let i = 0; i < count; i += 1) parts.push(make(i));
   return parts.join("");
 }
 
@@ -2805,15 +3433,15 @@ function spawnFxLayer(id, perfect) {
   const big = perfect ? " big" : "";
   els.fxLayer.className = `fx-layer on fx-${id}${big}`;
   if (id === "rainbow") {
-    els.fxLayer.innerHTML = fxBits("ribbon", perfect ? 10 : 6, (i) =>
-      `<i class="fx-ribbon r${i % 6}" style="left:${6 + (i * 5.2) % 88}%;animation-delay:${(i * 0.08).toFixed(2)}s;--rot:${-28 + (i % 7) * 8}deg"></i>`
+    els.fxLayer.innerHTML = fxBits(perfect ? 4 : 3, (i) =>
+      `<i class="fx-ribbon r${i % 6}" style="left:${10 + (i * 18) % 80}%;animation-delay:${(i * 0.12).toFixed(2)}s;--rot:${-20 + (i % 5) * 8}deg"></i>`
     );
   } else if (id === "galaxy") {
     els.fxLayer.innerHTML = `
       <div class="fx-nebula"></div>
       <div class="fx-spin">
-        ${fxBits("star", perfect ? 14 : 8, (i) =>
-          `<i class="fx-star" style="--a:${(i * 37) % 360}deg;--d:${40 + (i % 8) * 18}px;animation-delay:${(i * 0.05).toFixed(2)}s"></i>`
+        ${fxBits(perfect ? 5 : 4, (i) =>
+          `<i class="fx-star" style="--a:${(i * 72) % 360}deg;--d:${48 + (i % 4) * 14}px"></i>`
         )}
       </div>
     `;
@@ -2821,32 +3449,27 @@ function spawnFxLayer(id, perfect) {
     els.fxLayer.innerHTML = `
       <div class="fx-flame-ring a"></div>
       <div class="fx-flame-ring b"></div>
-      <div class="fx-flame-ring c"></div>
-      ${fxBits("ember", perfect ? 12 : 7, (i) =>
-        `<i class="fx-ember" style="left:${10 + (i * 7) % 80}%;animation-delay:${(i * 0.07).toFixed(2)}s"></i>`
+      ${fxBits(perfect ? 4 : 3, (i) =>
+        `<i class="fx-ember" style="left:${14 + (i * 18) % 72}%;animation-delay:${(i * 0.12).toFixed(2)}s"></i>`
       )}
     `;
   } else if (id === "aurora") {
     els.fxLayer.innerHTML = `
       <div class="fx-aurora a"></div>
       <div class="fx-aurora b"></div>
-      <div class="fx-aurora c"></div>
-      ${fxBits("glint", perfect ? 10 : 6, (i) =>
-        `<i class="fx-glint" style="left:${8 + (i * 11) % 84}%;top:${12 + (i * 9) % 50}%;animation-delay:${(i * 0.12).toFixed(2)}s"></i>`
+      ${fxBits(perfect ? 3 : 2, (i) =>
+        `<i class="fx-glint" style="left:${16 + (i * 22) % 70}%;top:${18 + (i * 14) % 36}%;animation-delay:${(i * 0.18).toFixed(2)}s"></i>`
       )}
     `;
   } else if (id === "golden") {
     els.fxLayer.innerHTML = `
       <div class="fx-gold-glow"></div>
-      ${fxBits("coin", perfect ? 14 : 8, (i) =>
-        `<i class="fx-gold" style="left:${4 + (i * 3.7) % 92}%;animation-delay:${(i * 0.06).toFixed(2)}s;--spin:${rand(-40, 40)}deg"></i>`
-      )}
-      ${fxBits("spark", perfect ? 10 : 6, (i) =>
-        `<i class="fx-sparkle" style="left:${10 + (i * 8) % 80}%;top:${8 + (i * 13) % 55}%;animation-delay:${(i * 0.09).toFixed(2)}s"></i>`
+      ${fxBits(perfect ? 5 : 3, (i) =>
+        `<i class="fx-gold" style="left:${10 + (i * 16) % 80}%;animation-delay:${(i * 0.1).toFixed(2)}s"></i>`
       )}
     `;
   }
-  fxTimer = setTimeout(stopFxLayer, perfect ? 5000 : 2400);
+  fxTimer = setTimeout(stopFxLayer, perfect ? 2000 : 1400);
 }
 
 function spawnVictoryFx(celebrate, perfect) {
@@ -2856,20 +3479,19 @@ function spawnVictoryFx(celebrate, perfect) {
     return;
   }
   const fxId = state.shop.fx && FX[state.shop.fx] ? state.shop.fx : "classic";
-  const mega = perfect || fxId === "golden" || fxId === "aurora";
-  spawnFireworks(mega);
-  if (fxId !== "classic") spawnFxLayer(fxId, perfect || fxId === "golden");
+  spawnFireworks(!!perfect);
+  if (fxId !== "classic") spawnFxLayer(fxId, !!perfect);
 }
 
 function stopFireworks() {
   cancelAnimationFrame(fw.raf);
+  fw.raf = 0;
   fw.rockets = [];
   fw.sparks = [];
   document.body.classList.remove("fw-perfect");
   if (fw.canvas) {
     fw.canvas.classList.remove("on");
-    const ctx = fw.canvas.getContext("2d");
-    ctx.clearRect(0, 0, fw.canvas.width, fw.canvas.height);
+    if (fw.ctx) fw.ctx.clearRect(0, 0, fw.w || fw.canvas.width, fw.h || fw.canvas.height);
   }
 }
 
@@ -2877,156 +3499,103 @@ function fwPick(list) {
   return list[rand(0, list.length - 1)];
 }
 
-function fwLaunch(x, targetY, color, power, style) {
+function fwLaunch(x, targetY, color) {
   fw.rockets.push({
     x,
-    y: fw.canvas.height + 8,
-    vx: (Math.random() - 0.5) * 1.1,
-    vy: - (11 + Math.random() * 4),
+    y: fw.h + 4,
+    vx: (Math.random() - 0.5) * 0.8,
+    vy: -(6.5 + Math.random() * 2.2),
     targetY,
     color,
-    power,
-    style,
-    trail: [],
   });
 }
 
-function fwBurst(x, y, color, power, style) {
-  const n = power;
-  if (style === "ring") {
-    for (let i = 0; i < n; i += 1) {
-      const a = (Math.PI * 2 * i) / n;
-      const sp = 3.4 + Math.random() * 0.6;
-      fw.sparks.push(fwSpark(x, y, Math.cos(a) * sp, Math.sin(a) * sp, color, 2.4, 0.008));
-    }
-    return;
+function fwBurst(x, y, color, n) {
+  const room = FW_MAX_SPARKS - fw.sparks.length;
+  if (room <= 0) return;
+  const count = Math.min(n, room);
+  for (let i = 0; i < count; i += 1) {
+    const a = (Math.PI * 2 * i) / count + Math.random() * 0.2;
+    const sp = 1.4 + Math.random() * 2.2;
+    fw.sparks.push({
+      x,
+      y,
+      vx: Math.cos(a) * sp,
+      vy: Math.sin(a) * sp,
+      color,
+      size: 1.6 + Math.random() * 1.2,
+      life: 1,
+      fade: 0.028 + Math.random() * 0.012,
+    });
   }
-  if (style === "willow") {
-    for (let i = 0; i < n; i += 1) {
-      const a = Math.random() * Math.PI * 2;
-      const sp = 1.2 + Math.random() * 3.8;
-      fw.sparks.push(fwSpark(x, y, Math.cos(a) * sp, Math.sin(a) * sp - 1.2, color, 1.6, 0.006));
-    }
-    return;
-  }
-  for (let i = 0; i < n; i += 1) {
-    const a = (Math.PI * 2 * i) / n + Math.random() * 0.25;
-    const sp = (style === "gold" ? 2.2 : 1.8) + Math.random() * 3.4;
-    fw.sparks.push(fwSpark(x, y, Math.cos(a) * sp, Math.sin(a) * sp, color, style === "gold" ? 2.8 : 2.1, 0.01));
-  }
-  if (style === "gold") {
-    for (let i = 0; i < 18; i += 1) {
-      fw.sparks.push(fwSpark(x, y, (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2, "#fff", 1.2, 0.02));
-    }
-  }
-}
-
-function fwSpark(x, y, vx, vy, color, size, fade) {
-  return { x, y, vx, vy, color, size, life: 1, fade, trail: [] };
 }
 
 function fwScheduleLaunches(now) {
-  if (now < fw.nextLaunch || now > fw.stopAt - 400) return;
-  const w = fw.canvas.width;
-  const h = fw.canvas.height;
+  if (now < fw.nextLaunch || now > fw.stopAt - 350) return;
+  if (fw.sparks.length > FW_MAX_SPARKS * 0.85) {
+    fw.nextLaunch = now + 280;
+    return;
+  }
+  const w = fw.w;
+  const h = fw.h;
   if (fw.perfect) {
-    const palette = Math.random() < 0.55 ? FW_GOLD : FW_COLORS;
-    const styles = ["peony", "ring", "willow", "gold"];
-    const count = fw.launched === 0 ? 2 : rand(1, 2);
-    for (let i = 0; i < count; i += 1) {
-      fwLaunch(
-        w * (0.12 + Math.random() * 0.76),
-        h * (0.16 + Math.random() * 0.32),
-        fwPick(palette),
-        rand(36, 58),
-        fwPick(styles)
-      );
-    }
-    fw.nextLaunch = now + (fw.launched < 2 ? 320 : 520);
-    fw.launched += 1;
-    if (fw.launched === 4) {
-      const cx = w / 2;
-      const cy = h * 0.28;
-      fwBurst(cx, cy, "#ffd24a", 66, "gold");
-      fwBurst(cx - 90, cy + 20, "#ff6b9d", 42, "ring");
-      fwBurst(cx + 90, cy + 20, "#4ecdc4", 42, "ring");
-    }
+    fwLaunch(
+      w * (0.18 + Math.random() * 0.64),
+      h * (0.2 + Math.random() * 0.28),
+      fwPick(Math.random() < 0.5 ? FW_GOLD : FW_COLORS)
+    );
+    fw.nextLaunch = now + 620;
   } else {
     fwLaunch(
-      w * (0.2 + Math.random() * 0.6),
-      h * (0.22 + Math.random() * 0.22),
-      fwPick(FW_COLORS),
-      rand(36, 52),
-      "peony"
+      w * (0.25 + Math.random() * 0.5),
+      h * (0.24 + Math.random() * 0.2),
+      fwPick(FW_COLORS)
     );
-    fw.nextLaunch = now + 520;
-    fw.launched += 1;
+    fw.nextLaunch = now + 700;
   }
+  fw.launched += 1;
 }
 
 function fwTick() {
   const ctx = fw.ctx;
+  if (!ctx) return;
   const now = Date.now();
-  ctx.globalCompositeOperation = "destination-out";
-  ctx.fillStyle = "rgba(0,0,0,0.22)";
-  ctx.fillRect(0, 0, fw.canvas.width, fw.canvas.height);
-  ctx.globalCompositeOperation = "lighter";
+  ctx.clearRect(0, 0, fw.w, fw.h);
 
   fwScheduleLaunches(now);
 
-  fw.rockets = fw.rockets.filter((r) => {
-    r.trail.push({ x: r.x, y: r.y });
-    if (r.trail.length > 10) r.trail.shift();
+  for (let i = fw.rockets.length - 1; i >= 0; i -= 1) {
+    const r = fw.rockets[i];
     r.x += r.vx;
     r.y += r.vy;
-    r.vy += 0.12;
-    r.trail.forEach((p, i) => {
-      ctx.fillStyle = r.color;
-      ctx.globalAlpha = i / r.trail.length;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
-      ctx.fill();
-    });
-    ctx.globalAlpha = 1;
+    r.vy += 0.09;
     ctx.fillStyle = "#fff";
-    ctx.beginPath();
-    ctx.arc(r.x, r.y, 3, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillRect(r.x - 1.5, r.y - 1.5, 3, 3);
+    ctx.fillStyle = r.color;
+    ctx.fillRect(r.x - 1, r.y + 2, 2, 5);
     if (r.vy >= 0 || r.y <= r.targetY) {
-      fwBurst(r.x, r.y, r.color, r.power, r.style);
-      if (fw.perfect) fwBurst(r.x, r.y, "#fff6c2", Math.floor(r.power * 0.35), "peony");
-      return false;
+      fwBurst(r.x, r.y, r.color, fw.perfect ? 8 : 6);
+      fw.rockets.splice(i, 1);
     }
-    return true;
-  });
+  }
 
-  fw.sparks = fw.sparks.filter((s) => {
+  for (let i = fw.sparks.length - 1; i >= 0; i -= 1) {
+    const s = fw.sparks[i];
     s.life -= s.fade;
-    if (s.life <= 0) return false;
-    s.trail.push({ x: s.x, y: s.y });
-    if (s.trail.length > 6) s.trail.shift();
+    if (s.life <= 0) {
+      fw.sparks.splice(i, 1);
+      continue;
+    }
     s.x += s.vx;
     s.y += s.vy;
-    s.vy += 0.035;
-    s.vx *= 0.985;
-    s.trail.forEach((p, i) => {
-      ctx.globalAlpha = (s.life * i) / s.trail.length * 0.5;
-      ctx.fillStyle = s.color;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, s.size * 0.45, 0, Math.PI * 2);
-      ctx.fill();
-    });
+    s.vy += 0.04;
+    s.vx *= 0.99;
     ctx.globalAlpha = s.life;
     ctx.fillStyle = s.color;
-    ctx.shadowBlur = fw.perfect ? 16 : 8;
-    ctx.shadowColor = s.color;
-    ctx.beginPath();
-    ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.globalAlpha = 1;
-    return true;
-  });
+    const sz = s.size;
+    ctx.fillRect(s.x - sz * 0.5, s.y - sz * 0.5, sz, sz);
+  }
+  ctx.globalAlpha = 1;
 
   if (now < fw.stopAt || fw.rockets.length || fw.sparks.length) {
     fw.raf = requestAnimationFrame(fwTick);
@@ -3101,47 +3670,65 @@ function renderBoostBar() {
     return;
   }
   let html = "";
-  const showBoosts = run.level >= 4 && run.level < SECRET_LEVEL && selectedMode !== MODE_UNITS && levelCfg(run.level).limit;
-  if (showBoosts) {
+  const roundLevel = run.battle ? run.roundLevel : run.level;
+  const showTimeBoosts = (run.battle || (roundLevel >= 4 && roundLevel < SECRET_LEVEL))
+    && selectedMode !== MODE_UNITS
+    && (run.battle ? Boolean(levelCfg(roundLevel).limit) : Boolean(levelCfg(roundLevel).limit));
+  if (showTimeBoosts || run.battle) {
     const slowN = state.shop.slow;
     const extraN = state.shop.extra;
     const cheatN = state.shop.cheat;
-    const cheatUsed = run.forgive || 0;
-    const cheatLeft = CHEAT_MAX_PER_RUN - cheatUsed;
-    const canCheat = run.level === 5 && cheatN > 0 && cheatLeft > 0;
-    html += `
-      <button type="button" class="boost-btn ${run.slowOn ? "on" : ""}" data-boost="slow" ${run.slowOn || slowN < 1 ? "disabled" : ""}>🐌 Замедлить${slowN ? ` ×${slowN}` : ""}</button>
-      <button type="button" class="boost-btn ${run.extraOn ? "on" : ""}" data-boost="extra" ${run.extraOn || extraN < 1 ? "disabled" : ""}>⏳ +15 сек${extraN ? ` ×${extraN}` : ""}</button>
-    `;
-    if (run.level === 5) {
+    const extraLeft = EXTRA_MAX_PER_RUN - (run.extraUsed || 0);
+    if (showTimeBoosts) {
+      html += `
+        <button type="button" class="boost-btn ${run.slowOn ? "on" : ""}" data-boost="slow" ${run.slowOn || slowN < 1 ? "disabled" : ""}>🐌 Улитка${slowN ? ` ×${slowN}` : ""}</button>
+        <button type="button" class="boost-btn ${(run.extraUsed || 0) ? "on" : ""}" data-boost="extra" ${extraLeft < 1 || extraN < 1 ? "disabled" : ""}>⏳ −15 (${run.extraUsed || 0}/${EXTRA_MAX_PER_RUN})${extraN ? ` ×${extraN}` : ""}</button>
+      `;
+    }
+    if (roundLevel === 5) {
+      const cheatUsed = run.forgive || 0;
+      const cheatLeft = CHEAT_MAX_PER_RUN - cheatUsed;
+      const canCheat = cheatN > 0 && cheatLeft > 0;
       html += `<button type="button" class="boost-btn ${cheatUsed ? "on" : ""}" data-boost="cheat" ${canCheat ? "" : "disabled"}>🕵️ Читер${cheatUsed ? ` +${cheatUsed}` : ""}${cheatN ? ` ×${cheatN}` : ""}</button>`;
     }
+  }
+  if (run.battle) {
+    const pN = state.shop.potion || 0;
+    const mN = state.shop.megaPotion || 0;
+    const sN = state.shop.shieldScroll || 0;
+    html += `
+      <button type="button" class="boost-btn" data-boost="potion" ${pN < 1 || run.potionUsed >= 2 || run.heroHp >= run.heroMaxHp ? "disabled" : ""}>🧪 +1HP${pN ? ` ×${pN}` : ""}</button>
+      <button type="button" class="boost-btn" data-boost="megaPotion" ${mN < 1 || run.megaPotionUsed >= 1 || run.heroHp >= run.heroMaxHp ? "disabled" : ""}>🧴 +2HP${mN ? ` ×${mN}` : ""}</button>
+      <button type="button" class="boost-btn" data-boost="shieldScroll" ${sN < 1 || run.shieldScrollUsed >= 1 ? "disabled" : ""}>📜 Щит${sN ? ` ×${sN}` : ""}</button>
+    `;
   }
   html += skillButtonHtml();
   els.boostBar.innerHTML = html;
 }
 
 function useBoost(id) {
-  if (!run || run.done || run.level < 4) return;
+  if (!run || run.done) return;
   if (id === "slow" && !run.slowOn && state.shop.slow > 0) {
     gameElapsed();
-    run.timeScale = 0.5;
+    run.scoreScale = 0.5;
     run.slowOn = true;
     state.shop.slow -= 1;
     state.shop.boostUsed.slow = (state.shop.boostUsed.slow || 0) + 1;
     document.body.classList.add("slow-mo");
     saveState();
-    showToasts([{ plain: true, icon: "🐌", name: "Время замедлилось", desc: "Таймер ползёт, как улитка!" }]);
+    showToasts([{ plain: true, icon: "🐌", name: "Учётные секунды замедлены", desc: "Для топа время ползёт медленнее. Лимит — как обычно." }]);
   }
-  if (id === "extra" && !run.extraOn && state.shop.extra > 0) {
-    run.limit += 15000;
-    run.extraOn = true;
+  if (id === "extra" && (run.extraUsed || 0) < EXTRA_MAX_PER_RUN && state.shop.extra > 0) {
+    gameElapsed();
+    run.scoreMs = Math.max(0, (run.scoreMs || 0) - 15000);
+    run.gameMs = run.scoreMs;
+    run.extraUsed = (run.extraUsed || 0) + 1;
     state.shop.extra -= 1;
     state.shop.boostUsed.extra = (state.shop.boostUsed.extra || 0) + 1;
     saveState();
-    showToasts([{ plain: true, icon: "⏳", name: "+15 секунд", desc: "Ещё чуть-чуть времени!" }]);
+    showToasts([{ plain: true, icon: "⏳", name: "−15 секунд", desc: `Учётное время урезано (${run.extraUsed}/${EXTRA_MAX_PER_RUN})` }]);
   }
-  if (id === "cheat" && run.level === 5 && state.shop.cheat > 0 && (run.forgive || 0) < CHEAT_MAX_PER_RUN) {
+  if (id === "cheat" && (run.battle ? run.roundLevel === 5 : run.level === 5) && state.shop.cheat > 0 && (run.forgive || 0) < CHEAT_MAX_PER_RUN) {
     run.forgive = (run.forgive || 0) + 1;
     state.shop.cheat -= 1;
     state.shop.boostUsed.cheat = (state.shop.boostUsed.cheat || 0) + 1;
@@ -3152,6 +3739,32 @@ function useBoost(id) {
       name: `Читер +${run.forgive}`,
       desc: `Ещё ${run.forgive} ошибк${run.forgive === 1 ? "а не считается" : "и не считаются"} для оценки.`,
     }]);
+  }
+  if (run.battle && id === "potion" && state.shop.potion > 0 && run.potionUsed < 2 && run.heroHp < run.heroMaxHp) {
+    state.shop.potion -= 1;
+    run.potionUsed += 1;
+    state.shop.boostUsed.potion = (state.shop.boostUsed.potion || 0) + 1;
+    run.heroHp = Math.min(run.heroMaxHp, run.heroHp + 1);
+    saveState();
+    renderBattleHud();
+    showToasts([{ plain: true, icon: "🧪", name: "Зелье", desc: "+1 HP" }]);
+  }
+  if (run.battle && id === "megaPotion" && state.shop.megaPotion > 0 && run.megaPotionUsed < 1 && run.heroHp < run.heroMaxHp) {
+    state.shop.megaPotion -= 1;
+    run.megaPotionUsed += 1;
+    state.shop.boostUsed.megaPotion = (state.shop.boostUsed.megaPotion || 0) + 1;
+    run.heroHp = Math.min(run.heroMaxHp, run.heroHp + 2);
+    saveState();
+    renderBattleHud();
+    showToasts([{ plain: true, icon: "🧴", name: "Большое зелье", desc: "+2 HP" }]);
+  }
+  if (run.battle && id === "shieldScroll" && state.shop.shieldScroll > 0 && run.shieldScrollUsed < 1) {
+    state.shop.shieldScroll -= 1;
+    run.shieldScrollUsed += 1;
+    state.shop.boostUsed.shieldScroll = (state.shop.boostUsed.shieldScroll || 0) + 1;
+    run.shieldCharges = (run.shieldCharges || 0) + 1;
+    saveState();
+    showToasts([{ plain: true, icon: "📜", name: "Свиток щита", desc: "Следующая ошибка заблокирована" }]);
   }
   renderBoostBar();
   renderHome();
@@ -3225,7 +3838,7 @@ function renderShop() {
         <div class="ico"><span class="relic-ico">${r.icon}</span></div>
         <div class="name">${r.name}${rankNeed}</div>
         <button type="button" class="buy ${(!canBuy && !owned) || !rankOpen ? "ghost" : ""}" data-act="${action}" data-id="${r.id}" ${(!canBuy && !owned) || !rankOpen || action === "on" ? "disabled" : ""}>${label}${price ? ` · ${price}&nbsp;<span class="coin sm" aria-hidden="true"></span>` : ""}</button>
-        <div class="desc">${r.desc} · звание + монеты</div>
+        <div class="desc">${r.desc}${r.battle ? " · бой" : ""} · звание + монеты</div>
       </article>`;
     }).join("");
     return;
@@ -3275,23 +3888,27 @@ function renderShop() {
       const gate = skillGateOpen(sk);
       const owned = state.shop.skills.includes(sk.id);
       const on = state.shop.skill === sk.id;
-      const canBuy = gate && rankOk && (owned || state.coins >= sk.price);
+      const needRankMin = sk.rankMin || ARCHMAGE_MIN;
+      const hasRank = state.stars >= needRankMin;
+      const canBuy = gate && hasRank && (owned || state.coins >= sk.price);
       const action = owned ? (on ? "on" : "equip-skill") : "buy-skill";
       const label = on ? "Надет" : owned ? "Надеть" : "Купить";
       const price = owned ? 0 : sk.price;
       const secretName = sk.secretMode === MODE_CHAIN ? "2 действия" : "База";
-      const needSecret = gate
-        ? `<span class="rank-need ok">секрет «${secretName}» ✓</span>`
-        : `<span class="rank-need">нужен секрет «${secretName}»</span>`;
-      const needRank = rankOk
-        ? `<span class="rank-need ok">Архимаг ✓</span>`
-        : `<span class="rank-need warn">нужно звание Архимаг (${ARCHMAGE_MIN}⭐)</span>`;
-      const locked = !owned && (!gate || !rankOk);
+      const needSecret = sk.battleOnly
+        ? `<span class="rank-need ok">для босса</span>`
+        : (gate
+          ? `<span class="rank-need ok">секрет «${secretName}» ✓</span>`
+          : `<span class="rank-need">нужен секрет «${secretName}»</span>`);
+      const needRank = hasRank
+        ? `<span class="rank-need ok">${sk.rank || "Архимаг"} ✓</span>`
+        : `<span class="rank-need warn">нужно звание ${sk.rank || "Архимаг"} (${needRankMin}⭐)</span>`;
+      const locked = !owned && (!gate || !hasRank);
       return `<article class="shop-card ${locked ? "locked-rank" : ""}">
         <div class="ico"><span class="relic-ico skill-ico">${sk.icon}</span></div>
         <div class="name">${sk.name}${needSecret}${needRank}</div>
         <button type="button" class="buy ${(!canBuy && !owned) || locked ? "ghost" : ""}" data-act="${action}" data-id="${sk.id}" ${(!canBuy && !owned) || locked || action === "on" ? "disabled" : ""}>${label}${price ? ` · ${price}&nbsp;<span class="coin sm" aria-hidden="true"></span>` : ""}</button>
-        <div class="desc">${sk.desc}<br><strong>Требования:</strong> секрет «${secretName}» + звание Архимаг + ${sk.price} монет.</div>
+        <div class="desc">${sk.desc}${sk.battleOnly ? "<br><strong>Только в бою.</strong>" : `<br><strong>Требования:</strong> секрет «${secretName}» + ${sk.rank || "Архимаг"} + ${sk.price} монет.`}</div>
       </article>`;
     }).join("");
     return;
@@ -3342,7 +3959,7 @@ function shopAction(act, id) {
     const item = BOOSTS.find((b) => b.id === id);
     if (!item || state.coins < item.price) return notEnough();
     state.coins -= item.price;
-    state.shop[id] += 1;
+    state.shop[id] = (state.shop[id] || 0) + 1;
     pingBuy(item.icon, item.name);
   } else if (act === "buy-skin") {
     const item = SKINS[id];
@@ -3414,8 +4031,8 @@ function shopAction(act, id) {
     const item = SKILLS[id];
     if (!item) return;
     if (!skillGateOpen(item)) return;
-    if (state.stars < item.rankMin) {
-      showToasts([{ plain: true, icon: "👑", name: "Нужен Архимаг", desc: "Скилл доступен с ранга Архимаг." }]);
+    if (state.stars < (item.rankMin || ARCHMAGE_MIN)) {
+      showToasts([{ plain: true, icon: "👑", name: `Нужен ${item.rank || "Архимаг"}`, desc: `Скилл доступен с ранга ${item.rank || "Архимаг"}.` }]);
       return;
     }
     if (state.coins < item.price) return notEnough();
@@ -3504,7 +4121,7 @@ function pingBuy(icon, name) {
 }
 
 document.getElementById("levels").addEventListener("click", (e) => {
-  const card = e.target.closest(".level-card");
+  const card = e.target.closest(".map-node, .level-card");
   if (!card) return;
   const id = Number(card.dataset.level);
   if (!isLevelOpen(id)) {
@@ -3513,7 +4130,9 @@ document.getElementById("levels").addEventListener("click", (e) => {
     card.classList.add("shake");
     const meta = MODE_META[selectedMode] || MODE_META[MODE_BASIC];
     let desc = "Ещё рано";
-    if (selectedMode === MODE_UNITS && id === 1) {
+    if (id === BATTLE_LEVEL) {
+      desc = "Сначала пройди все обычные уровни на 10/10";
+    } else if (selectedMode === MODE_UNITS && id === 1) {
       desc = "Сначала 10/10 на «Сложный» в Базе или 2 действиях";
     } else if (id === SECRET_LEVEL) {
       const gate = secretGateProgress();
@@ -3526,10 +4145,11 @@ document.getElementById("levels").addEventListener("click", (e) => {
     return;
   }
   selectedLevel = id;
-  state.lastLevel = selectedLevel;
+  state.lastLevel = selectedLevel === BATTLE_LEVEL ? maxOpenLevel() : selectedLevel;
   saveState();
-  applyTheme(selectedLevel);
+  applyTheme(selectedLevel === BATTLE_LEVEL ? 5 : selectedLevel);
   renderLevels();
+  placeMapToken(id, true);
 });
 
 function saveMode() {
@@ -3543,6 +4163,7 @@ function saveMode() {
 function parseModeId(raw) {
   if (raw === MODE_CHAIN) return MODE_CHAIN;
   if (raw === MODE_UNITS) return MODE_UNITS;
+  if (raw === MODE_MUL) return MODE_MUL;
   return MODE_BASIC;
 }
 
