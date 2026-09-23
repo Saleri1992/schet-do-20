@@ -2442,8 +2442,11 @@ body[data-theme="hard"] .gallery-item .done-tag { color: #8ef0b0; }
   margin-bottom: 12px;
 }
 .mode-tabs {
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   margin-bottom: 10px;
+}
+@media (max-width: 380px) {
+  .mode-tabs { grid-template-columns: repeat(2, 1fr); }
 }
 
 .filter-btn {

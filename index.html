@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=18" />
+  <link rel="stylesheet" href="style.css?v=19" />
 </head>
 <body data-theme="easy">
   <div class="sky">
@@ -67,6 +67,7 @@
         <button type="button" class="filter-btn selected" data-mode="basic">База</button>
         <button type="button" class="filter-btn" data-mode="chain">2 действия</button>
         <button type="button" class="filter-btn" data-mode="mul">Умножение</button>
+        <button type="button" class="filter-btn" data-mode="div">Деление</button>
         <button type="button" class="filter-btn" data-mode="units">Меры</button>
       </div>
 
@@ -279,6 +280,7 @@
         <button type="button" class="filter-btn selected" data-board-mode="basic">База</button>
         <button type="button" class="filter-btn" data-board-mode="chain">2 действия</button>
         <button type="button" class="filter-btn" data-board-mode="mul">Умножение</button>
+        <button type="button" class="filter-btn" data-board-mode="div">Деление</button>
         <button type="button" class="filter-btn" data-board-mode="units">Меры</button>
       </div>
       <div class="filters" id="boardFilters">
@@ -374,6 +376,35 @@
     </div>
   </div>
 
-  <script src="app.js?v=18"></script>
+  <div class="units-intro mul-intro hidden" id="divIntro" aria-hidden="true">
+    <div class="units-intro-card">
+      <h2>Что такое деление?</h2>
+      <p class="units-intro-lead">Это обратное умножению. Время просмотра не идёт в зачёт.</p>
+      <div class="mul-intro-examples">
+        <div class="mul-ex">
+          <strong>12 ÷ 3</strong>
+          <span>значит</span>
+          <em>сколько раз 3 в 12</em>
+          <span>= 4</span>
+        </div>
+        <div class="mul-ex">
+          <strong>10 ÷ 2</strong>
+          <span>потому что</span>
+          <em>2 × 5 = 10</em>
+          <span>= 5</span>
+        </div>
+        <div class="mul-ex">
+          <strong>15 ÷ 5</strong>
+          <span>потому что</span>
+          <em>5 × 3 = 15</em>
+          <span>= 3</span>
+        </div>
+      </div>
+      <p class="units-note">Делим без остатка — ответ целое число.</p>
+      <p class="units-countdown">Старт через <strong id="divCountdown">12</strong>…</p>
+    </div>
+  </div>
+
+  <script src="app.js?v=19"></script>
 </body>
 </html>

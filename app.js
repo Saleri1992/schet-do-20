@@ -11,6 +11,7 @@ const MODE_BASIC = "basic";
 const MODE_CHAIN = "chain";
 const MODE_UNITS = "units";
 const MODE_MUL = "mul";
+const MODE_DIV = "div";
 const SECRET_LEVEL = 6;
 const BATTLE_LEVEL = 7;
 const EXTRA_MAX_PER_RUN = 2;
@@ -50,6 +51,7 @@ async function fetchScores(levelFilter, modeFilter = "all", { limit = BOARD_FETC
     if (withMode && modeFilter === MODE_BASIC) params.set("or", "(mode.eq.basic,mode.is.null)");
     if (withMode && modeFilter === MODE_UNITS) params.set("mode", `eq.${MODE_UNITS}`);
     if (withMode && modeFilter === MODE_MUL) params.set("mode", `eq.${MODE_MUL}`);
+    if (withMode && modeFilter === MODE_DIV) params.set("mode", `eq.${MODE_DIV}`);
     return params;
   };
 
@@ -93,6 +95,7 @@ async function fetchScores(levelFilter, modeFilter = "all", { limit = BOARD_FETC
   if (modeFilter === MODE_CHAIN) return list.filter((r) => r.mode === MODE_CHAIN);
   if (modeFilter === MODE_UNITS) return list.filter((r) => r.mode === MODE_UNITS);
   if (modeFilter === MODE_MUL) return list.filter((r) => r.mode === MODE_MUL);
+  if (modeFilter === MODE_DIV) return list.filter((r) => r.mode === MODE_DIV);
   if (modeFilter === MODE_BASIC) return list.filter((r) => !r.mode || r.mode === MODE_BASIC);
   return list;
 }
@@ -457,6 +460,62 @@ const MUL_LEVELS = {
 
 const MUL_INTRO_MS = 12 * 1000;
 
+const DIV_LEVELS = {
+  1: {
+    id: 1,
+    name: "Суть",
+    theme: "easy",
+    coin: 2,
+    limit: null,
+    div: "intro",
+    intro: true,
+    balloons: ["💡", "➗", "💡"],
+    subtitle: "Деление — обратное умножению. Учимся делить поровну.",
+  },
+  2: {
+    id: 2,
+    name: "÷2 и ÷3",
+    theme: "medium",
+    coin: 2,
+    limit: null,
+    div: "t23",
+    balloons: ["2️⃣", "3️⃣", "⭐"],
+    subtitle: "Деление на 2 и на 3 без остатка.",
+  },
+  3: {
+    id: 3,
+    name: "÷4 и ÷5",
+    theme: "sharp",
+    coin: 3,
+    limit: null,
+    div: "t45",
+    balloons: ["4️⃣", "5️⃣", "⚡"],
+    subtitle: "Деление на 4 и на 5 без остатка.",
+  },
+  4: {
+    id: 4,
+    name: "÷6–÷9",
+    theme: "hard",
+    coin: 4,
+    limit: null,
+    div: "t69",
+    balloons: ["6️⃣", "9️⃣", "🔥"],
+    subtitle: "Деление на 6, 7, 8 и 9 без остатка.",
+  },
+  5: {
+    id: 5,
+    name: "Смешанно",
+    theme: "exam",
+    coin: 5,
+    limit: null,
+    div: "mixed",
+    balloons: ["🎲", "➗", "🎲"],
+    subtitle: "Вперемешку вся таблица и примеры «12 ÷ ? = 3».",
+  },
+};
+
+const DIV_INTRO_MS = 12 * 1000;
+
 const MODE_META = {
   [MODE_BASIC]: {
     id: MODE_BASIC,
@@ -514,6 +573,21 @@ const MODE_META = {
       "Только ×4 и ×5",
       "Таблица ×6, ×7, ×8, ×9",
       "Всё вместе + найти множитель",
+    ],
+    themes: ["easy", "medium", "sharp", "hard", "exam"],
+  },
+  [MODE_DIV]: {
+    id: MODE_DIV,
+    name: "Деление",
+    unlockText: "Лестница деления",
+    maxLevel: 5,
+    levelNames: ["Суть", "÷2 и ÷3", "÷4 и ÷5", "÷6–÷9", "Смешанно"],
+    levelDescs: [
+      "Что значит разделить: обратное умножению",
+      "Только ÷2 и ÷3",
+      "Только ÷4 и ÷5",
+      "Деление на 6, 7, 8, 9",
+      "Всё вместе + найти делитель",
     ],
     themes: ["easy", "medium", "sharp", "hard", "exam"],
   },
@@ -853,7 +927,11 @@ const ACHIEVEMENTS = [
   { id: "mul_table", icon: "2️⃣", name: "Двойки и тройки", desc: "10/10 на этапе «×2 и ×3»", check: (s) => s.runs.some((r) => r.mode === MODE_MUL && r.level === 2 && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => r.mode === MODE_MUL && r.level === 2).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
   { id: "mul_hard", icon: "🎲", name: "Смешанный мастер", desc: "10/10 на этапе «Смешанно»", check: (s) => s.runs.some((r) => r.mode === MODE_MUL && r.level === 5 && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => r.mode === MODE_MUL && r.level === 5).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
   { id: "mul_secret", icon: "✖️", name: "Вся лестница ×", desc: "Пройди все 5 этапов умножения на 10/10", check: (s) => [1, 2, 3, 4, 5].every((lvl) => s.runs.some((r) => r.mode === MODE_MUL && (r.level || 1) === lvl && r.correct === 10)), progress: (s) => ({ current: [1, 2, 3, 4, 5].filter((lvl) => s.runs.some((r) => r.mode === MODE_MUL && (r.level || 1) === lvl && r.correct === 10)).length, target: 5 }) },
-  { id: "speed_gate", icon: "⏱️", name: "Спринтер режимов", desc: "Все обычные уровни Базы, 2 действий, Умножения и Мер — 10/10 быстрее 40 сек", check: () => isSecretGateReady(), progress: () => ({ current: secretGateProgress().current, target: secretGateProgress().target }) },
+  { id: "div_easy", icon: "🧩", name: "Понял деление", desc: "10/10 на этапе «Суть» деления", check: (s) => s.runs.some((r) => r.mode === MODE_DIV && (r.level || 1) === 1 && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => r.mode === MODE_DIV && (r.level || 1) === 1).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
+  { id: "div_table", icon: "3️⃣", name: "Делю на 2 и 3", desc: "10/10 на этапе «÷2 и ÷3»", check: (s) => s.runs.some((r) => r.mode === MODE_DIV && r.level === 2 && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => r.mode === MODE_DIV && r.level === 2).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
+  { id: "div_hard", icon: "🎯", name: "Мастер деления", desc: "10/10 на этапе «Смешанно» деления", check: (s) => s.runs.some((r) => r.mode === MODE_DIV && r.level === 5 && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => r.mode === MODE_DIV && r.level === 5).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
+  { id: "div_secret", icon: "➗", name: "Вся лестница ÷", desc: "Пройди все 5 этапов деления на 10/10", check: (s) => [1, 2, 3, 4, 5].every((lvl) => s.runs.some((r) => r.mode === MODE_DIV && (r.level || 1) === lvl && r.correct === 10)), progress: (s) => ({ current: [1, 2, 3, 4, 5].filter((lvl) => s.runs.some((r) => r.mode === MODE_DIV && (r.level || 1) === lvl && r.correct === 10)).length, target: 5 }) },
+  { id: "speed_gate", icon: "⏱️", name: "Спринтер режимов", desc: "Все обычные уровни Базы, 2 действий, Умножения, Деления и Мер — 10/10 быстрее 40 сек", check: () => isSecretGateReady(), progress: () => ({ current: secretGateProgress().current, target: secretGateProgress().target }) },
   { id: "secret_open", icon: "🔓", name: "Дверь приоткрыта", desc: "Открой секретный уровень", check: () => isSecretUnlocked(), progress: () => ({ current: isSecretUnlocked() ? 1 : 0, target: 1 }) },
   { id: "secret_basic", icon: "🗝️", name: "Секрет базы", desc: "10/10 на секретном уровне Базы", check: (s) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_BASIC && r.level === SECRET_LEVEL && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_BASIC && r.level === SECRET_LEVEL).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
   { id: "secret_chain", icon: "🔐", name: "Секрет цепочки", desc: "10/10 на секретном уровне 2 действий", check: (s) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_CHAIN && r.level === SECRET_LEVEL && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_CHAIN && r.level === SECRET_LEVEL).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
@@ -1016,6 +1094,7 @@ let selectedMode = (() => {
     if (saved === MODE_CHAIN) return MODE_CHAIN;
     if (saved === MODE_UNITS) return MODE_UNITS;
     if (saved === MODE_MUL) return MODE_MUL;
+    if (saved === MODE_DIV) return MODE_DIV;
     return MODE_BASIC;
   } catch {
     return MODE_BASIC;
@@ -1328,6 +1407,7 @@ function claimDailyBox() {
 function levelCfg(level, mode = selectedMode) {
   if (mode === MODE_UNITS) return UNIT_LEVELS[level] || UNIT_LEVELS[1];
   if (mode === MODE_MUL) return MUL_LEVELS[level] || MUL_LEVELS[1];
+  if (mode === MODE_DIV) return DIV_LEVELS[level] || DIV_LEVELS[1];
   return LEVELS[level] || LEVELS[1];
 }
 
@@ -1335,6 +1415,7 @@ function modeLabelShort(mode) {
   if (mode === MODE_CHAIN) return " · 2ш";
   if (mode === MODE_UNITS) return " · меры";
   if (mode === MODE_MUL) return " · ×";
+  if (mode === MODE_DIV) return " · ÷";
   return "";
 }
 
@@ -1356,6 +1437,7 @@ function secretGateNeeds() {
     need.push({ mode: MODE_CHAIN, level: l });
   }
   for (let l = 1; l <= 5; l += 1) need.push({ mode: MODE_MUL, level: l });
+  for (let l = 1; l <= 5; l += 1) need.push({ mode: MODE_DIV, level: l });
   need.push({ mode: MODE_UNITS, level: 1 });
   need.push({ mode: MODE_UNITS, level: 2 });
   return need;
@@ -1414,7 +1496,7 @@ function equippedBattleRelic() {
 
 function battleRoundsForMode(mode = selectedMode) {
   if (mode === MODE_UNITS) return [1, 2];
-  if (mode === MODE_MUL) return [1, 2, 3, 4, 5];
+  if (mode === MODE_MUL || mode === MODE_DIV) return [1, 2, 3, 4, 5];
   return [1, 2, 3, 4, 5];
 }
 
@@ -1424,7 +1506,9 @@ function isBossOpen() {
 
 function normalMaxLevel() {
   const modeInfo = MODE_META[selectedMode] || MODE_META[MODE_BASIC];
-  if (selectedMode === MODE_UNITS || selectedMode === MODE_MUL) return modeInfo.maxLevel || 2;
+  if (selectedMode === MODE_UNITS || selectedMode === MODE_MUL || selectedMode === MODE_DIV) {
+    return modeInfo.maxLevel || 2;
+  }
   return Math.min(modeInfo.maxLevel || 5, SECRET_LEVEL - 1);
 }
 
@@ -1459,7 +1543,7 @@ function isLevelOpen(id) {
     if (id === 1) return modeProgress(MODE_BASIC, 3) || modeProgress(MODE_CHAIN, 3);
     return hasPerfect(1);
   }
-  if (selectedMode === MODE_MUL) {
+  if (selectedMode === MODE_MUL || selectedMode === MODE_DIV) {
     if (id <= 1) return true;
     return hasPerfect(id - 1);
   }
@@ -1955,6 +2039,73 @@ function generateMulProblem(level) {
   return generateMulMixed();
 }
 
+function generateDivIntro() {
+  const divisor = rand(2, 5);
+  const quotient = rand(2, 5);
+  const dividend = divisor * quotient;
+  const roll = Math.random();
+  if (roll < 0.4) {
+    return {
+      a: dividend,
+      b: divisor,
+      op: "÷",
+      answer: quotient,
+      text: `Сколько раз ${divisor} входит в ${dividend}?`,
+      hint: `${divisor} × ${quotient} = ${dividend}`,
+    };
+  }
+  if (roll < 0.7) {
+    return {
+      a: dividend,
+      b: divisor,
+      op: "÷",
+      answer: quotient,
+      text: `${dividend} ÷ ${divisor} = ?`,
+      hint: `потому что ${divisor} × ${quotient} = ${dividend}`,
+    };
+  }
+  return {
+    a: dividend,
+    b: divisor,
+    op: "÷",
+    answer: quotient,
+    text: `${dividend} ÷ ${divisor}  (= ${divisor} × ${quotient})  = ?`,
+  };
+}
+
+function generateDivByTables(tables, quotMax = 10) {
+  const b = tables[rand(0, tables.length - 1)];
+  const answer = rand(1, quotMax);
+  const a = b * answer;
+  return { a, b, op: "÷", answer, text: `${a} ÷ ${b} = ?` };
+}
+
+function generateDivMissing(tables) {
+  const b = tables[rand(0, tables.length - 1)];
+  const quot = rand(2, 9);
+  const a = b * quot;
+  if (Math.random() < 0.5) {
+    return { a, b, op: "÷", answer: b, text: `${a} ÷ ? = ${quot}`, missing: "b" };
+  }
+  return { a, b, op: "÷", answer: a, text: `? ÷ ${b} = ${quot}`, missing: "a" };
+}
+
+function generateDivMixed() {
+  const tables = [2, 3, 4, 5, 6, 7, 8, 9];
+  if (Math.random() < 0.7) return generateDivByTables(tables, 9);
+  return generateDivMissing(tables);
+}
+
+function generateDivProblem(level) {
+  const cfg = levelCfg(level, MODE_DIV);
+  const kind = cfg.div || "mixed";
+  if (kind === "intro") return generateDivIntro();
+  if (kind === "t23") return generateDivByTables([2, 3], 10);
+  if (kind === "t45") return generateDivByTables([4, 5], 10);
+  if (kind === "t69") return generateDivByTables([6, 7, 8, 9], 9);
+  return generateDivMixed();
+}
+
 function generateProblem(level) {
   if (selectedMode === MODE_UNITS) {
     const cfg = levelCfg(level);
@@ -1963,6 +2114,7 @@ function generateProblem(level) {
     return generateUnitsConvert(kind);
   }
   if (selectedMode === MODE_MUL) return generateMulProblem(level);
+  if (selectedMode === MODE_DIV) return generateDivProblem(level);
   if (level === SECRET_LEVEL) {
     return selectedMode === MODE_CHAIN ? generateSecretChain() : generateSecretBasic();
   }
@@ -2063,6 +2215,22 @@ function generateRun(level) {
     while (items.length < TOTAL) items.push(generateMulProblem(level));
     return items;
   }
+  if (selectedMode === MODE_DIV) {
+    const items = [];
+    const seen = new Set();
+    let guard = 0;
+    while (items.length < TOTAL && guard < 200) {
+      const p = generateDivProblem(level);
+      const key = p.text || `${p.a}÷${p.b}=${p.answer}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        items.push(p);
+      }
+      guard += 1;
+    }
+    while (items.length < TOTAL) items.push(generateDivProblem(level));
+    return items;
+  }
   if (selectedMode === MODE_CHAIN) {
     const items = [];
     const seen = new Set();
@@ -2101,7 +2269,7 @@ function applyTheme(level) {
     els.homeSubtitle.textContent = `Босс режима «${modeInfo.name}»: все уровни подряд, следи за HP!`;
   } else if (selectedMode === MODE_UNITS) {
     els.homeSubtitle.textContent = `Режим «Меры»: ${modeInfo.levelDescs[(level || 1) - 1] || cfg.subtitle}`;
-  } else if (selectedMode === MODE_CHAIN || selectedMode === MODE_MUL) {
+  } else if (selectedMode === MODE_CHAIN || selectedMode === MODE_MUL || selectedMode === MODE_DIV) {
     els.homeSubtitle.textContent = `Режим «${modeInfo.name}»: ${modeInfo.levelDescs[(level || 1) - 1] || cfg.subtitle}`;
   } else {
     els.homeSubtitle.textContent = cfg.subtitle;
@@ -2573,6 +2741,9 @@ function renderHome() {
   if (selectedMode === MODE_MUL && (selectedLevel === SECRET_LEVEL || (selectedLevel > 5 && selectedLevel !== BATTLE_LEVEL))) {
     selectedLevel = maxOpenLevel();
   }
+  if (selectedMode === MODE_DIV && (selectedLevel === SECRET_LEVEL || (selectedLevel > 5 && selectedLevel !== BATTLE_LEVEL))) {
+    selectedLevel = maxOpenLevel();
+  }
   if (selectedLevel !== BATTLE_LEVEL && !isLevelOpen(selectedLevel)) selectedLevel = maxOpenLevel();
   if (unlockSkiesByRank()) saveState();
   applyTheme(selectedLevel);
@@ -2611,6 +2782,18 @@ function renderHome() {
       els.unlockHint.textContent = "Все этапы умножения открыты. Пройди их на 10/10 — откроется босс.";
     } else {
       els.unlockHint.textContent = "Лестница умножения пройдена — можно бить босса!";
+    }
+  } else if (selectedMode === MODE_DIV) {
+    if (!isLevelOpen(2)) {
+      els.unlockHint.textContent = "Сначала «Суть»: деление — обратное умножению.";
+    } else if (!isLevelOpen(5)) {
+      const next = [2, 3, 4, 5].find((id) => !isLevelOpen(id));
+      const prev = next - 1;
+      els.unlockHint.textContent = `10/10 на «${modeInfo.levelNames[prev - 1]}» откроет «${modeInfo.levelNames[next - 1]}»`;
+    } else if (!isBossOpen()) {
+      els.unlockHint.textContent = "Все этапы деления открыты. Пройди их на 10/10 — откроется босс.";
+    } else {
+      els.unlockHint.textContent = "Лестница деления пройдена — можно бить босса!";
     }
   } else if (!isLevelOpen(2)) {
     els.unlockHint.textContent = `10/10 на «${modeInfo.levelNames[0]}» откроет «${modeInfo.levelNames[1]}»`;
@@ -2753,6 +2936,31 @@ function showMulIntro() {
   });
 }
 
+function showDivIntro() {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById("divIntro");
+    const countEl = document.getElementById("divCountdown");
+    if (!overlay || !countEl) {
+      resolve();
+      return;
+    }
+    let left = Math.round(DIV_INTRO_MS / 1000);
+    countEl.textContent = String(left);
+    overlay.classList.remove("hidden");
+    overlay.setAttribute("aria-hidden", "false");
+    const tick = setInterval(() => {
+      left -= 1;
+      countEl.textContent = String(Math.max(0, left));
+      if (left <= 0) {
+        clearInterval(tick);
+        overlay.classList.add("hidden");
+        overlay.setAttribute("aria-hidden", "true");
+        resolve();
+      }
+    }, 1000);
+  });
+}
+
 async function startGame() {
   if (startGame.busy) return;
   startGame.busy = true;
@@ -2774,6 +2982,10 @@ async function startGame() {
     if (selectedMode === MODE_MUL && !isBattle && (cfg.intro || cfg.mul === "intro")) {
       showScreen("home");
       await showMulIntro();
+    }
+    if (selectedMode === MODE_DIV && !isBattle && (cfg.intro || cfg.div === "intro")) {
+      showScreen("home");
+      await showDivIntro();
     }
     const relic = equippedBattleRelic();
     const battleFx = (relic && relic.battle) || {};
@@ -3204,6 +3416,7 @@ function coinsFor(level, correct, timedOut, grade) {
   if (level === SECRET_LEVEL && correct === 10) coins += 20;
   if (selectedMode === MODE_UNITS && correct === 10) coins += 5;
   if (selectedMode === MODE_MUL && correct === 10) coins += 5;
+  if (selectedMode === MODE_DIV && correct === 10) coins += 5;
   return coins;
 }
 
@@ -4341,6 +4554,7 @@ function parseModeId(raw) {
   if (raw === MODE_CHAIN) return MODE_CHAIN;
   if (raw === MODE_UNITS) return MODE_UNITS;
   if (raw === MODE_MUL) return MODE_MUL;
+  if (raw === MODE_DIV) return MODE_DIV;
   return MODE_BASIC;
 }
 
