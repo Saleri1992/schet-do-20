@@ -501,19 +501,29 @@ h1 {
 .mascot-stage.has-speech { min-height: 168px; }
 .mascot-stage.has-storm.has-speech { min-height: 190px; }
 
-/* На главной: бабл не раздувает ширину и не даёт горизонтальный скролл */
+/* На главной: бабл и игрушки не дают горизонтальный скролл */
 #homeStage {
-  overflow: visible;
+  overflow-x: clip;
+  overflow-y: visible;
   max-width: 100%;
+  width: 100%;
+  contain: inline-size;
 }
 #homeStage .mascot-bubble {
-  max-width: min(140px, 38vw);
-  right: 0;
+  max-width: min(132px, 36vw);
+  right: 4px;
   left: auto;
+  top: 4%;
 }
 #homeStage.has-speech {
-  padding-inline: 8px;
+  padding-inline: 4px;
   box-sizing: border-box;
+}
+#homeStage .toy.rainbow,
+#homeStage .toy.crystal,
+#homeStage .toy.wand,
+#homeStage .toy.rocket {
+  max-width: 28%;
 }
 
 .mascot.mood-sad { animation: sad-sway 2.8s ease-in-out infinite; }
@@ -2619,33 +2629,74 @@ body[data-theme="hard"] .key.next { color: #2b1d3a; }
   box-sizing: border-box;
   overflow: hidden;
 }
+#game .game-top {
+  margin-bottom: 2px;
+  gap: 8px;
+}
+#game .timer {
+  font-size: 16px;
+  padding: 4px 8px;
+  min-width: 68px;
+}
+#game .progress-label {
+  font-size: 12px;
+  margin-bottom: 2px;
+}
 #game .boost-bar {
-  margin-bottom: 4px;
-  gap: 6px;
+  margin-bottom: 2px;
+  gap: 4px;
   flex-shrink: 0;
 }
 #game .boost-btn {
-  font-size: 12px;
-  padding: 6px 8px;
+  font-size: 11px;
+  padding: 5px 6px;
 }
 #game .battle-hud {
-  margin-bottom: 4px;
-  padding: 6px 8px;
+  margin-bottom: 2px;
+  padding: 4px 6px;
   flex-shrink: 0;
+  font-size: 12px;
 }
 #game .mascot-stage.tiny {
-  min-height: 48px;
-  margin: 0 auto 2px;
+  min-height: 40px;
+  margin: 0 auto 0;
   flex-shrink: 0;
 }
 #game .mascot.tiny {
   margin: 0;
-  transform: scale(0.72);
+  transform: scale(0.62);
   transform-origin: center bottom;
 }
+#game .problem-card {
+  min-height: 58px;
+  margin: 2px 0 6px;
+  padding: 6px 8px;
+  border-radius: 16px;
+}
+#game .problem {
+  font-size: clamp(22px, 6.2vw, 30px);
+  letter-spacing: 0.5px;
+}
+#game .answer-box {
+  min-height: 42px;
+  font-size: clamp(24px, 7vw, 30px);
+  margin-bottom: 6px;
+  border-radius: 14px;
+}
+#game .pad {
+  gap: 6px;
+}
+#game .key {
+  font-size: 20px;
+  min-height: 42px;
+  border-radius: 12px;
+}
+#game .key.next {
+  font-size: 14px;
+}
 #game .mul-hint {
-  margin-top: 4px;
-  font-size: 12px;
+  margin-top: 2px;
+  font-size: 11px;
 }
 
 .score-row {
@@ -3206,13 +3257,20 @@ body.fw-perfect .fw-canvas {
 }
 
 /* Очень низкие экраны / ландшафт телефона */
-@media (max-height: 700px) {
+@media (max-height: 720px) {
   #game .mascot-stage.tiny { display: none; }
-  .problem-card { min-height: 56px; margin: 2px 0 6px; }
-  .answer-box { min-height: 40px; margin-bottom: 6px; font-size: 26px; }
-  .key { min-height: 40px; font-size: 18px; }
-  .pad { gap: 5px; }
-  .timer { font-size: 16px; padding: 4px 8px; min-width: 70px; }
+  #game .problem-card { min-height: 48px; margin: 0 0 4px; padding: 4px 6px; }
+  #game .problem { font-size: clamp(20px, 5.5vw, 26px); }
+  #game .answer-box { min-height: 36px; margin-bottom: 4px; font-size: 24px; }
+  #game .key { min-height: 36px; font-size: 17px; }
+  #game .pad { gap: 4px; }
+  #game .timer { font-size: 14px; padding: 3px 6px; min-width: 60px; }
+  #game .boost-btn { font-size: 10px; padding: 4px 5px; }
+}
+@media (max-height: 600px) {
+  #game .problem { font-size: clamp(18px, 5vw, 22px); }
+  #game .key { min-height: 32px; font-size: 15px; }
+  #game .answer-box { min-height: 32px; font-size: 20px; }
 }
 
 #shopTabs { grid-template-columns: repeat(4, 1fr); }
