@@ -6,8 +6,8 @@
   <title>Счёт до 20</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=24" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css?v=25" />
 </head>
 <body data-theme="easy">
   <div class="sky">
@@ -329,6 +329,32 @@
       </div>
       <div class="shop-list" id="shopList"></div>
     </section>
+
+    <section class="screen hidden safe-screen" id="safe" data-screen="safe">
+      <div class="safe-crt" id="safeStage">
+        <div class="safe-scanlines" aria-hidden="true"></div>
+        <header class="safe-top">
+          <button type="button" class="back-btn bit-btn" id="safeHomeBtn" aria-label="Назад">←</button>
+          <h1 class="bit-font" id="safeTitle">QUEST</h1>
+        </header>
+        <div class="pc-mascot" aria-hidden="true">
+          <div class="pc-monitor">
+            <div class="pc-bezel">
+              <div class="pc-screen" id="safePcFace" data-mood="idle">
+                <span class="pc-eye l"></span>
+                <span class="pc-eye r"></span>
+                <span class="pc-mouth"></span>
+              </div>
+            </div>
+          </div>
+          <div class="pc-stand"></div>
+          <div class="pc-base"></div>
+        </div>
+        <p class="safe-scene bit-body" id="safeScene"></p>
+        <div class="safe-choices" id="safeChoices"></div>
+        <div class="safe-result hidden" id="safeResult"></div>
+      </div>
+    </section>
   </main>
 
   <div class="units-intro hidden" id="unitsIntro" aria-hidden="true">
@@ -425,6 +451,6 @@
       <button type="button" class="btn primary" id="codeIntroSkip">Понятно — в викторину!</button>
     </div>
   </div>
-  <script src="app.js?v=24"></script>
+  <script src="app.js?v=25"></script>
 </body>
 </html>

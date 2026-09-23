@@ -1,7 +1,7 @@
 const STORAGE_KEY = "schet-do-20";
 const NICK_KEY = "schet-do-20-nick";
 const SCORE_QUEUE_KEY = "schet-do-20-score-queue";
-const DATA_VERSION = 8;
+const DATA_VERSION = 9;
 const TOTAL = 10;
 const HARD_LIMIT_MS = 60 * 1000;
 const SECRET_SPEED_MS = 40 * 1000;
@@ -14,9 +14,11 @@ const MODE_MUL = "mul";
 const MODE_DIV = "div";
 const MODE_ENG = "eng";
 const MODE_CODE = "code";
+const MODE_SAFE = "safe";
 const THEME_MATH = "math";
 const THEME_ENG = "eng";
 const THEME_CODE = "code";
+const THEME_SAFE = "safe";
 const SECRET_LEVEL = 6;
 const BATTLE_LEVEL = 7;
 const BATTLE_LEVELS = [7, 8, 9];
@@ -680,7 +682,25 @@ const THEME_META = {
     modes: [MODE_CODE],
     blurb: "Папки, память, сеть — чтобы ставить и играть",
   },
+  [THEME_SAFE]: {
+    id: THEME_SAFE,
+    name: "Безопасность",
+    icon: "🛡️",
+    modes: [MODE_SAFE],
+    blurb: "Обязательные квесты: не качай всё подряд",
+  },
 };
+
+const MODE_META_SAFE = {
+  id: MODE_SAFE,
+  name: "Безопасность",
+  unlockText: "Квесты безопасности",
+  maxLevel: 1,
+  levelNames: ["Квест"],
+  levelDescs: ["Мини-игры: защити себя в сети"],
+  themes: ["exam"],
+};
+MODE_META[MODE_SAFE] = MODE_META_SAFE;
 
 /** Профессии по успехам в каждой обучалке (кол-во 10/10 на уровнях 1–5 темы). */
 const PROFESSIONS = {
@@ -699,7 +719,113 @@ const PROFESSIONS = {
     { id: "code_dev", name: "Мастер установки", icon: "📦", need: 3, desc: "3 этапа ПК на 10/10" },
     { id: "code_arch", name: "Админ игрового ПК", icon: "🖥️", need: 5, desc: "Вся лестница ПК" },
   ],
+  [THEME_SAFE]: [
+    { id: "safe_scout", name: "Юный защитник", icon: "🛡️", need: 2, desc: "2 квеста безопасности" },
+    { id: "safe_guard", name: "Страж сети", icon: "🔐", need: 4, desc: "4 квеста безопасности" },
+    { id: "safe_hero", name: "Кибер-герой", icon: "🦸", need: 6, desc: "Все квесты безопасности" },
+  ],
 };
+
+/** Обязательные сценарии ИБ: 8-битные мини-игры (не 10/10, а «защитился / ошибка»). */
+const SAFE_SCENARIOS = [
+  {
+    id: "call_bank",
+    ico: "📞",
+    title: "Звонок «из банка»",
+    tag: "Телефон",
+    scene: "Звонит «дядя из банка»: «Скажи код из смс, иначе карту родителей заблокируют!» Он торопит и чуть-чуть троллит.",
+    choices: [
+      { text: "Положить трубку и сказать родителям", ok: true },
+      { text: "Назвать код из смс — вдруг правда банк", ok: false },
+      { text: "Продиктовать пароль от Wi‑Fi «для проверки»", ok: false },
+    ],
+    win: "Ты защитился! Незнакомцам по телефону коды и пароли не дают.",
+    failTitle: "КРАСНЫЙ ЭКРАН",
+    failStory: "Код ушёл мошеннику. В этой истории злоумышленник мог бы списать деньги с карты родителей.",
+    explain: "Это НЕ случилось по-настоящему — только учебный пример. Правильно: положить трубку и позвать взрослых. Банк сам никогда не просит код из смс.",
+  },
+  {
+    id: "weird_link",
+    ico: "🔗",
+    title: "Ссылка на «крутую игру»",
+    tag: "Скачивание",
+    scene: "В чате незнакомец кинул ссылку: «Скачай новую игру БЕСПЛАТНО!!! 999 скинов». Сайт странный, не Steam и не официальный магазин.",
+    choices: [
+      { text: "Скачать и установить — вдруг реально круто", ok: false },
+      { text: "Не качать. Спросить взрослых / брать только из магазина приложений", ok: true },
+      { text: "Переслать ссылку всем одноклассникам", ok: false },
+    ],
+    win: "Молодец! Игры ставят из проверенных магазинов, не из случайных ссылок.",
+    failTitle: "ТЕЛЕФОН ЗАРАЖЁН?!",
+    failStory: "В учебной истории после такой установки «игра» могла бы украсть пароли и даже доступы, из‑за чего у семьи пропали бы деньги в банке.",
+    explain: "Это НЕ реально сейчас — только «что бывает». Правильно: не качать с неизвестных ссылок. Бери игры из Google Play / App Store / официального лаунчера.",
+  },
+  {
+    id: "chat_apk",
+    ico: "📦",
+    title: "Файл из переписки",
+    tag: "Установка",
+    scene: "Друг друга (или «друг») прислал файл game_free.exe / .apk: «Поставь, там читы». Телефон/ПК просит «разрешить установку из неизвестных источников».",
+    choices: [
+      { text: "Разрешить и поставить файл из чата", ok: false },
+      { text: "Не ставить. Читы и файлы из чатов — опасны", ok: true },
+      { text: "Отключить антивирус «чтобы быстрее встало»", ok: false },
+    ],
+    win: "Верно! Неизвестные установщики — частый способ подсунуть вредную программу.",
+    failTitle: "ВСЁ СЛОМАЛОСЬ",
+    failStory: "В примере вредонос мог бы открыть доступ к аккаунтам игр и даже к платежам родителей.",
+    explain: "Учебный ужастик, не факт. Правильный ход: не ставить файлы из чатов и не отключать защиту. Нужна игра — официальный магазин + взрослые.",
+  },
+  {
+    id: "free_robux",
+    ico: "🎁",
+    title: "«Бесплатные Robux / V‑Bucks»",
+    tag: "Обман",
+    scene: "Сайт мигает: «Введи логин и пароль от игры — получим 99999 монет!» Рядом кнопка «ВОЙТИ ЧЕРЕЗ АККАУНТ».",
+    choices: [
+      { text: "Ввести логин и пароль — халява же", ok: false },
+      { text: "Закрыть. Халявы нет: так воруют аккаунты", ok: true },
+      { text: "Ввести пароль от почты родителей «для подтверждения»", ok: false },
+    ],
+    win: "Защита сработала! Бесплатных горы монет за пароль не бывает.",
+    failTitle: "АККАУНТ УГНАН",
+    failStory: "В сценарии злоумышленник забрал бы скин, друзей и мог бы пытаться просить деньги у родителей от твоего имени.",
+    explain: "Не по‑настоящему — урок. Правильно: никогда не вводить пароль на «халявных» сайтах. Скажи взрослым.",
+  },
+  {
+    id: "fake_virus",
+    ico: "⚠️",
+    title: "Всплывашка «ПК заражён»",
+    tag: "Обман",
+    scene: "На весь экран красное окно: «ВИРУС!!! Позвони по номеру / скачай очиститель СЕЙЧАС». Кнопки мигают, страшно.",
+    choices: [
+      { text: "Позвонить по номеру с экрана", ok: false },
+      { text: "Скачать «очиститель» с этой же страницы", ok: false },
+      { text: "Закрыть вкладку / позвать взрослого, ничего не качать", ok: true },
+    ],
+    win: "Правильно! Страшные окна часто сами и есть обман.",
+    failTitle: "ЛОЖНАЯ ТРЕВОГА ПОБЕДИЛА",
+    failStory: "В истории «очиститель» мог бы сам оказаться вредоносом, а «техподдержка» — выманить деньги.",
+    explain: "Это учебный красный экран. Правильный ответ: закрыть, не звонить, не качать, позвать родителей или учителя.",
+  },
+  {
+    id: "usb_find",
+    ico: "💾",
+    title: "Чужая флешка",
+    tag: "Носители",
+    scene: "У школы / в парке нашли флешку с наклейкой «ИГРЫ SUPER». Хочется воткнуть в ПК и посмотреть.",
+    choices: [
+      { text: "Вставить в домашний ПК и открыть всё", ok: false },
+      { text: "Отдать взрослым / в бюро находок, не подключать", ok: true },
+      { text: "Подключить, но «только быстро глянуть»", ok: false },
+    ],
+    win: "Супер! Неизвестные флешки не подключают — так иногда разносят вредоносы.",
+    failTitle: "ФЛЕШКА-ЛОВУШКА",
+    failStory: "В примере с флешки могла бы запуститься вредная программа и испортить файлы или вытащить пароли.",
+    explain: "Не случилось по‑настоящему. Правильно: не подключать чужие носители, отдать взрослым.",
+  },
+];
+
 
 const ENG_LEVELS = {
   1: { id: 1, name: "Слова", theme: "easy", coin: 2, eng: "animals", balloons: ["🐱", "🇬🇧", "🐶"], subtitle: "Животные и вещи: выбери верный перевод." },
@@ -1459,6 +1585,7 @@ const screens = {
   sessions: document.getElementById("sessions"),
   board: document.getElementById("board"),
   shop: document.getElementById("shop"),
+  safe: document.getElementById("safe"),
 };
 
 const els = {
@@ -1571,6 +1698,7 @@ let selectedMode = (() => {
     if (saved === MODE_DIV) return MODE_DIV;
     if (saved === MODE_ENG) return MODE_ENG;
     if (saved === MODE_CODE) return MODE_CODE;
+    if (saved === MODE_SAFE) return MODE_SAFE;
     return MODE_BASIC;
   } catch {
     return MODE_BASIC;
@@ -1579,10 +1707,11 @@ let selectedMode = (() => {
 let selectedTheme = (() => {
   try {
     const saved = localStorage.getItem(`${STORAGE_KEY}-theme`);
-    if (saved === THEME_ENG || saved === THEME_CODE || saved === THEME_MATH) return saved;
+    if (saved === THEME_ENG || saved === THEME_CODE || saved === THEME_MATH || saved === THEME_SAFE) return saved;
   } catch { /* ignore */ }
   if (selectedMode === MODE_ENG) return THEME_ENG;
   if (selectedMode === MODE_CODE) return THEME_CODE;
+  if (selectedMode === MODE_SAFE) return THEME_SAFE;
   return THEME_MATH;
 })();
 boardMode = selectedMode === MODE_BASIC ? MODE_BASIC : selectedMode;
@@ -1779,13 +1908,14 @@ function loadState() {
     shop: emptyShop(),
     dailyClaimDay: "",
     dailyStreak: 0,
+    safeCleared: {},
   };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return empty;
     const data = JSON.parse(raw);
     const ver = Number(data.version);
-    if (ver !== 2 && ver !== 3 && ver !== 4 && ver !== 5 && ver !== 6 && ver !== 7 && ver !== DATA_VERSION) {
+    if (ver !== 2 && ver !== 3 && ver !== 4 && ver !== 5 && ver !== 6 && ver !== 7 && ver !== 8 && ver !== DATA_VERSION) {
       return { ...empty, lastLevel: 1 };
     }
     let runs = Array.isArray(data.runs) ? data.runs : [];
@@ -1804,6 +1934,7 @@ function loadState() {
       shop: normalizeShop(data.shop),
       dailyClaimDay: typeof data.dailyClaimDay === "string" ? data.dailyClaimDay : "",
       dailyStreak: Math.max(0, Number(data.dailyStreak) || 0),
+      safeCleared: (data.safeCleared && typeof data.safeCleared === "object") ? data.safeCleared : {},
     };
   } catch {
     return empty;
@@ -1989,10 +2120,21 @@ function modeLabelShort(mode) {
 function themeOfMode(mode = selectedMode) {
   if (mode === MODE_ENG) return THEME_ENG;
   if (mode === MODE_CODE) return THEME_CODE;
+  if (mode === MODE_SAFE) return THEME_SAFE;
   return THEME_MATH;
 }
 
+function safeClearedCount() {
+  const map = state.safeCleared || {};
+  return SAFE_SCENARIOS.filter((s) => map[s.id]).length;
+}
+
+function isSafeAllCleared() {
+  return safeClearedCount() >= SAFE_SCENARIOS.length;
+}
+
 function themePerfectCount(themeId) {
+  if (themeId === THEME_SAFE) return safeClearedCount();
   const modes = (THEME_META[themeId] && THEME_META[themeId].modes) || [];
   let n = 0;
   modes.forEach((mode) => {
@@ -2082,7 +2224,7 @@ function hasSecretPerfect(modeId) {
 
 function professionUnlocked(profId) {
   if (!profId) return true;
-  for (const themeId of [THEME_MATH, THEME_ENG, THEME_CODE]) {
+  for (const themeId of [THEME_MATH, THEME_ENG, THEME_CODE, THEME_SAFE]) {
     const info = professionFor(themeId);
     if (info.all.some((p) => p.id === profId && info.score >= p.need)) return true;
   }
@@ -3133,9 +3275,14 @@ function generateRun(level) {
 
 function showScreen(name) {
   Object.entries(screens).forEach(([key, node]) => {
+    if (!node) return;
     node.classList.toggle("hidden", key !== name);
   });
   document.body.classList.toggle("screen-game", name === "game");
+  document.body.classList.toggle("screen-safe", name === "safe");
+  if (name !== "safe") {
+    document.body.classList.remove("safe-fail", "safe-win");
+  }
 }
 
 function applyTheme(level) {
@@ -3156,7 +3303,12 @@ function applyTheme(level) {
   const homeTitle = document.getElementById("homeTitle");
   if (homeTitle) {
     const tmeta = THEME_META[selectedTheme] || THEME_META[THEME_MATH];
-    homeTitle.textContent = selectedTheme === THEME_MATH ? "Счёт до 20" : `${tmeta.icon} ${tmeta.name}`;
+    if (selectedTheme === THEME_MATH) homeTitle.textContent = "Счёт до 20";
+    else if (selectedTheme === THEME_SAFE) homeTitle.textContent = "🛡️ Безопасность";
+    else homeTitle.textContent = `${tmeta.icon} ${tmeta.name}`;
+  }
+  if (selectedTheme === THEME_SAFE && els.homeSubtitle) {
+    els.homeSubtitle.textContent = "Обязательные 8-битные квесты: не качай всё подряд и не верь мошенникам.";
   }
   [els.balloon1, els.balloon2, els.balloon3].forEach((node, i) => {
     node.textContent = cfg.balloons[i];
@@ -3652,13 +3804,14 @@ function renderNickCard(forceEdit = false) {
 function renderThemeTabs() {
   const root = document.getElementById("themeTabs");
   if (!root) return;
-  root.innerHTML = [THEME_MATH, THEME_ENG, THEME_CODE].map((id) => {
+  root.innerHTML = [THEME_MATH, THEME_ENG, THEME_CODE, THEME_SAFE].map((id) => {
     const meta = THEME_META[id];
     const on = selectedTheme === id ? " selected" : "";
     const prof = professionFor(id);
     const badge = prof.current ? `<span class="theme-prof-ico" title="${prof.current.name}">${prof.current.icon}</span>` : "";
-    return `<button type="button" class="filter-btn theme-tab${on}" data-theme="${id}">
-      <span class="theme-ico">${meta.icon}</span> ${meta.name}${badge}
+    const must = id === THEME_SAFE && !isSafeAllCleared() ? '<span class="theme-must">!</span>' : "";
+    return `<button type="button" class="filter-btn theme-tab${on}${id === THEME_SAFE ? " theme-safe" : ""}" data-theme="${id}">
+      <span class="theme-ico">${meta.icon}</span> ${meta.name}${badge}${must}
     </button>`;
   }).join("");
 }
@@ -3666,7 +3819,7 @@ function renderThemeTabs() {
 function renderProfessions() {
   const root = document.getElementById("professionRow");
   if (!root) return;
-  const themes = [THEME_MATH, THEME_ENG, THEME_CODE];
+  const themes = [THEME_MATH, THEME_ENG, THEME_CODE, THEME_SAFE];
   root.innerHTML = themes.map((id) => {
     const meta = THEME_META[id];
     const info = professionFor(id);
@@ -3676,7 +3829,7 @@ function renderProfessions() {
     const ico = cur ? cur.icon : "🌱";
     const prog = nxt
       ? `${info.score}/${nxt.need} → ${nxt.name}`
-      : (cur ? "Максимум!" : "Пройди 10/10");
+      : (cur ? "Максимум!" : (id === THEME_SAFE ? "Пройди квесты" : "Пройди 10/10"));
     const on = selectedTheme === id ? " on" : "";
     return `<button type="button" class="prof-chip${on}" data-theme="${id}" title="${meta.blurb}">
       <span class="prof-ico">${meta.icon}${ico}</span>
@@ -3686,7 +3839,7 @@ function renderProfessions() {
 }
 
 function selectTheme(themeId) {
-  if (![THEME_MATH, THEME_ENG, THEME_CODE].includes(themeId)) return;
+  if (![THEME_MATH, THEME_ENG, THEME_CODE, THEME_SAFE].includes(themeId)) return;
   if (selectedTheme === themeId) return;
   selectedTheme = themeId;
   saveTheme();
@@ -3695,8 +3848,10 @@ function selectTheme(themeId) {
     selectedMode = modes[0];
     saveMode();
   }
-  selectedLevel = maxOpenLevel();
-  state.lastLevel = selectedLevel;
+  if (themeId !== THEME_SAFE) {
+    selectedLevel = maxOpenLevel();
+    state.lastLevel = selectedLevel;
+  }
   saveState();
   renderHome();
 }
@@ -3735,7 +3890,17 @@ function renderHome() {
   const modeInfo = MODE_META[selectedMode] || MODE_META[MODE_BASIC];
   const modeTabs = document.getElementById("modeTabs");
   if (modeTabs) modeTabs.classList.toggle("hidden", selectedTheme !== THEME_MATH);
-  if (selectedMode === MODE_UNITS) {
+  const isSafeTheme = selectedTheme === THEME_SAFE;
+  const levelsEl = document.getElementById("levels");
+  if (levelsEl) levelsEl.classList.toggle("hidden", isSafeTheme);
+  if (els.startBtn) els.startBtn.classList.toggle("hidden", isSafeTheme);
+  renderSafeBanner();
+  renderSafeHub();
+  if (isSafeTheme) {
+    els.unlockHint.textContent = isSafeAllCleared()
+      ? "Все квесты безопасности пройдены — ты кибер-герой!"
+      : `Обязательные квесты: защити себя ${safeClearedCount()}/${SAFE_SCENARIOS.length}. Жми сценарий!`;
+  } else if (selectedMode === MODE_UNITS) {
     if (!isLevelOpen(1)) {
       els.unlockHint.textContent = "Меры откроются после 10/10 на «Сложный» (База или 2 действия).";
     } else if (!isLevelOpen(2)) {
@@ -3799,7 +3964,7 @@ function renderHome() {
   } else {
     els.unlockHint.textContent = `Все уровни «${modeInfo.unlockText}» открыты — включая секрет!`;
   }
-  renderLevels();
+  if (!isSafeTheme) renderLevels();
   renderDailyBox();
 
   const done = unlockedCount();
@@ -5759,8 +5924,189 @@ function shopAction(act, id) {
   renderHome();
 }
 
+
+/* ——— Безопасность: 8-бит квесты ——— */
+let safeRun = null;
+
+function renderSafeBanner() {
+  let bar = document.getElementById("safeMustBanner");
+  if (!bar) {
+    bar = document.createElement("button");
+    bar.type = "button";
+    bar.id = "safeMustBanner";
+    bar.className = "safe-must-banner";
+    const host = document.getElementById("home");
+    const tabs = document.getElementById("themeTabs");
+    if (host && tabs) host.insertBefore(bar, tabs);
+    else if (host) host.prepend(bar);
+    bar.addEventListener("click", () => selectTheme(THEME_SAFE));
+  }
+  const done = isSafeAllCleared();
+  bar.classList.toggle("hidden", done || selectedTheme === THEME_SAFE);
+  bar.innerHTML = done
+    ? ""
+    : `<span class="safe-must-pix">!</span> Обязательно: квесты безопасности (${safeClearedCount()}/${SAFE_SCENARIOS.length}) — нажми`;
+}
+
+function renderSafeHub() {
+  let hub = document.getElementById("safeHub");
+  if (!hub) {
+    hub = document.createElement("div");
+    hub.id = "safeHub";
+    hub.className = "safe-hub";
+    const levels = document.getElementById("levels");
+    if (levels && levels.parentNode) levels.parentNode.insertBefore(hub, levels);
+  }
+  const show = selectedTheme === THEME_SAFE;
+  hub.classList.toggle("hidden", !show);
+  if (!show) return;
+  hub.innerHTML = `
+    <div class="safe-hub-lead bit-font">QUEST LOG · INFOSEC</div>
+    <p class="safe-hub-note">Выбери сценарий. Верный ответ = защита. Ошибка = красный экран (это учёба, не по-настоящему).</p>
+    <div class="safe-quest-grid">
+      ${SAFE_SCENARIOS.map((s) => {
+        const ok = !!(state.safeCleared && state.safeCleared[s.id]);
+        return `<button type="button" class="safe-quest-card ${ok ? "cleared" : ""}" data-safe-id="${s.id}">
+          <span class="sq-ico">${s.ico}</span>
+          <span class="sq-title">${escapeHtml(s.title)}</span>
+          <span class="sq-tag">${escapeHtml(s.tag)}</span>
+          <span class="sq-status">${ok ? "CLEAR" : "PLAY"}</span>
+        </button>`;
+      }).join("")}
+    </div>
+  `;
+}
+
+function openSafeScenario(id) {
+  const sc = SAFE_SCENARIOS.find((s) => s.id === id);
+  if (!sc) return;
+  safeRun = { id: sc.id, sc };
+  const stage = document.getElementById("safeStage");
+  const title = document.getElementById("safeTitle");
+  const scene = document.getElementById("safeScene");
+  const choices = document.getElementById("safeChoices");
+  const result = document.getElementById("safeResult");
+  if (!stage || !choices) return;
+  document.body.classList.remove("safe-fail", "safe-win");
+  if (title) title.textContent = sc.title;
+  if (scene) scene.textContent = sc.scene;
+  if (result) {
+    result.classList.add("hidden");
+    result.innerHTML = "";
+  }
+  choices.classList.remove("hidden");
+  choices.innerHTML = sc.choices.map((c, i) =>
+    `<button type="button" class="safe-choice bit-btn" data-safe-choice="${i}">
+      <span class="safe-choice-n">${i + 1}</span>${escapeHtml(c.text)}
+    </button>`
+  ).join("");
+  const face = document.getElementById("safePcFace");
+  if (face) face.dataset.mood = "idle";
+  showScreen("safe");
+}
+
+function resolveSafeChoice(index) {
+  if (!safeRun) return;
+  const sc = safeRun.sc;
+  const choice = sc.choices[index];
+  if (!choice) return;
+  const choices = document.getElementById("safeChoices");
+  const result = document.getElementById("safeResult");
+  const face = document.getElementById("safePcFace");
+  if (choices) choices.classList.add("hidden");
+  const ok = !!choice.ok;
+  document.body.classList.toggle("safe-fail", !ok);
+  document.body.classList.toggle("safe-win", ok);
+  if (face) face.dataset.mood = ok ? "happy" : "panic";
+  if (ok) {
+    if (!state.safeCleared) state.safeCleared = {};
+    state.safeCleared[sc.id] = true;
+    state.coins += 8;
+    state.stars += 2;
+    saveState();
+    const fresh = unlockAchievements();
+    if (result) {
+      result.classList.remove("hidden");
+      result.innerHTML = `
+        <div class="safe-result-box win">
+          <div class="safe-result-kicker bit-font">PROTECTED!</div>
+          <p class="safe-result-story">${escapeHtml(sc.win)}</p>
+          <p class="safe-result-explain">+8 монет · +2 опыта</p>
+          <button type="button" class="btn primary bit-btn" id="safeBackBtn">К списку квестов</button>
+        </div>`;
+    }
+    if (fresh.length) showToasts(fresh.slice(0, 3).map((a) => ({ icon: a.icon, name: a.name, desc: a.desc })));
+  } else {
+    if (result) {
+      result.classList.remove("hidden");
+      result.innerHTML = `
+        <div class="safe-result-box fail">
+          <div class="safe-result-kicker bit-font">${escapeHtml(sc.failTitle)}</div>
+          <p class="safe-result-story">${escapeHtml(sc.failStory)}</p>
+          <p class="safe-result-explain"><strong>Важно:</strong> ${escapeHtml(sc.explain)}</p>
+          <button type="button" class="btn primary bit-btn" id="safeRetryBtn">Попробовать снова</button>
+          <button type="button" class="btn ghost-btn bit-btn" id="safeBackBtn">К списку</button>
+        </div>`;
+    }
+  }
+  document.getElementById("safeRetryBtn")?.addEventListener("click", () => openSafeScenario(sc.id));
+  document.getElementById("safeBackBtn")?.addEventListener("click", () => {
+    safeRun = null;
+    document.body.classList.remove("safe-fail", "safe-win");
+    showScreen("home");
+    renderHome();
+  });
+}
+
+document.getElementById("home")?.addEventListener("click", (e) => {
+  const card = e.target.closest("[data-safe-id]");
+  if (!card) return;
+  openSafeScenario(card.dataset.safeId);
+});
+
+document.getElementById("safe")?.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-safe-choice]");
+  if (!btn || !safeRun) return;
+  resolveSafeChoice(Number(btn.dataset.safeChoice));
+});
+
+document.getElementById("safeHomeBtn")?.addEventListener("click", () => {
+  safeRun = null;
+  document.body.classList.remove("safe-fail", "safe-win");
+  showScreen("home");
+  renderHome();
+});
+
 // Ачивки Английский / Код / профессии
 ACHIEVEMENTS.push(
+  {
+    id: "safe_first",
+    icon: "🛡️",
+    name: "Первая защита",
+    desc: "Пройди любой квест безопасности верно",
+    check: () => safeClearedCount() >= 1,
+    progress: () => ({ current: safeClearedCount(), target: 1 }),
+  },
+  {
+    id: "safe_all",
+    icon: "🦸",
+    name: "Кибер-герой",
+    desc: "Пройди все обязательные квесты безопасности",
+    gold: true,
+    check: () => isSafeAllCleared(),
+    progress: () => ({ current: safeClearedCount(), target: SAFE_SCENARIOS.length }),
+  },
+  {
+    id: "safe_download",
+    icon: "🚫",
+    name: "Не качаю всё подряд",
+    desc: "Пройди квесты про ссылку и файл из чата",
+    check: (s) => !!(s.safeCleared && s.safeCleared.weird_link && s.safeCleared.chat_apk),
+    progress: (s) => ({
+      current: [s.safeCleared?.weird_link, s.safeCleared?.chat_apk].filter(Boolean).length,
+      target: 2,
+    }),
+  },
   {
     id: "eng_open",
     icon: "🇬🇧",
@@ -5972,6 +6318,7 @@ function parseModeId(raw) {
   if (raw === MODE_DIV) return MODE_DIV;
   if (raw === MODE_ENG) return MODE_ENG;
   if (raw === MODE_CODE) return MODE_CODE;
+  if (raw === MODE_SAFE) return MODE_SAFE;
   return MODE_BASIC;
 }
 
