@@ -911,7 +911,9 @@ const SAFE_SCENARIOS = [
 const KINGDOM_SLOTS = 12;
 const KINGDOM_COLLECT_CAP_MS = 8 * 60 * 60 * 1000;
 const KINGDOM_CASTLE_SLOT = 5;
-const KINGDOM_GATHER_CD_MS = 70 * 1000;
+const KINGDOM_GATHER_CD_MS = 3 * 60 * 1000; // 3 мин между рубкой/копанием одной клетки
+const KINGDOM_GATHER_FAIL_CD_MS = 45 * 1000; // даже при ошибке/отмене — короткая пауза
+const KINGDOM_COLLECT_MIN_MS = 90 * 1000; // нельзя жать «Собрать» чаще чем раз в 1.5 мин
 
 /** Природа на карте: клик = добыть дерево/камень (кулдаун). */
 const KINGDOM_NATURE = {
@@ -1881,13 +1883,24 @@ const CARE_SLEEP_CD_MS = 70 * 1000;
 const CARE_TOILET_CD_MS = 25 * 1000;
 const CARE_WASH_CD_MS = 35 * 1000;
 
-/** Еда: покупаешь → лежит в запасе → кормишь. */
+/** Еда: разные эффекты — выбирай по ситуации. */
 const CARE_FOOD = {
-  apple: { id: "apple", name: "Яблоко", icon: "🍎", price: 5, hunger: 28, happiness: 4, desc: "Простой перекус." },
-  cookie: { id: "cookie", name: "Печенька", icon: "🍪", price: 8, hunger: 36, happiness: 10, desc: "Вкусно и весело." },
-  soup: { id: "soup", name: "Супчик", icon: "🥣", price: 12, hunger: 52, happiness: 6, energy: 4, desc: "Сытно и полезно." },
-  berry: { id: "berry", name: "Ягодки", icon: "🫐", price: 7, hunger: 22, happiness: 12, desc: "Сладенькие." },
-  cake: { id: "cake", name: "Тортик", icon: "🍰", price: 18, hunger: 40, happiness: 18, desc: "Праздник для животика." },
+  apple: { id: "apple", name: "Яблоко", icon: "🍎", price: 5, hunger: 26, happiness: 3, tags: ["фрукт"], desc: "Лёгкий перекус." },
+  banana: { id: "banana", name: "Банан", icon: "🍌", price: 6, hunger: 30, energy: 6, tags: ["фрукт"], desc: "Силы на учёбу." },
+  carrot: { id: "carrot", name: "Морковка", icon: "🥕", price: 5, hunger: 24, hygiene: 2, tags: ["овощ"], desc: "Хрустит и полезно." },
+  bread: { id: "bread", name: "Хлеб", icon: "🍞", price: 7, hunger: 38, happiness: 2, tags: ["сытное"], desc: "Простая сытость." },
+  cheese: { id: "cheese", name: "Сыр", icon: "🧀", price: 9, hunger: 34, energy: 4, happiness: 5, tags: ["сытное"], desc: "Вкусно и сытно." },
+  egg: { id: "egg", name: "Яичко", icon: "🥚", price: 8, hunger: 32, energy: 8, tags: ["завтрак"], desc: "Заряд бодрости." },
+  porridge: { id: "porridge", name: "Каша", icon: "🍚", price: 10, hunger: 48, energy: 5, happiness: 3, tags: ["завтрак", "сытное"], desc: "На весь день." },
+  soup: { id: "soup", name: "Супчик", icon: "🥣", price: 12, hunger: 52, happiness: 6, energy: 4, toilet: -4, tags: ["обед"], desc: "Согревает животик." },
+  fish: { id: "fish", name: "Рыбка", icon: "🐟", price: 14, hunger: 44, happiness: 8, energy: 6, tags: ["обед"], desc: "Много белка." },
+  salad: { id: "salad", name: "Салатик", icon: "🥗", price: 11, hunger: 28, hygiene: 6, happiness: 7, tags: ["овощ"], desc: "Лёгко и свежо." },
+  berry: { id: "berry", name: "Ягодки", icon: "🫐", price: 7, hunger: 18, happiness: 14, tags: ["десерт"], desc: "Сладость и радость." },
+  cookie: { id: "cookie", name: "Печенька", icon: "🍪", price: 8, hunger: 22, happiness: 16, energy: 2, toilet: -3, tags: ["десерт"], desc: "Для настроения." },
+  yogurt: { id: "yogurt", name: "Йогурт", icon: "🥛", price: 9, hunger: 26, happiness: 8, hygiene: 3, tags: ["десерт"], desc: "Нежный перекус." },
+  cake: { id: "cake", name: "Тортик", icon: "🍰", price: 18, hunger: 36, happiness: 22, energy: -2, toilet: -8, tags: ["десерт", "праздник"], desc: "Праздник (чуть тяжёлый)." },
+  juice: { id: "juice", name: "Сок", icon: "🧃", price: 6, hunger: 12, happiness: 6, energy: 5, toilet: -5, tags: ["питьё"], desc: "Освежает." },
+  honey: { id: "honey", name: "Мёд", icon: "🍯", price: 15, hunger: 20, happiness: 12, energy: 10, tags: ["лечебное"], desc: "Силы и улыбка." },
 };
 
 /** Предметы комнаты: один раз купил — лучше спит. */
@@ -1926,7 +1939,7 @@ function emptyCare() {
     plays: 0,
     sleeps: 0,
     heals: 0,
-    food: { apple: 1, cookie: 0, soup: 0, berry: 0, cake: 0 },
+    food: { apple: 1, banana: 0, carrot: 0, bread: 0, cheese: 0, egg: 0, porridge: 0, soup: 0, fish: 0, salad: 0, berry: 0, cookie: 0, yogurt: 0, cake: 0, juice: 0, honey: 0 },
     room: [],
     wash: { soap: 1, shampoo: 0, towel: 0 },
   };
@@ -2192,9 +2205,8 @@ function renderPetCare() {
     feedBtn.textContent = n ? `🍎 Кормить (${n})` : "🍎 Нет еды — в магазин";
   }
   if (playBtn) {
-    const left = Math.max(0, (c.playAt || 0) - now);
-    playBtn.disabled = left > 0 || c.sick;
-    playBtn.textContent = left > 0 ? `🎾 ${Math.ceil(left / 1000)}с` : "🎾 Играть";
+    playBtn.disabled = c.sick || c.energy < 10;
+    playBtn.textContent = "🎮 Играть";
   }
   if (sleepBtn) {
     const left = Math.max(0, (c.sleepAt || 0) - now);
@@ -2238,12 +2250,19 @@ function openPetFoodPicker() {
     showToasts([{ plain: true, icon: "🛒", name: "Нет еды", desc: "Купи еду во вкладке «Уход» в магазине." }]);
     return;
   }
-  list.innerHTML = items.map((f) => `
-    <button type="button" class="pet-pick-card" data-pet-food="${f.id}">
+  list.innerHTML = items.map((f) => {
+    const bits = [];
+    if (f.hunger) bits.push(`🍎${f.hunger > 0 ? "+" : ""}${f.hunger}`);
+    if (f.happiness) bits.push(`😊${f.happiness > 0 ? "+" : ""}${f.happiness}`);
+    if (f.energy) bits.push(`⚡${f.energy > 0 ? "+" : ""}${f.energy}`);
+    if (f.hygiene) bits.push(`✨+${f.hygiene}`);
+    const tag = (f.tags && f.tags[0]) ? ` · ${f.tags[0]}` : "";
+    return `<button type="button" class="pet-pick-card" data-pet-food="${f.id}">
       <span class="ico">${f.icon}</span>
-      <span class="name">${f.name} ×${c.food[f.id]}</span>
-      <span class="desc">+${f.hunger} сытость</span>
-    </button>`).join("");
+      <span class="name">${f.name} ×${c.food[f.id]}${tag}</span>
+      <span class="desc">${bits.join(" ") || f.desc}</span>
+    </button>`;
+  }).join("");
   modal.classList.remove("hidden");
   modal.setAttribute("aria-hidden", "false");
 }
@@ -2302,14 +2321,19 @@ function petFeed(foodId) {
     hunger: item.hunger || 0,
     happiness: item.happiness || 0,
     energy: item.energy || 0,
+    hygiene: item.hygiene || 0,
+    toilet: item.toilet || -5,
   }, { silent: true });
   c.feeds = (c.feeds || 0) + 1;
-  // после еды чуть хочет в туалет
-  c.toilet = clampCare(c.toilet - 6);
   saveState();
   closePetFoodPicker();
   const fresh = unlockAchievements();
-  showToasts([{ plain: true, icon: item.icon, name: "Ням!", desc: item.name }]);
+  const effect = [
+    item.hunger ? `сытость ${item.hunger > 0 ? "+" : ""}${item.hunger}` : "",
+    item.happiness ? `счастье ${item.happiness > 0 ? "+" : ""}${item.happiness}` : "",
+    item.energy ? `энергия ${item.energy > 0 ? "+" : ""}${item.energy}` : "",
+  ].filter(Boolean).join(", ");
+  showToasts([{ plain: true, icon: item.icon, name: item.name, desc: effect || item.desc }]);
   if (fresh.length) showToasts(fresh.slice(0, 1).map((a) => ({ icon: a.icon, name: a.name, desc: a.desc })));
   if (els.totalCoins) els.totalCoins.textContent = String(state.coins);
   renderPetCare();
@@ -2318,24 +2342,26 @@ function petFeed(foodId) {
 
 function petPlay() {
   const c = ensureCare();
-  const now = Date.now();
   if (c.sick) {
     showToasts([{ plain: true, icon: "🤒", name: "Болеет", desc: "Сначала укольчик." }]);
     return;
   }
-  if ((c.playAt || 0) > now) return;
-  if (c.energy < 12) {
-    showToasts([{ plain: true, icon: "😴", name: "Нет сил", desc: "Сначала поспит." }]);
+  if (c.energy < 10) {
+    showToasts([{ plain: true, icon: "😴", name: "Нет сил", desc: "Сначала поспит — потом в игру." }]);
     return;
   }
-  careAdd({ happiness: 22, energy: -10, hunger: -5, boredom: -12 }, { silent: true });
-  c.playAt = now + CARE_PLAY_CD_MS;
+  // Играть = идём в обучалку; характеристики меняет уже прогон
+  careAdd({ energy: -4 }, { silent: true });
   c.plays = (c.plays || 0) + 1;
   saveState();
-  unlockAchievements();
-  showToasts([{ plain: true, icon: "🎾", name: "Игра!", desc: "Веселее, но учёба лечит скуку лучше" }]);
   renderPetCare();
-  paintMascots();
+  showToasts([{ plain: true, icon: "🎮", name: "В игру!", desc: "Скука уйдёт после примеров" }]);
+  showScreen("home");
+  renderHome();
+  // чуть подождать отрисовку дома, затем старт текущего уровня
+  setTimeout(() => {
+    if (typeof startGame === "function") startGame();
+  }, 60);
 }
 
 function petSleep() {
@@ -6460,7 +6486,7 @@ function renderShop() {
     let html = `<div class="shop-section">🍎 Еда (в запас)</div>`;
     html += Object.values(CARE_FOOD).map((f) => {
       const n = (c.food && c.food[f.id]) || 0;
-      return shopCard(f.icon, f.name, `${f.desc} В запасе: ${n}`, f.price, state.coins >= f.price, "buy-care-food", f.id, "Купить");
+      return shopCard(f.icon, f.name, `${f.desc}${(f.tags && f.tags[0]) ? ` · ${f.tags[0]}` : ""} · в запасе: ${n}`, f.price, state.coins >= f.price, "buy-care-food", f.id, "Купить");
     }).join("");
     html += `<div class="shop-section">🛏️ Комната (лучше сон)</div>`;
     html += Object.values(CARE_ROOM).map((r) => {
@@ -7030,18 +7056,40 @@ function kingdomResolveGate(ok) {
   const action = kingdomGate && kingdomGate.action;
   closeKingdomGate();
   if (!ok) {
-    kingdomSoftHint("Неверно — попробуй ещё раз. Действие не выполнено.");
-    showToasts([{ plain: true, icon: "❌", name: "Мимо", desc: "Реши задачу верно, чтобы строить или собрать." }]);
+    // при провале — короткая отсечка на рубку, чтобы не спамить задачи
+    if (action && action.type === "gather" && action.slot != null) {
+      const k = ensureKingdom();
+      const left = kingdomGatherLeft(action.slot);
+      if (left < KINGDOM_GATHER_FAIL_CD_MS) {
+        k.gatherAt[action.slot] = Date.now() + KINGDOM_GATHER_FAIL_CD_MS;
+        saveState();
+      }
+    }
+    kingdomSoftHint("Неверно — подожди и попробуй ещё раз.");
+    showToasts([{ plain: true, icon: "❌", name: "Мимо", desc: "Реши задачу верно. На ресурс — пауза." }]);
+    renderKingdom();
     return;
   }
   if (!action) return;
-  if (action.type === "collect") collectKingdom(false, true);
-  else if (action.type === "gather") kingdomGather(action.slot, true);
-  else if (action.type === "place") kingdomPlace(action.slot, true);
-  else if (action.type === "upgrade") kingdomPlace(action.slot, true);
-  else if (action.type === "forge") kingdomForge(action.recipeId, true);
-  else if (action.type === "clear") kingdomClearNature(action.slot, true);
-  kingdomSoftHint("Верно! Действие выполнено.");
+  let done = false;
+  if (action.type === "collect") {
+    collectKingdom(false, true);
+    done = true;
+  } else if (action.type === "gather") {
+    kingdomGather(action.slot, true);
+    done = true;
+  } else if (action.type === "place") {
+    done = kingdomPlace(action.slot, true, action.buildingId);
+  } else if (action.type === "upgrade") {
+    done = kingdomPlace(action.slot, true);
+  } else if (action.type === "forge") {
+    kingdomForge(action.recipeId, true);
+    done = true;
+  } else if (action.type === "clear") {
+    kingdomClearNature(action.slot, true);
+    done = true;
+  }
+  kingdomSoftHint(done === false ? "Действие не выполнено (проверь ресурсы)." : "Верно! Действие выполнено.");
 }
 
 const KINGDOM_FORGE = {
@@ -7227,7 +7275,14 @@ function kingdomPending() {
 }
 
 function collectKingdom(silent = false, unlocked = false) {
+  const k0 = ensureKingdom();
+  const since = Date.now() - (Number(k0.lastCollectAt) || 0);
   if (!unlocked) {
+    if (since < KINGDOM_COLLECT_MIN_MS) {
+      const sec = Math.ceil((KINGDOM_COLLECT_MIN_MS - since) / 1000);
+      kingdomSoftHint(`Сбор подожди ещё ${sec}с — нельзя кликать без паузы.`);
+      return kingdomPending();
+    }
     const pend = kingdomPending();
     if (pend.coins < 1 && pend.stars < 1 && pend.wood < 1 && pend.stone < 1) {
       kingdomSoftHint("Пока копить нечего — построй здания или подожди.");
@@ -7294,29 +7349,35 @@ function kingdomGather(slotIndex, unlocked = false) {
   const k = ensureKingdom();
   const id = k.slots[slotIndex];
   const nat = KINGDOM_NATURE[id];
-  if (!nat) return;
+  if (!nat) return false;
   if (!kingdomGatherReady(slotIndex)) {
     const sec = Math.ceil(kingdomGatherLeft(slotIndex) / 1000);
     kingdomSoftHint(`${nat.name}: подожди ещё ${sec} сек.`);
-    return;
+    return false;
   }
   if (!unlocked) {
+    // короткая блокировка на время задачи — нельзя спамить кликами
+    k.gatherAt[slotIndex] = Date.now() + KINGDOM_GATHER_FAIL_CD_MS;
+    saveState();
     openKingdomGate({ type: "gather", slot: slotIndex });
-    return;
+    renderKingdom();
+    return false;
   }
   const amt = nat.amount || 1;
   if (nat.gather === "wood") k.wood = (k.wood || 0) + amt;
   if (nat.gather === "stone") k.stone = (k.stone || 0) + amt;
+  // полный кулдаун уже стоит с открытия гейта; продлим от момента успеха
   k.gatherAt[slotIndex] = Date.now() + KINGDOM_GATHER_CD_MS;
   saveState();
   showToasts([{
     plain: true,
     icon: nat.ico,
     name: nat.gather === "wood" ? "Дерево!" : "Камень!",
-    desc: `+${amt} в склад`,
+    desc: `+${amt} · следующая рубка через ${Math.round(KINGDOM_GATHER_CD_MS / 60000)} мин`,
   }]);
   unlockAchievements();
   renderKingdom();
+  return true;
 }
 
 function renderKingdom() {
@@ -7417,7 +7478,7 @@ function renderKingdom() {
   if (hint && !kingdomGate) {
     hint.textContent = kingdomBuildPick
       ? `Выбрано: ${KINGDOM_BUILDINGS[kingdomBuildPick].name} (${kingdomFormatCost(kingdomCostOf(KINGDOM_BUILDINGS[kingdomBuildPick]))}). Жми пустую клетку — будет задача.`
-      : "Стройка/сбор/рубка — через мини-задачу из пройденного. 🌳🪨 кликай, когда готовы.";
+      : "Стройка/сбор — через задачу. Рубка/камень: пауза ~3 мин на клетку. 🌳🪨";
   }
   const forgeEl = document.getElementById("kingdomForge");
   if (forgeEl) {
@@ -7448,26 +7509,31 @@ function openKingdom() {
   }, 3000);
 }
 
-function kingdomPlace(slotIndex, unlocked = false) {
+function kingdomPlace(slotIndex, unlocked = false, buildingId = null) {
   const k = ensureKingdom();
-  if (slotIndex < 0 || slotIndex >= KINGDOM_SLOTS) return;
-  if (slotIndex === KINGDOM_CASTLE_SLOT) return;
+  if (slotIndex < 0 || slotIndex >= KINGDOM_SLOTS) return false;
+  if (slotIndex === KINGDOM_CASTLE_SLOT) return false;
   if (KINGDOM_NATURE[k.slots[slotIndex]]) {
     kingdomSoftHint("Тут природа — собери ресурс или расчисти клетку.");
-    return;
+    return false;
   }
   if (k.slots[slotIndex]) {
     const id = k.slots[slotIndex];
     const b = KINGDOM_BUILDINGS[id];
-    if (!b || b.fixed) return;
+    if (!b || b.fixed) return false;
     if (!unlocked) {
+      const price = kingdomUpgradePrice(slotIndex);
+      if (!kingdomCanAfford(price)) {
+        kingdomSoftHint(`Мало ресурсов на апгрейд: ${kingdomFormatCost(price)}`);
+        return false;
+      }
       openKingdomGate({ type: "upgrade", slot: slotIndex });
-      return;
+      return false;
     }
     const price = kingdomUpgradePrice(slotIndex);
     if (!kingdomCanAfford(price)) {
       kingdomSoftHint(`Мало ресурсов на апгрейд: ${kingdomFormatCost(price)}`);
-      return;
+      return false;
     }
     kingdomPay(price);
     k.levels[slotIndex] = kingdomLevelOf(slotIndex) + 1;
@@ -7475,22 +7541,23 @@ function kingdomPlace(slotIndex, unlocked = false) {
     showToasts([{ plain: true, icon: b.ico, name: `${b.name} Lv${k.levels[slotIndex]}!`, desc: `− ${kingdomFormatCost(price)}` }]);
     unlockAchievements();
     renderKingdom();
-    return;
+    return true;
   }
-  if (!kingdomBuildPick) {
+  const pickId = buildingId || kingdomBuildPick;
+  if (!pickId) {
     kingdomSoftHint("Сначала выбери здание в каталоге «Строить».");
-    return;
+    return false;
   }
-  if (!unlocked) {
-    openKingdomGate({ type: "place", slot: slotIndex });
-    return;
-  }
-  const b = KINGDOM_BUILDINGS[kingdomBuildPick];
-  if (!b || b.fixed) return;
+  const b = KINGDOM_BUILDINGS[pickId];
+  if (!b || b.fixed) return false;
   const cost = kingdomCostOf(b);
   if (!kingdomCanAfford(cost)) {
     kingdomSoftHint(`Мало ресурсов: ${kingdomFormatCost(cost)}`);
-    return;
+    return false;
+  }
+  if (!unlocked) {
+    openKingdomGate({ type: "place", slot: slotIndex, buildingId: pickId });
+    return false;
   }
   kingdomPay(cost);
   k.slots[slotIndex] = b.id;
@@ -7501,6 +7568,7 @@ function kingdomPlace(slotIndex, unlocked = false) {
   showToasts([{ plain: true, icon: b.ico, name: "Построено!", desc: b.name }]);
   if (fresh.length) showToasts(fresh.slice(0, 2).map((a) => ({ icon: a.icon, name: a.name, desc: a.desc })));
   renderKingdom();
+  return true;
 }
 
 function kingdomClearNature(slotIndex, unlocked = false) {
@@ -8190,8 +8258,15 @@ document.getElementById("kingdom")?.addEventListener("click", (e) => {
 
 document.getElementById("kingdomGate")?.addEventListener("click", (e) => {
   if (e.target.id === "kingdomGate" || e.target.closest("[data-kd-gate-close]")) {
+    const action = kingdomGate && kingdomGate.action;
+    if (action && action.type === "gather" && action.slot != null) {
+      const k = ensureKingdom();
+      k.gatherAt[action.slot] = Date.now() + KINGDOM_GATHER_FAIL_CD_MS;
+      saveState();
+    }
     closeKingdomGate();
     kingdomSoftHint("Задача отменена.");
+    renderKingdom();
     return;
   }
   const ans = e.target.closest("[data-kd-ans]");
