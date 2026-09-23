@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=21" />
+  <link rel="stylesheet" href="style.css?v=22" />
 </head>
 <body data-theme="easy">
   <div class="sky">
@@ -61,8 +61,10 @@
       <div class="mascot-stage" id="homeStage">
         <div class="mascot bounce-soft" id="homeMascot" aria-hidden="true"></div>
       </div>
-      <h1>Счёт до 20</h1>
+      <h1 id="homeTitle">Счёт до 20</h1>
       <p class="subtitle" id="homeSubtitle">10 весёлых примеров. Можно ошибаться — в конце узнаем результат!</p>
+      <div class="filters theme-tabs" id="themeTabs" aria-label="Обучалки"></div>
+      <div class="profession-row" id="professionRow" aria-label="Профессии"></div>
       <div class="filters mode-tabs" id="modeTabs">
         <button type="button" class="filter-btn selected" data-mode="basic">База</button>
         <button type="button" class="filter-btn" data-mode="chain">2 действия</button>
@@ -284,6 +286,8 @@
         <button type="button" class="filter-btn" data-board-mode="mul">Умножение</button>
         <button type="button" class="filter-btn" data-board-mode="div">Деление</button>
         <button type="button" class="filter-btn" data-board-mode="units">Меры</button>
+        <button type="button" class="filter-btn" data-board-mode="eng">EN</button>
+        <button type="button" class="filter-btn" data-board-mode="code">Код</button>
       </div>
       <div class="filters" id="boardFilters">
         <button type="button" class="filter-btn selected" data-board="all">Все</button>
@@ -410,6 +414,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=21"></script>
+  <script src="app.js?v=22"></script>
 </body>
 </html>

@@ -3835,3 +3835,108 @@ body[data-sky="secretNight"] .sky {
   .paper-preview { display: none; }
 }
 
+
+
+/* === Темы / профессии / выбор ответа (v22) === */
+.theme-tabs {
+  grid-template-columns: repeat(3, 1fr);
+  margin-bottom: 8px;
+}
+.theme-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 13px;
+}
+.theme-ico { font-size: 15px; }
+.theme-prof-ico {
+  font-size: 12px;
+  margin-left: 2px;
+}
+.profession-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  margin: 0 0 10px;
+}
+.prof-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  border: 0;
+  border-radius: 14px;
+  padding: 8px 10px;
+  background: var(--card);
+  box-shadow: 0 3px 0 rgba(0,0,0,.08);
+  font-family: inherit;
+  cursor: pointer;
+  color: var(--ink);
+}
+.prof-chip.on {
+  outline: 3px solid rgba(78, 205, 196, 0.55);
+}
+.prof-ico { font-size: 20px; line-height: 1; }
+.prof-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.prof-text strong { font-size: 13px; font-weight: 900; }
+.prof-text small { font-size: 11px; opacity: .75; font-weight: 700; }
+
+.choice-pad {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+.choice-pad.hidden { display: none; }
+.choice-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: 0;
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,.92);
+  box-shadow: 0 4px 0 rgba(61,58,74,.12);
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+}
+.choice-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(61,58,74,.12); }
+.choice-btn.picked {
+  background: #4ecdc4;
+  color: #fff;
+}
+.choice-n {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  background: rgba(0,0,0,.08);
+  font-weight: 900;
+  flex: 0 0 auto;
+}
+.choice-btn.picked .choice-n { background: rgba(255,255,255,.25); }
+
+body.choice-mode .keypad .key[data-key="0"],
+body.choice-mode .keypad .key[data-key="4"],
+body.choice-mode .keypad .key[data-key="5"],
+body.choice-mode .keypad .key[data-key="6"],
+body.choice-mode .keypad .key[data-key="7"],
+body.choice-mode .keypad .key[data-key="8"],
+body.choice-mode .keypad .key[data-key="9"] {
+  opacity: .35;
+  pointer-events: none;
+}
+
+#game .problem.units-cmp {
+  white-space: normal;
+  text-align: left;
+  font-size: clamp(16px, 4.4vw, 22px);
+  line-height: 1.35;
+}

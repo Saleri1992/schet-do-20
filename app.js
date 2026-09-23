@@ -12,6 +12,11 @@ const MODE_CHAIN = "chain";
 const MODE_UNITS = "units";
 const MODE_MUL = "mul";
 const MODE_DIV = "div";
+const MODE_ENG = "eng";
+const MODE_CODE = "code";
+const THEME_MATH = "math";
+const THEME_ENG = "eng";
+const THEME_CODE = "code";
 const SECRET_LEVEL = 6;
 const BATTLE_LEVEL = 7;
 const BATTLE_LEVELS = [7, 8, 9];
@@ -621,7 +626,140 @@ const MODE_META = {
     ],
     themes: ["easy", "medium", "sharp", "hard", "exam"],
   },
+  [MODE_ENG]: {
+    id: MODE_ENG,
+    name: "Английский",
+    unlockText: "Лестница английского",
+    maxLevel: 5,
+    levelNames: ["Слова", "Цвета", "Школа", "Фразы", "Смешанно"],
+    levelDescs: [
+      "Животные и вещи: выбери перевод (1/2/3)",
+      "Цвета и числа на английском",
+      "Школьные слова",
+      "Простые фразы",
+      "Всё вместе",
+    ],
+    themes: ["easy", "medium", "sharp", "hard", "exam"],
+  },
+  [MODE_CODE]: {
+    id: MODE_CODE,
+    name: "Код",
+    unlockText: "Лестница программирования",
+    maxLevel: 5,
+    levelNames: ["Шаги", "Переменные", "Если", "Циклы", "Смешанно"],
+    levelDescs: [
+      "Порядок шагов: что дальше?",
+      "Чему равна переменная?",
+      "Условия if",
+      "Сколько раз выполнится цикл?",
+      "Мини-задачки вместе",
+    ],
+    themes: ["easy", "medium", "sharp", "hard", "exam"],
+  },
 };
+
+const THEME_META = {
+  [THEME_MATH]: {
+    id: THEME_MATH,
+    name: "Математика",
+    icon: "🔢",
+    modes: [MODE_BASIC, MODE_CHAIN, MODE_MUL, MODE_DIV, MODE_UNITS],
+    blurb: "Счёт, меры, × и ÷",
+  },
+  [THEME_ENG]: {
+    id: THEME_ENG,
+    name: "Английский",
+    icon: "🇬🇧",
+    modes: [MODE_ENG],
+    blurb: "Слова и фразы для начальной школы",
+  },
+  [THEME_CODE]: {
+    id: THEME_CODE,
+    name: "Код",
+    icon: "💻",
+    modes: [MODE_CODE],
+    blurb: "Простые шаги, переменные и циклы",
+  },
+};
+
+/** Профессии по успехам в каждой обучалке (кол-во 10/10 на уровнях 1–5 темы). */
+const PROFESSIONS = {
+  [THEME_MATH]: [
+    { id: "math_pupil", name: "Ученик счёта", icon: "🧮", need: 3, desc: "3 десятки в математике" },
+    { id: "math_master", name: "Мастер чисел", icon: "📐", need: 10, desc: "10 десяток в математике" },
+    { id: "math_arch", name: "Архимаг математики", icon: "🧙", need: 18, desc: "18 десяток в математике" },
+  ],
+  [THEME_ENG]: [
+    { id: "eng_reader", name: "Читатель", icon: "📖", need: 1, desc: "Первая 10/10 по английскому" },
+    { id: "eng_talker", name: "Говорун", icon: "🗣️", need: 3, desc: "3 этапа английского на 10/10" },
+    { id: "eng_poly", name: "Полиглот", icon: "🌍", need: 5, desc: "Вся лестница английского" },
+  ],
+  [THEME_CODE]: [
+    { id: "code_hatch", name: "Юный кодер", icon: "🐣", need: 1, desc: "Первая 10/10 по коду" },
+    { id: "code_dev", name: "Программист", icon: "👨‍💻", need: 3, desc: "3 этапа кода на 10/10" },
+    { id: "code_arch", name: "Архитектор кода", icon: "🏛️", need: 5, desc: "Вся лестница кода" },
+  ],
+};
+
+const ENG_LEVELS = {
+  1: { id: 1, name: "Слова", theme: "easy", coin: 2, eng: "animals", balloons: ["🐱", "🇬🇧", "🐶"], subtitle: "Животные и вещи: выбери верный перевод." },
+  2: { id: 2, name: "Цвета", theme: "medium", coin: 2, eng: "colors", balloons: ["🔴", "🇬🇧", "🔵"], subtitle: "Цвета и простые числа." },
+  3: { id: 3, name: "Школа", theme: "sharp", coin: 3, eng: "school", balloons: ["📚", "🇬🇧", "✏️"], subtitle: "Школьные слова." },
+  4: { id: 4, name: "Фразы", theme: "hard", coin: 4, eng: "phrases", balloons: ["💬", "🇬🇧", "👋"], subtitle: "Короткие фразы." },
+  5: { id: 5, name: "Смешанно", theme: "exam", coin: 5, eng: "mixed", balloons: ["🎲", "🇬🇧", "🎲"], subtitle: "Всё вместе." },
+};
+
+const CODE_LEVELS = {
+  1: { id: 1, name: "Шаги", theme: "easy", coin: 2, code: "seq", balloons: ["1️⃣", "💻", "2️⃣"], subtitle: "Что идёт дальше в последовательности?" },
+  2: { id: 2, name: "Переменные", theme: "medium", coin: 2, code: "vars", balloons: ["📦", "💻", "🔢"], subtitle: "Чему равна переменная?" },
+  3: { id: 3, name: "Если", theme: "sharp", coin: 3, code: "if", balloons: ["❓", "💻", "✅"], subtitle: "Условия if — что получится?" },
+  4: { id: 4, name: "Циклы", theme: "hard", coin: 4, code: "loop", balloons: ["🔁", "💻", "🔁"], subtitle: "Сколько раз выполнится цикл?" },
+  5: { id: 5, name: "Смешанно", theme: "exam", coin: 5, code: "mixed", balloons: ["🎲", "💻", "🎲"], subtitle: "Мини-задачки вместе." },
+};
+
+const ENG_WORDS = {
+  animals: [
+    { en: "cat", ru: "кот", ico: "🐱" },
+    { en: "dog", ru: "собака", ico: "🐶" },
+    { en: "bird", ru: "птица", ico: "🐦" },
+    { en: "fish", ru: "рыба", ico: "🐟" },
+    { en: "apple", ru: "яблоко", ico: "🍎" },
+    { en: "ball", ru: "мяч", ico: "⚽" },
+    { en: "sun", ru: "солнце", ico: "☀️" },
+    { en: "moon", ru: "луна", ico: "🌙" },
+  ],
+  colors: [
+    { en: "red", ru: "красный", ico: "🔴" },
+    { en: "blue", ru: "синий", ico: "🔵" },
+    { en: "green", ru: "зелёный", ico: "🟢" },
+    { en: "yellow", ru: "жёлтый", ico: "🟡" },
+    { en: "one", ru: "один", ico: "1️⃣" },
+    { en: "two", ru: "два", ico: "2️⃣" },
+    { en: "three", ru: "три", ico: "3️⃣" },
+    { en: "five", ru: "пять", ico: "5️⃣" },
+  ],
+  school: [
+    { en: "book", ru: "книга", ico: "📘" },
+    { en: "pen", ru: "ручка", ico: "🖊️" },
+    { en: "school", ru: "школа", ico: "🏫" },
+    { en: "teacher", ru: "учитель", ico: "👩‍🏫" },
+    { en: "friend", ru: "друг", ico: "🤝" },
+    { en: "home", ru: "дом", ico: "🏠" },
+    { en: "water", ru: "вода", ico: "💧" },
+    { en: "milk", ru: "молоко", ico: "🥛" },
+  ],
+  phrases: [
+    { en: "Hello!", ru: "Привет!", ico: "👋" },
+    { en: "Bye!", ru: "Пока!", ico: "👋" },
+    { en: "Thank you", ru: "Спасибо", ico: "🙏" },
+    { en: "Please", ru: "Пожалуйста", ico: "🤲" },
+    { en: "Yes", ru: "Да", ico: "✅" },
+    { en: "No", ru: "Нет", ico: "❌" },
+    { en: "I am fine", ru: "У меня всё хорошо", ico: "😊" },
+    { en: "Good morning", ru: "Доброе утро", ico: "🌅" },
+  ],
+};
+
 
 const RANKS = [
   { min: 0, name: "Новичок", icon: "🌱" },
@@ -659,6 +797,8 @@ const HATS = {
   knightHelm: { id: "knightHelm", name: "Шлем рыцаря", price: 220, icon: "⛑️", slot: "head" },
   gnomeCap: { id: "gnomeCap", name: "Шапка гнома", price: 140, icon: "🎩", slot: "head" },
   mapleLeaf: { id: "mapleLeaf", name: "Кленовый лист", price: 110, icon: "🍁", slot: "head" },
+  engCap: { id: "engCap", name: "Шапка ABC", price: 160, icon: "🅰️", slot: "head", theme: THEME_ENG, desc: "Для любителей английского." },
+  codeCap: { id: "codeCap", name: "Капюшон кода", price: 160, icon: "🧑‍💻", slot: "head", theme: THEME_CODE, desc: "Для юных программистов." },
 };
 
 const BODIES = {
@@ -713,6 +853,10 @@ const TOYS = {
   bell: { id: "bell", name: "Колокольчик", price: 130, icon: "🔔" },
   scarf: { id: "scarf", name: "Шарфик", price: 170, icon: "🧣" },
   secretKey: { id: "secretKey", name: "Ключ тайны", price: 0, icon: "🗝️", secret: true },
+  engBook: { id: "engBook", name: "English book", price: 220, icon: "📗", theme: THEME_ENG },
+  engFlag: { id: "engFlag", name: "Флажок EN", price: 180, icon: "🇬🇧", theme: THEME_ENG },
+  codeBug: { id: "codeBug", name: "Жучик-баг", price: 200, icon: "🐛", theme: THEME_CODE },
+  codeChip: { id: "codeChip", name: "Чип", price: 240, icon: "💾", theme: THEME_CODE },
 };
 
 /* Артефакты персонажа: нужны и звание, и монеты (по одному на каждое звание). */
@@ -761,6 +905,28 @@ const RELICS = {
     slot: "body",
     battle: { maxHpBonus: 1 },
     desc: "Для боёв: старт с +1 сердцем. Надевается в слот тела.",
+  },
+  polyglotPin: {
+    id: "polyglotPin",
+    name: "Значок полиглота",
+    icon: "🌍",
+    rank: "Знаток",
+    rankMin: 72,
+    price: 380,
+    slot: "relic",
+    theme: THEME_ENG,
+    desc: "Награда за успехи в английском. Красивый значок.",
+  },
+  coderBadge: {
+    id: "coderBadge",
+    name: "Бейдж кодера",
+    icon: "💻",
+    rank: "Знаток",
+    rankMin: 72,
+    price: 380,
+    slot: "relic",
+    theme: THEME_CODE,
+    desc: "Награда за успехи в программировании.",
   },
 };
 
@@ -843,6 +1009,32 @@ const SKILLS = {
     durationMs: 0,
     cooldownMs: 35 * 1000,
     desc: "Только босс: блок одной ошибки. КД 35 сек.",
+  },
+  wordSense: {
+    id: "wordSense",
+    name: "Чутьё слова",
+    icon: "🔤",
+    price: 900,
+    rankMin: 42,
+    rank: "Считальщик",
+    theme: THEME_ENG,
+    needProfession: "eng_talker",
+    durationMs: 0,
+    cooldownMs: 28 * 1000,
+    desc: "Подсказка-ответ. Открывается профессией «Говорун». КД 28 сек.",
+  },
+  debugTrace: {
+    id: "debugTrace",
+    name: "Отладка",
+    icon: "🐞",
+    price: 900,
+    rankMin: 42,
+    rank: "Считальщик",
+    theme: THEME_CODE,
+    needProfession: "code_dev",
+    durationMs: 0,
+    cooldownMs: 28 * 1000,
+    desc: "Подсказка-ответ. Открывается профессией «Программист». КД 28 сек.",
   },
 };
 
@@ -1159,10 +1351,21 @@ let selectedMode = (() => {
     if (saved === MODE_UNITS) return MODE_UNITS;
     if (saved === MODE_MUL) return MODE_MUL;
     if (saved === MODE_DIV) return MODE_DIV;
+    if (saved === MODE_ENG) return MODE_ENG;
+    if (saved === MODE_CODE) return MODE_CODE;
     return MODE_BASIC;
   } catch {
     return MODE_BASIC;
   }
+})();
+let selectedTheme = (() => {
+  try {
+    const saved = localStorage.getItem(`${STORAGE_KEY}-theme`);
+    if (saved === THEME_ENG || saved === THEME_CODE || saved === THEME_MATH) return saved;
+  } catch { /* ignore */ }
+  if (selectedMode === MODE_ENG) return THEME_ENG;
+  if (selectedMode === MODE_CODE) return THEME_CODE;
+  return THEME_MATH;
 })();
 boardMode = selectedMode === MODE_BASIC ? MODE_BASIC : selectedMode;
 let playerNick = loadNick();
@@ -1550,6 +1753,8 @@ function levelCfg(level, mode = selectedMode) {
   if (mode === MODE_UNITS) return UNIT_LEVELS[level] || UNIT_LEVELS[1];
   if (mode === MODE_MUL) return MUL_LEVELS[level] || MUL_LEVELS[1];
   if (mode === MODE_DIV) return DIV_LEVELS[level] || DIV_LEVELS[1];
+  if (mode === MODE_ENG) return ENG_LEVELS[level] || ENG_LEVELS[1];
+  if (mode === MODE_CODE) return CODE_LEVELS[level] || CODE_LEVELS[1];
   return LEVELS[level] || LEVELS[1];
 }
 
@@ -1558,7 +1763,40 @@ function modeLabelShort(mode) {
   if (mode === MODE_UNITS) return " · меры";
   if (mode === MODE_MUL) return " · ×";
   if (mode === MODE_DIV) return " · ÷";
+  if (mode === MODE_ENG) return " · EN";
+  if (mode === MODE_CODE) return " · код";
   return "";
+}
+
+function themeOfMode(mode = selectedMode) {
+  if (mode === MODE_ENG) return THEME_ENG;
+  if (mode === MODE_CODE) return THEME_CODE;
+  return THEME_MATH;
+}
+
+function themePerfectCount(themeId) {
+  const modes = (THEME_META[themeId] && THEME_META[themeId].modes) || [];
+  let n = 0;
+  modes.forEach((mode) => {
+    for (let lvl = 1; lvl <= 5; lvl += 1) {
+      if (state.runs.some((r) => (r.mode || MODE_BASIC) === mode && (r.level || 1) === lvl && r.correct === 10)) n += 1;
+    }
+  });
+  return n;
+}
+
+function professionFor(themeId) {
+  const list = PROFESSIONS[themeId] || [];
+  const score = themePerfectCount(themeId);
+  let cur = null;
+  list.forEach((p) => {
+    if (score >= p.need) cur = p;
+  });
+  return { current: cur, score, next: list.find((p) => score < p.need) || null, all: list };
+}
+
+function saveTheme() {
+  try { localStorage.setItem(`${STORAGE_KEY}-theme`, selectedTheme); } catch { /* ignore */ }
 }
 
 function fastPerfect(modeId, levelId) {
@@ -1624,9 +1862,20 @@ function hasSecretPerfect(modeId) {
   );
 }
 
+function professionUnlocked(profId) {
+  if (!profId) return true;
+  for (const themeId of [THEME_MATH, THEME_ENG, THEME_CODE]) {
+    const info = professionFor(themeId);
+    if (info.all.some((p) => p.id === profId && info.score >= p.need)) return true;
+  }
+  return false;
+}
+
 function skillGateOpen(skill) {
   if (!skill) return false;
+  if (skill.needProfession && !professionUnlocked(skill.needProfession)) return false;
   if (skill.battleOnly) return state.stars >= (skill.rankMin || 0);
+  if (skill.needProfession) return state.stars >= (skill.rankMin || 0);
   return hasSecretPerfect(skill.secretMode);
 }
 
@@ -1685,7 +1934,7 @@ function equippedBattleRelic() {
 function battleRoundsForMode(mode = selectedMode, battleId = selectedLevel) {
   let all;
   if (mode === MODE_UNITS) all = [1, 2];
-  else if (mode === MODE_MUL || mode === MODE_DIV) all = [1, 2, 3, 4, 5];
+  else if (mode === MODE_MUL || mode === MODE_DIV || mode === MODE_ENG || mode === MODE_CODE) all = [1, 2, 3, 4, 5];
   else all = [1, 2, 3, 4, 5];
   const frac = (battleCfg(battleId).roundFrac != null) ? battleCfg(battleId).roundFrac : 1;
   const n = Math.max(1, Math.ceil(all.length * frac));
@@ -1713,7 +1962,8 @@ function isBossOpen(id = BATTLE_LEVEL) {
 
 function normalMaxLevel() {
   const modeInfo = MODE_META[selectedMode] || MODE_META[MODE_BASIC];
-  if (selectedMode === MODE_UNITS || selectedMode === MODE_MUL || selectedMode === MODE_DIV) {
+  if (selectedMode === MODE_UNITS || selectedMode === MODE_MUL || selectedMode === MODE_DIV
+    || selectedMode === MODE_ENG || selectedMode === MODE_CODE) {
     return modeInfo.maxLevel || 2;
   }
   return Math.min(modeInfo.maxLevel || 5, SECRET_LEVEL - 1);
@@ -1750,7 +2000,7 @@ function isLevelOpen(id) {
     if (id === 1) return modeProgress(MODE_BASIC, 3) || modeProgress(MODE_CHAIN, 3);
     return hasPerfect(1);
   }
-  if (selectedMode === MODE_MUL || selectedMode === MODE_DIV) {
+  if (selectedMode === MODE_MUL || selectedMode === MODE_DIV || selectedMode === MODE_ENG || selectedMode === MODE_CODE) {
     if (id <= 1) return true;
     return hasPerfect(id - 1);
   }
@@ -1829,6 +2079,15 @@ function mapLayoutForMode(mode = selectedMode) {
       { id: 7, kind: "boss", col: 1, row: 2 },
       { id: 8, kind: "boss", col: 3, row: 3 },
       { id: 9, kind: "boss", col: 5, row: 2 },
+    ];
+  }
+  if (mode === MODE_ENG || mode === MODE_CODE) {
+    return [
+      { id: 1, kind: "level", col: 2, row: 1 },
+      { id: 2, kind: "level", col: 4, row: 1 },
+      { id: 3, kind: "level", col: 3, row: 2 },
+      { id: 4, kind: "level", col: 1, row: 3 },
+      { id: 5, kind: "level", col: 5, row: 3 },
     ];
   }
   if (mode === MODE_MUL || mode === MODE_DIV) {
@@ -2413,6 +2672,136 @@ function generateDivProblem(level) {
   return generateDivMixed();
 }
 
+function shuffleChoices(correct, pool) {
+  const wrong = shuffle(pool.filter((x) => x !== correct)).slice(0, 2);
+  const opts = shuffle([correct, ...wrong]);
+  return { choices: opts, answer: opts.indexOf(correct) + 1 };
+}
+
+function generateEngQuiz(bank) {
+  const item = bank[rand(0, bank.length - 1)];
+  const askEn = Math.random() < 0.55;
+  if (askEn) {
+    const q = shuffleChoices(item.ru, bank.map((b) => b.ru));
+    return {
+      text: `${item.ico || ""}  ${item.en}  = ?`,
+      hint: "Выбери перевод: 1, 2 или 3",
+      choices: q.choices,
+      answer: q.answer,
+      choice: true,
+      a: item.en,
+      b: item.ru,
+      op: "EN",
+    };
+  }
+  const q = shuffleChoices(item.en, bank.map((b) => b.en));
+  return {
+    text: `${item.ico || ""}  ${item.ru}  = ?`,
+    hint: "Выбери английское слово: 1, 2 или 3",
+    choices: q.choices,
+    answer: q.answer,
+    choice: true,
+    a: item.ru,
+    b: item.en,
+    op: "EN",
+  };
+}
+
+function generateEngProblem(level) {
+  const cfg = levelCfg(level, MODE_ENG);
+  const kind = cfg.eng || "mixed";
+  if (kind === "mixed") {
+    const keys = Object.keys(ENG_WORDS);
+    const bank = ENG_WORDS[keys[rand(0, keys.length - 1)]];
+    return generateEngQuiz(bank);
+  }
+  return generateEngQuiz(ENG_WORDS[kind] || ENG_WORDS.animals);
+}
+
+function generateCodeSeq() {
+  const start = rand(1, 5);
+  const step = rand(1, 3);
+  const seq = [start, start + step, start + step * 2];
+  const next = start + step * 3;
+  const q = shuffleChoices(next, [next, next + 1, next - 1, next + step, start]);
+  return {
+    text: `Шаги: ${seq.join(" → ")} → ?`,
+    hint: "Что дальше?",
+    choices: q.choices.map(String),
+    answer: q.answer,
+    choice: true,
+    op: "CODE",
+  };
+}
+
+function generateCodeVars() {
+  const x = rand(2, 9);
+  const y = rand(1, 6);
+  const roll = Math.random();
+  if (roll < 0.4) {
+    return { text: `x = ${x}
+Чему равно x?`, answer: x, hint: "Прочитай переменную", op: "CODE", a: x, b: 0 };
+  }
+  if (roll < 0.7) {
+    return { text: `x = ${x}
+y = ${y}
+x + y = ?`, answer: x + y, hint: "Сложи переменные", op: "CODE", a: x, b: y };
+  }
+  return { text: `x = ${x}
+x + 2 = ?`, answer: x + 2, hint: "Прибавь 2", op: "CODE", a: x, b: 2 };
+}
+
+function generateCodeIf() {
+  const a = rand(2, 9);
+  const b = rand(1, 9);
+  const useGt = Math.random() < 0.5;
+  const cond = useGt ? a > b : a === b;
+  const yes = rand(3, 9);
+  const no = rand(1, 5);
+  const result = cond ? yes : no;
+  const op = useGt ? ">" : "==";
+  const q = shuffleChoices(result, [yes, no, a, b, yes + 1]);
+  return {
+    text: `if (${a} ${op} ${b}) → ${yes}
+иначе → ${no}
+Результат?`,
+    hint: "Проверь условие",
+    choices: q.choices.map(String),
+    answer: q.answer,
+    choice: true,
+    op: "CODE",
+  };
+}
+
+function generateCodeLoop() {
+  const times = rand(2, 6);
+  const add = rand(1, 4);
+  const start = rand(0, 3);
+  const result = start + times * add;
+  return {
+    text: `x = ${start}
+повторить ${times} раз:
+  x = x + ${add}
+x = ?`,
+    answer: result,
+    hint: "Цикл: прибавляй снова и снова",
+    op: "CODE",
+    a: times,
+    b: add,
+  };
+}
+
+function generateCodeProblem(level) {
+  const cfg = levelCfg(level, MODE_CODE);
+  const kind = cfg.code || "mixed";
+  if (kind === "seq") return generateCodeSeq();
+  if (kind === "vars") return generateCodeVars();
+  if (kind === "if") return generateCodeIf();
+  if (kind === "loop") return generateCodeLoop();
+  const fns = [generateCodeSeq, generateCodeVars, generateCodeIf, generateCodeLoop];
+  return fns[rand(0, fns.length - 1)]();
+}
+
 function generateProblem(level) {
   if (selectedMode === MODE_UNITS) {
     const cfg = levelCfg(level);
@@ -2422,6 +2811,8 @@ function generateProblem(level) {
   }
   if (selectedMode === MODE_MUL) return generateMulProblem(level);
   if (selectedMode === MODE_DIV) return generateDivProblem(level);
+  if (selectedMode === MODE_ENG) return generateEngProblem(level);
+  if (selectedMode === MODE_CODE) return generateCodeProblem(level);
   if (level === SECRET_LEVEL) {
     return selectedMode === MODE_CHAIN ? generateSecretChain() : generateSecretBasic();
   }
@@ -2538,6 +2929,23 @@ function generateRun(level) {
     while (items.length < TOTAL) items.push(generateDivProblem(level));
     return items;
   }
+  if (selectedMode === MODE_ENG || selectedMode === MODE_CODE) {
+    const items = [];
+    const seen = new Set();
+    const make = () => (selectedMode === MODE_ENG ? generateEngProblem(level) : generateCodeProblem(level));
+    let guard = 0;
+    while (items.length < TOTAL && guard < 220) {
+      const p = make();
+      const key = p.text || `${p.op}:${p.answer}:${(p.choices || []).join(",")}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        items.push(p);
+      }
+      guard += 1;
+    }
+    while (items.length < TOTAL) items.push(make());
+    return items;
+  }
   if (selectedMode === MODE_CHAIN) {
     const items = [];
     const seen = new Set();
@@ -2577,10 +2985,16 @@ function applyTheme(level) {
     els.homeSubtitle.textContent = `${bcfg.name} «${modeInfo.name}»: ${bcfg.subtitle}`;
   } else if (selectedMode === MODE_UNITS) {
     els.homeSubtitle.textContent = `Режим «Меры»: ${modeInfo.levelDescs[(level || 1) - 1] || cfg.subtitle}`;
-  } else if (selectedMode === MODE_CHAIN || selectedMode === MODE_MUL || selectedMode === MODE_DIV) {
+  } else if (selectedMode === MODE_CHAIN || selectedMode === MODE_MUL || selectedMode === MODE_DIV
+    || selectedMode === MODE_ENG || selectedMode === MODE_CODE) {
     els.homeSubtitle.textContent = `Режим «${modeInfo.name}»: ${modeInfo.levelDescs[(level || 1) - 1] || cfg.subtitle}`;
   } else {
     els.homeSubtitle.textContent = cfg.subtitle;
+  }
+  const homeTitle = document.getElementById("homeTitle");
+  if (homeTitle) {
+    const tmeta = THEME_META[selectedTheme] || THEME_META[THEME_MATH];
+    homeTitle.textContent = selectedTheme === THEME_MATH ? "Счёт до 20" : `${tmeta.icon} ${tmeta.name}`;
   }
   [els.balloon1, els.balloon2, els.balloon3].forEach((node, i) => {
     node.textContent = cfg.balloons[i];
@@ -3073,11 +3487,67 @@ function renderNickCard(forceEdit = false) {
   }
 }
 
+function renderThemeTabs() {
+  const root = document.getElementById("themeTabs");
+  if (!root) return;
+  root.innerHTML = [THEME_MATH, THEME_ENG, THEME_CODE].map((id) => {
+    const meta = THEME_META[id];
+    const on = selectedTheme === id ? " selected" : "";
+    const prof = professionFor(id);
+    const badge = prof.current ? `<span class="theme-prof-ico" title="${prof.current.name}">${prof.current.icon}</span>` : "";
+    return `<button type="button" class="filter-btn theme-tab${on}" data-theme="${id}">
+      <span class="theme-ico">${meta.icon}</span> ${meta.name}${badge}
+    </button>`;
+  }).join("");
+}
+
+function renderProfessions() {
+  const root = document.getElementById("professionRow");
+  if (!root) return;
+  const themes = [THEME_MATH, THEME_ENG, THEME_CODE];
+  root.innerHTML = themes.map((id) => {
+    const meta = THEME_META[id];
+    const info = professionFor(id);
+    const cur = info.current;
+    const nxt = info.next;
+    const title = cur ? cur.name : "Новичок";
+    const ico = cur ? cur.icon : "🌱";
+    const prog = nxt
+      ? `${info.score}/${nxt.need} → ${nxt.name}`
+      : (cur ? "Максимум!" : "Пройди 10/10");
+    const on = selectedTheme === id ? " on" : "";
+    return `<button type="button" class="prof-chip${on}" data-theme="${id}" title="${meta.blurb}">
+      <span class="prof-ico">${meta.icon}${ico}</span>
+      <span class="prof-text"><strong>${meta.name}: ${title}</strong><small>${prog}</small></span>
+    </button>`;
+  }).join("");
+}
+
+function selectTheme(themeId) {
+  if (![THEME_MATH, THEME_ENG, THEME_CODE].includes(themeId)) return;
+  if (selectedTheme === themeId) return;
+  selectedTheme = themeId;
+  saveTheme();
+  const modes = THEME_META[themeId].modes;
+  if (!modes.includes(selectedMode)) {
+    selectedMode = modes[0];
+    saveMode();
+  }
+  selectedLevel = maxOpenLevel();
+  state.lastLevel = selectedLevel;
+  saveState();
+  renderHome();
+}
+
 function renderHome() {
   if (selectedMode === MODE_MUL && (selectedLevel === SECRET_LEVEL || (selectedLevel > 5 && !isBattleLevel(selectedLevel)))) {
     selectedLevel = maxOpenLevel();
   }
   if (selectedMode === MODE_DIV && (selectedLevel === SECRET_LEVEL || (selectedLevel > 5 && !isBattleLevel(selectedLevel)))) {
+    selectedLevel = maxOpenLevel();
+  }
+  if ((selectedMode === MODE_ENG || selectedMode === MODE_CODE)
+    && (selectedLevel === SECRET_LEVEL || (selectedLevel > 5 && !isBattleLevel(selectedLevel)))) {
     selectedLevel = maxOpenLevel();
   }
   if (!isBattleLevel(selectedLevel) && !isLevelOpen(selectedLevel)) selectedLevel = maxOpenLevel();
@@ -3098,7 +3568,11 @@ function renderHome() {
   const xp = xpInfo();
   els.xpLabel.textContent = xp.label;
   els.xpFill.style.width = `${xp.pct}%`;
+  renderThemeTabs();
+  renderProfessions();
   const modeInfo = MODE_META[selectedMode] || MODE_META[MODE_BASIC];
+  const modeTabs = document.getElementById("modeTabs");
+  if (modeTabs) modeTabs.classList.toggle("hidden", selectedTheme !== THEME_MATH);
   if (selectedMode === MODE_UNITS) {
     if (!isLevelOpen(1)) {
       els.unlockHint.textContent = "Меры откроются после 10/10 на «Сложный» (База или 2 действия).";
@@ -3134,6 +3608,20 @@ function renderHome() {
       els.unlockHint.textContent = "Бои открыты — побеждай Бой 1 → 2 → 3!";
     } else {
       els.unlockHint.textContent = "Лестница деления и все бои пройдены!";
+    }
+  } else if (selectedMode === MODE_ENG || selectedMode === MODE_CODE) {
+    if (!isLevelOpen(2)) {
+      els.unlockHint.textContent = `Начни с «${modeInfo.levelNames[0]}» — 10/10 откроет следующий этап.`;
+    } else if (!isLevelOpen(5)) {
+      const next = [2, 3, 4, 5].find((id) => !isLevelOpen(id));
+      const prev = next - 1;
+      els.unlockHint.textContent = `10/10 на «${modeInfo.levelNames[prev - 1]}» откроет «${modeInfo.levelNames[next - 1]}»`;
+    } else {
+      const prof = professionFor(themeOfMode(selectedMode));
+      const tip = prof.next
+        ? `Лестница открыта. Профессия: ${prof.current ? prof.current.name : "Новичок"} → ${prof.next.name} (${prof.score}/${prof.next.need}).`
+        : `Лестница «${modeInfo.name}» пройдена! Профессия: ${prof.current ? prof.current.name : "—"}.`;
+      els.unlockHint.textContent = tip;
     }
   } else if (!isLevelOpen(2)) {
     els.unlockHint.textContent = `10/10 на «${modeInfo.levelNames[0]}» откроет «${modeInfo.levelNames[1]}»`;
@@ -3461,7 +3949,7 @@ function skillButtonHtml() {
   const skill = equippedSkill();
   if (!skill || !run) return "";
   if (skill.battleOnly && !run.battle) return "";
-  if (!skill.battleOnly && run.battle && skill.id !== "timeLord" && skill.id !== "sageHint") return "";
+  if (!skill.battleOnly && run.battle && skill.id !== "timeLord" && skill.id !== "sageHint" && skill.id !== "wordSense" && skill.id !== "debugTrace") return "";
   const now = Date.now();
   const active = skillIsActive();
   const cd = skillCooldownLeft();
@@ -3515,14 +4003,17 @@ function useSkill(id) {
     run.timeScale = 0.5;
     document.body.classList.add("slow-mo");
     showToasts([{ plain: true, icon: skill.icon, name: skill.name, desc: "Время замедлено на 10 секунд!" }]);
-  } else if (id === "sageHint") {
+  } else if (id === "sageHint" || id === "wordSense" || id === "debugTrace") {
     const item = run.items[run.index];
     if (!item) return;
     run.skillReadyAt = Date.now() + skill.cooldownMs;
     run.skillHintUsedOn = run.index;
     run.input = String(item.answer);
     drawAnswer();
-    showToasts([{ plain: true, icon: skill.icon, name: "Подсказка мудреца", desc: `Правильный ответ: ${item.answer}` }]);
+    const choiceHint = item.choice && item.choices
+      ? `Вариант ${item.answer}: ${item.choices[item.answer - 1]}`
+      : `Правильный ответ: ${item.answer}`;
+    showToasts([{ plain: true, icon: skill.icon, name: skill.name, desc: choiceHint }]);
   } else if (id === "fireBolt" && run.battle) {
     run.skillReadyAt = Date.now() + skill.cooldownMs;
     run.fireNext = true;
@@ -3554,10 +4045,10 @@ function renderProblem() {
   run.input = "";
   els.stepNow.textContent = String(run.index + 1);
   els.progressFill.style.width = `${((run.index + 1) / TOTAL) * 100}%`;
-  els.problem.textContent = item.text || `${item.a}  ${item.op}  ${item.b}  =  ?`;
-  // Только сравнение мер — многострочный блок; обычные примеры всегда по центру.
-  els.problem.classList.toggle("units-cmp", Boolean(item.compare));
-  els.problem.classList.toggle("mul-long", Boolean(item.hint) || (item.text && item.text.length > 22));
+  const rawText = item.text || `${item.a}  ${item.op}  ${item.b}  =  ?`;
+  els.problem.innerHTML = escapeHtml(rawText).replace(/\n/g, "<br>");
+  els.problem.classList.toggle("units-cmp", Boolean(item.compare) || Boolean(item.choice) || (item.text && item.text.includes("\n")));
+  els.problem.classList.toggle("mul-long", Boolean(item.hint) || (item.text && item.text.length > 22) || Boolean(item.choice));
   let hintEl = document.getElementById("mulHint");
   if (!hintEl && els.problemCard) {
     hintEl = document.createElement("div");
@@ -3574,6 +4065,26 @@ function renderProblem() {
       hintEl.classList.add("hidden");
     }
   }
+  let choiceEl = document.getElementById("choicePad");
+  if (!choiceEl && els.problemCard) {
+    choiceEl = document.createElement("div");
+    choiceEl.id = "choicePad";
+    choiceEl.className = "choice-pad";
+    els.problemCard.appendChild(choiceEl);
+  }
+  if (choiceEl) {
+    if (item.choice && Array.isArray(item.choices)) {
+      choiceEl.innerHTML = item.choices.map((c, i) =>
+        `<button type="button" class="choice-btn" data-choice="${i + 1}"><span class="choice-n">${i + 1}</span> ${escapeHtml(String(c))}</button>`
+      ).join("");
+      choiceEl.classList.remove("hidden");
+      document.body.classList.add("choice-mode");
+    } else {
+      choiceEl.innerHTML = "";
+      choiceEl.classList.add("hidden");
+      document.body.classList.remove("choice-mode");
+    }
+  }
   els.problemCard.classList.remove("pop");
   void els.problemCard.offsetWidth;
   els.problemCard.classList.add("pop");
@@ -3584,6 +4095,12 @@ function drawAnswer() {
   const has = run.input.length > 0;
   els.answerBox.classList.toggle("has-value", has);
   els.answerText.textContent = run.input;
+  const item = run && run.items && run.items[run.index];
+  if (item && item.choice) {
+    document.querySelectorAll("#choicePad .choice-btn").forEach((b) => {
+      b.classList.toggle("picked", has && b.dataset.choice === run.input);
+    });
+  }
 }
 
 function pressKey(key) {
@@ -3591,6 +4108,14 @@ function pressKey(key) {
   if (key === "back") {
     run.input = run.input.slice(0, -1);
     drawAnswer();
+    return;
+  }
+  const item = run.items[run.index];
+  if (item && item.choice) {
+    if (/^[123]$/.test(key)) {
+      run.input = key;
+      drawAnswer();
+    }
     return;
   }
   if (/^\d$/.test(key) && run.input.length < 4) {
@@ -5012,6 +5537,103 @@ function shopAction(act, id) {
   renderHome();
 }
 
+// Ачивки Английский / Код / профессии
+ACHIEVEMENTS.push(
+  {
+    id: "eng_open",
+    icon: "🇬🇧",
+    name: "Hello!",
+    desc: "Пройди любой этап английского",
+    check: (s) => s.runs.some((r) => r.mode === MODE_ENG),
+    progress: (s) => ({ current: s.runs.filter((r) => r.mode === MODE_ENG).length, target: 1 }),
+  },
+  {
+    id: "eng_words",
+    icon: "🐱",
+    name: "Словарик",
+    desc: "10/10 на этапе «Слова»",
+    check: (s) => s.runs.some((r) => r.mode === MODE_ENG && (r.level || 1) === 1 && r.correct === 10),
+    progress: (s) => ({ current: s.runs.filter((r) => r.mode === MODE_ENG && (r.level || 1) === 1).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }),
+  },
+  {
+    id: "eng_all",
+    icon: "🌍",
+    name: "Вся лестница EN",
+    desc: "10/10 на всех 5 этапах английского",
+    check: (s) => [1, 2, 3, 4, 5].every((lvl) => s.runs.some((r) => r.mode === MODE_ENG && (r.level || 1) === lvl && r.correct === 10)),
+    progress: (s) => ({ current: [1, 2, 3, 4, 5].filter((lvl) => s.runs.some((r) => r.mode === MODE_ENG && (r.level || 1) === lvl && r.correct === 10)).length, target: 5 }),
+  },
+  {
+    id: "eng_poly",
+    icon: "🗣️",
+    name: "Полиглот",
+    desc: "Получи профессию «Полиглот»",
+    check: () => professionUnlocked("eng_poly"),
+    progress: () => {
+      const p = professionFor(THEME_ENG);
+      return { current: Math.min(p.score, 5), target: 5 };
+    },
+  },
+  {
+    id: "code_open",
+    icon: "💻",
+    name: "Первый код",
+    desc: "Пройди любой этап программирования",
+    check: (s) => s.runs.some((r) => r.mode === MODE_CODE),
+    progress: (s) => ({ current: s.runs.filter((r) => r.mode === MODE_CODE).length, target: 1 }),
+  },
+  {
+    id: "code_seq",
+    icon: "1️⃣",
+    name: "Шаг за шагом",
+    desc: "10/10 на этапе «Шаги»",
+    check: (s) => s.runs.some((r) => r.mode === MODE_CODE && (r.level || 1) === 1 && r.correct === 10),
+    progress: (s) => ({ current: s.runs.filter((r) => r.mode === MODE_CODE && (r.level || 1) === 1).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }),
+  },
+  {
+    id: "code_all",
+    icon: "🏛️",
+    name: "Вся лестница кода",
+    desc: "10/10 на всех 5 этапах кода",
+    check: (s) => [1, 2, 3, 4, 5].every((lvl) => s.runs.some((r) => r.mode === MODE_CODE && (r.level || 1) === lvl && r.correct === 10)),
+    progress: (s) => ({ current: [1, 2, 3, 4, 5].filter((lvl) => s.runs.some((r) => r.mode === MODE_CODE && (r.level || 1) === lvl && r.correct === 10)).length, target: 5 }),
+  },
+  {
+    id: "code_arch",
+    icon: "👨‍💻",
+    name: "Архитектор",
+    desc: "Получи профессию «Архитектор кода»",
+    check: () => professionUnlocked("code_arch"),
+    progress: () => {
+      const p = professionFor(THEME_CODE);
+      return { current: Math.min(p.score, 5), target: 5 };
+    },
+  },
+  {
+    id: "math_arch",
+    icon: "🧙",
+    name: "Архимаг математики",
+    desc: "Получи профессию «Архимаг математики»",
+    check: () => professionUnlocked("math_arch"),
+    progress: () => {
+      const p = professionFor(THEME_MATH);
+      return { current: Math.min(p.score, 18), target: 18 };
+    },
+  },
+  {
+    id: "triple_scholar",
+    icon: "🎓",
+    name: "Три академика",
+    desc: "Есть профессия в каждой из трёх обучалок",
+    gold: true,
+    check: () => [THEME_MATH, THEME_ENG, THEME_CODE].every((t) => professionFor(t).current),
+    progress: () => ({
+      current: [THEME_MATH, THEME_ENG, THEME_CODE].filter((t) => professionFor(t).current).length,
+      target: 3,
+    }),
+  }
+);
+
 // Дополнительные ачивки для режима "2 действия"
 ACHIEVEMENTS.push(
   {
@@ -5126,6 +5748,8 @@ function parseModeId(raw) {
   if (raw === MODE_UNITS) return MODE_UNITS;
   if (raw === MODE_MUL) return MODE_MUL;
   if (raw === MODE_DIV) return MODE_DIV;
+  if (raw === MODE_ENG) return MODE_ENG;
+  if (raw === MODE_CODE) return MODE_CODE;
   return MODE_BASIC;
 }
 
@@ -5135,12 +5759,42 @@ document.getElementById("modeTabs").addEventListener("click", (e) => {
   const nextMode = parseModeId(btn.dataset.mode);
   if (nextMode === selectedMode) return;
   selectedMode = nextMode;
+  selectedTheme = themeOfMode(selectedMode);
   saveMode();
+  saveTheme();
   selectedLevel = maxOpenLevel();
   state.lastLevel = selectedLevel;
   saveState();
   renderHome();
 });
+
+document.getElementById("themeTabs")?.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-theme]");
+  if (!btn) return;
+  selectTheme(btn.dataset.theme);
+});
+
+document.getElementById("professionRow")?.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-theme]");
+  if (!btn) return;
+  selectTheme(btn.dataset.theme);
+});
+
+document.getElementById("choicePad")?.addEventListener("click", onChoicePadClick);
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("#choicePad [data-choice]");
+  if (!btn || !run) return;
+  onChoicePadClick(e);
+});
+
+function onChoicePadClick(e) {
+  const btn = e.target.closest("[data-choice]");
+  if (!btn || !run || run.done) return;
+  pressKey(String(btn.dataset.choice));
+  document.querySelectorAll("#choicePad .choice-btn").forEach((b) => {
+    b.classList.toggle("picked", b === btn);
+  });
+}
 
 document.getElementById("boardModeFilters").addEventListener("click", (e) => {
   const btn = e.target.closest("[data-board-mode]");
