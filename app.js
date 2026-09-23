@@ -5301,21 +5301,33 @@ function renderShop() {
       const action = owned ? (on ? "on" : "equip-skill") : "buy-skill";
       const label = on ? "Надет" : owned ? "Надеть" : "Купить";
       const price = owned ? 0 : sk.price;
-      const secretName = sk.secretMode === MODE_CHAIN ? "2 действия" : "База";
-      const needSecret = sk.battleOnly
-        ? `<span class="rank-need ok">для босса</span>`
-        : (gate
+      let needGate;
+      let reqLine;
+      if (sk.battleOnly) {
+        needGate = `<span class="rank-need ok">для босса</span>`;
+        reqLine = "<br><strong>Только в бою.</strong>";
+      } else if (sk.needProfession) {
+        const profName = Object.values(PROFESSIONS).flat().find((p) => p.id === sk.needProfession)?.name || sk.needProfession;
+        needGate = gate
+          ? `<span class="rank-need ok">профессия «${profName}» ✓</span>`
+          : `<span class="rank-need">нужна профессия «${profName}»</span>`;
+        reqLine = `<br><strong>Требования:</strong> профессия «${profName}» + ${sk.rank || "Считальщик"} + ${sk.price} монет.`;
+      } else {
+        const secretName = sk.secretMode === MODE_CHAIN ? "2 действия" : "База";
+        needGate = gate
           ? `<span class="rank-need ok">секрет «${secretName}» ✓</span>`
-          : `<span class="rank-need">нужен секрет «${secretName}»</span>`);
+          : `<span class="rank-need">нужен секрет «${secretName}»</span>`;
+        reqLine = `<br><strong>Требования:</strong> секрет «${secretName}» + ${sk.rank || "Архимаг"} + ${sk.price} монет.`;
+      }
       const needRank = hasRank
         ? `<span class="rank-need ok">${sk.rank || "Архимаг"} ✓</span>`
         : `<span class="rank-need warn">нужно звание ${sk.rank || "Архимаг"} (${needRankMin}⭐)</span>`;
       const locked = !owned && (!gate || !hasRank);
       return `<article class="shop-card ${locked ? "locked-rank" : ""}">
         <div class="ico"><span class="relic-ico skill-ico">${sk.icon}</span></div>
-        <div class="name">${sk.name}${needSecret}${needRank}</div>
+        <div class="name">${sk.name}${needGate}${needRank}</div>
         <button type="button" class="buy ${(!canBuy && !owned) || locked ? "ghost" : ""}" data-act="${action}" data-id="${sk.id}" ${(!canBuy && !owned) || locked || action === "on" ? "disabled" : ""}>${label}${price ? ` · ${price}&nbsp;<span class="coin sm" aria-hidden="true"></span>` : ""}</button>
-        <div class="desc">${sk.desc}${sk.battleOnly ? "<br><strong>Только в бою.</strong>" : `<br><strong>Требования:</strong> секрет «${secretName}» + ${sk.rank || "Архимаг"} + ${sk.price} монет.`}</div>
+        <div class="desc">${sk.desc}${reqLine}</div>
       </article>`;
     }).join("");
     return;
