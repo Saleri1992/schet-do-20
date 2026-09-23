@@ -1328,6 +1328,16 @@ const HATS = {
   knightHelm: { id: "knightHelm", name: "Шлем рыцаря", price: 220, icon: "⛑️", slot: "head" },
   gnomeCap: { id: "gnomeCap", name: "Шапка гнома", price: 140, icon: "🎩", slot: "head" },
   mapleLeaf: { id: "mapleLeaf", name: "Кленовый лист", price: 110, icon: "🍁", slot: "head" },
+  beanie: { id: "beanie", name: "Шапочка", price: 70, icon: "🧢", slot: "head", desc: "Уютная кепка." },
+  bunny: { id: "bunny", name: "Ушки зайчика", price: 95, icon: "🐰", slot: "head", desc: "Милые ушки." },
+  flower: { id: "flower", name: "Венок", price: 120, icon: "🌼", slot: "head", desc: "Цветы на голове." },
+  headphones: { id: "headphones", name: "Наушники", price: 130, icon: "🎧", slot: "head", desc: "Музыка в ушах." },
+  beret: { id: "beret", name: "Берет", price: 115, icon: "🎨", slot: "head", desc: "Как у художника." },
+  cowboy: { id: "cowboy", name: "Ковбойская", price: 150, icon: "🤠", slot: "head", desc: "Йии-ха!" },
+  santa: { id: "santa", name: "Колпак Санты", price: 160, icon: "🎅", slot: "head", desc: "Новогодний вайб." },
+  catEars: { id: "catEars", name: "Кошачьи ушки", price: 105, icon: "🐱", slot: "head", desc: "Мяу." },
+  bandana: { id: "bandana", name: "Бандана", price: 85, icon: "🧧", slot: "head", desc: "Стильно и просто." },
+  chef: { id: "chef", name: "Колпак повара", price: 125, icon: "👨‍🍳", slot: "head", desc: "Для юного шефа." },
   engCap: { id: "engCap", name: "Шапка ABC", price: 160, icon: "🅰️", slot: "head", theme: THEME_ENG, desc: "Для любителей английского." },
   codeCap: { id: "codeCap", name: "Капюшон кода", price: 160, icon: "🧑‍💻", slot: "head", theme: THEME_CODE, desc: "Для юных программистов." },
 };
@@ -1335,6 +1345,17 @@ const HATS = {
 const BODIES = {
   none: { id: "none", name: "Без брони", price: 0, icon: "👕", slot: "body", desc: "Обычная одёжка." },
   clothVest: { id: "clothVest", name: "Тканевый жилет", price: 150, icon: "🧥", slot: "body", desc: "Лёгкая защита для новичка." },
+  hoodie: { id: "hoodie", name: "Худи", price: 120, icon: "🧥", slot: "body", desc: "Мягкое и тёплое." },
+  sweater: { id: "sweater", name: "Свитер", price: 110, icon: "🧶", slot: "body", desc: "Бабушкин уют." },
+  raincoat: { id: "raincoat", name: "Дождевик", price: 135, icon: "☔", slot: "body", desc: "Не боится луж." },
+  pajamas: { id: "pajamas", name: "Пижама", price: 100, icon: "🩳", slot: "body", desc: "Спать и учиться." },
+  dress: { id: "dress", name: "Платье", price: 145, icon: "👗", slot: "body", desc: "Нарядный вид." },
+  tuxedo: { id: "tuxedo", name: "Смокинг", price: 200, icon: "🤵", slot: "body", desc: "На праздник." },
+  apron: { id: "apron", name: "Фартук", price: 90, icon: "🧑‍🍳", slot: "body", desc: "Для готовки и опыта." },
+  overalls: { id: "overalls", name: "Комбинезон", price: 155, icon: "👷", slot: "body", desc: "Как у исследователя." },
+  kimono: { id: "kimono", name: "Кимоно", price: 180, icon: "🥋", slot: "body", desc: "Стиль воина знаний." },
+  tshirt: { id: "tshirt", name: "Футболка ★", price: 80, icon: "👕", slot: "body", desc: "Простая и яркая." },
+  cape: { id: "cape", name: "Плащ героя", price: 170, icon: "🦸", slot: "body", desc: "Развевается на ветру." },
   leatherVest: {
     id: "leatherVest", name: "Кожаный жилет", price: 280, icon: "🦺", slot: "body",
     rankMin: 42, rank: "Считальщик", battle: { maxHpBonus: 1 },
@@ -1345,10 +1366,22 @@ const BODIES = {
     rankMin: 110, rank: "Отличник", battle: { firstHitFree: true },
     desc: "Для боёв: первый удар по тебе не считается.",
   },
+  scaleMail: {
+    id: "scaleMail", name: "Чешуя", price: 360, icon: "🐉", slot: "body",
+    rankMin: 72, rank: "Знаток", battle: { maxHpBonus: 1 },
+    desc: "Для боёв: +1 HP, блестит как дракон.",
+  },
 };
 
 const WEAPONS = {
   none: { id: "none", name: "Без оружия", price: 0, icon: "✋", slot: "weapon", desc: "Бьёшь кулачками знаний." },
+  pencil: { id: "pencil", name: "Карандаш", price: 60, icon: "✏️", slot: "weapon", desc: "Пишет правильные ответы." },
+  ruler: { id: "ruler", name: "Линейка", price: 75, icon: "📏", slot: "weapon", desc: "Мерит примеры." },
+  balloon: { id: "balloon", name: "Шарик", price: 55, icon: "🎈", slot: "weapon", desc: "Лёгкий и весёлый." },
+  umbrella: { id: "umbrella", name: "Зонтик", price: 90, icon: "☂️", slot: "weapon", desc: "От дождя ошибок." },
+  book: { id: "book", name: "Учебник", price: 110, icon: "📖", slot: "weapon", desc: "Знания в руках." },
+  candyCane: { id: "candyCane", name: "Леденец", price: 70, icon: "🍭", slot: "weapon", desc: "Сладкая сила." },
+  flag: { id: "flag", name: "Флажок", price: 85, icon: "🚩", slot: "weapon", desc: "Вперёд к пятёрке!" },
   woodSword: {
     id: "woodSword", name: "Деревянный меч", price: 280, icon: "⚔️", slot: "weapon",
     rankMin: 72, rank: "Знаток", battle: { dmgBonus: 1 },
@@ -1479,8 +1512,30 @@ const SKIES = {
   secretNight: { id: "secretNight", name: "Тайная ночь", icon: "🗝️", rank: "Секрет", rankMin: 99999, price: 0, desc: "Награда за секретный уровень. Не купить." },
 };
 
-/* Скиллы: открываются секретными уровнями, покупка от Архимага. */
+/* Скиллы: часть — для боёв/профессий, часть — после секретов. */
 const SKILLS = {
+  focusBreath: {
+    id: "focusBreath",
+    name: "Спокойствие",
+    icon: "🧘",
+    price: 180,
+    rankMin: 18,
+    rank: "Ученик",
+    durationMs: 0,
+    cooldownMs: 45 * 1000,
+    desc: "Лёгкая подсказка: показывает верный ответ. КД 45 сек. Доступен рано.",
+  },
+  luckyTick: {
+    id: "luckyTick",
+    name: "Удачный тик",
+    icon: "✨",
+    price: 260,
+    rankMin: 42,
+    rank: "Считальщик",
+    durationMs: 8 * 1000,
+    cooldownMs: 35 * 1000,
+    desc: "Замедляет время на 8 сек. КД 35 сек.",
+  },
   timeLord: {
     id: "timeLord",
     name: "Владыка времени",
@@ -3158,7 +3213,9 @@ function skillGateOpen(skill) {
   if (skill.needProfession && !professionUnlocked(skill.needProfession)) return false;
   if (skill.battleOnly) return state.stars >= (skill.rankMin || 0);
   if (skill.needProfession) return state.stars >= (skill.rankMin || 0);
-  return hasSecretPerfect(skill.secretMode);
+  if (skill.secretMode) return hasSecretPerfect(skill.secretMode) && state.stars >= (skill.rankMin || 0);
+  // обычные скиллы — только звание
+  return state.stars >= (skill.rankMin || 0);
 }
 
 function equippedSkill() {
@@ -4384,6 +4441,11 @@ function hatSVG(id) {
   if (id === "mapleLeaf") {
     return `<text x="80" y="28" text-anchor="middle" font-size="28">🍁</text>`;
   }
+  // остальные — эмодзи из каталога
+  const hat = HATS[id];
+  if (hat && hat.icon && id !== "none") {
+    return `<text x="80" y="26" text-anchor="middle" font-size="26">${hat.icon}</text>`;
+  }
   return "";
 }
 
@@ -4542,13 +4604,25 @@ function mascotMarkup(size, mood = "neutral", look = null) {
     body += glasses + shades;
   }
 
-  const bodyCape = (bodyId === "clothVest")
+  const bodyCape = (bodyId === "clothVest" || bodyId === "hoodie")
     ? `<path d="M40 100 Q80 130 120 100 L110 140 Q80 155 50 140 Z" fill="#8ecae6" opacity=".85"/>`
-    : (bodyId === "leatherVest" || bodyId === "ironShield")
+    : (bodyId === "leatherVest" || bodyId === "ironShield" || bodyId === "scaleMail")
       ? `<path d="M42 95 Q80 125 118 95 L112 138 Q80 152 48 138 Z" fill="#c4a484"/><path d="M70 100 H90 V130 H70 Z" fill="#8d6e63"/>`
-      : (bodyId === "mageCloak")
+      : (bodyId === "mageCloak" || bodyId === "cape" || bodyId === "kimono")
         ? `<path d="M36 90 Q80 140 124 90 L118 150 Q80 168 42 150 Z" fill="#7b5ea7" opacity=".9"/><circle cx="80" cy="120" r="6" fill="#ffd166"/>`
-        : "";
+        : (bodyId === "sweater" || bodyId === "tshirt")
+          ? `<path d="M48 108 Q80 122 112 108 L108 142 Q80 150 52 142 Z" fill="#ef476f" opacity=".8"/>`
+          : (bodyId === "raincoat")
+            ? `<path d="M40 100 Q80 128 120 100 L114 145 Q80 158 46 145 Z" fill="#4cc9f0" opacity=".85"/>`
+            : (bodyId === "pajamas")
+              ? `<path d="M48 108 Q80 122 112 108 L108 142 Q80 150 52 142 Z" fill="#b8b8ff" opacity=".85"/>`
+              : (bodyId === "dress")
+                ? `<path d="M55 105 L105 105 L118 150 Q80 160 42 150 Z" fill="#f72585" opacity=".85"/>`
+                : (bodyId === "tuxedo")
+                  ? `<path d="M48 100 H112 L108 145 H52 Z" fill="#2b2d42"/><path d="M72 100 L80 130 L88 100" fill="#fff"/>`
+                  : (bodyId === "apron" || bodyId === "overalls")
+                    ? `<path d="M50 105 H110 V145 H50 Z" fill="#ffd166" opacity=".9"/><path d="M70 105 V145 M90 105 V145" stroke="#e9c46a" stroke-width="3"/>`
+                    : "";
   const weaponIcon = weaponId && weaponId !== "none" && WEAPONS[weaponId]
     ? `<text x="132" y="110" font-size="28">${WEAPONS[weaponId].icon}</text>`
     : "";
@@ -5259,14 +5333,14 @@ function skillButtonHtml() {
   const skill = equippedSkill();
   if (!skill || !run) return "";
   if (skill.battleOnly && !run.battle) return "";
-  if (!skill.battleOnly && run.battle && skill.id !== "timeLord" && skill.id !== "sageHint" && skill.id !== "wordSense" && skill.id !== "debugTrace") return "";
+  if (!skill.battleOnly && run.battle && !["timeLord", "sageHint", "wordSense", "debugTrace", "focusBreath", "luckyTick"].includes(skill.id)) return "";
   const now = Date.now();
   const active = skillIsActive();
   const cd = skillCooldownLeft();
   let label = skill.name;
   let disabled = false;
   let cls = "boost-btn skill-btn";
-  if (active && skill.id === "timeLord") {
+  if (active && (skill.id === "timeLord" || skill.id === "luckyTick")) {
     const left = Math.ceil((run.skillActiveUntil - now) / 1000);
     label = `${skill.icon} Замедление ${left}с`;
     cls += " on";
@@ -5304,7 +5378,7 @@ function useSkill(id) {
   if (!skill || state.shop.skill !== id || !state.shop.skills.includes(id)) return;
   if (skillCooldownLeft() > 0 || skillIsActive()) return;
 
-  if (id === "timeLord") {
+  if (id === "timeLord" || id === "luckyTick") {
     gameElapsed();
     const now = Date.now();
     run.skillActiveUntil = now + skill.durationMs;
@@ -5312,8 +5386,8 @@ function useSkill(id) {
     run.realScale = 0.5;
     run.timeScale = 0.5;
     document.body.classList.add("slow-mo");
-    showToasts([{ plain: true, icon: skill.icon, name: skill.name, desc: "Время замедлено на 10 секунд!" }]);
-  } else if (id === "sageHint" || id === "wordSense" || id === "debugTrace") {
+    showToasts([{ plain: true, icon: skill.icon, name: skill.name, desc: id === "luckyTick" ? "Время замедлено на 8 сек!" : "Время замедлено на 10 секунд!" }]);
+  } else if (id === "sageHint" || id === "wordSense" || id === "debugTrace" || id === "focusBreath") {
     const item = run.items[run.index];
     if (!item) return;
     run.skillReadyAt = Date.now() + skill.cooldownMs;
@@ -6614,60 +6688,66 @@ function renderShop() {
   }
   if (shopTab === "skills") {
     const myRank = rankFor(state.stars);
-    const rankOk = state.stars >= ARCHMAGE_MIN;
     const header = `<article class="shop-card skill-rules">
-      <div class="ico"><span class="relic-ico skill-ico">👑</span></div>
-      <div class="name">Правила скиллов</div>
+      <div class="ico"><span class="relic-ico skill-ico">⚡</span></div>
+      <div class="name">Скиллы</div>
       <div class="desc">
-        1) Пройди нужный секретный уровень (10/10).<br>
-        2) Нужно звание <strong>Архимаг</strong> (от ${ARCHMAGE_MIN}⭐). Сейчас: <strong>${myRank.name}</strong> (${state.stars}⭐).<br>
-        3) Купи скилл за монеты и надень — кнопка появится в игре.
+        Купи скилл за монеты (нужно звание на карточке) и жми <strong>Надеть</strong>.<br>
+        В игре появится кнопка скилла. Сейчас: <strong>${myRank.name}</strong> (${state.stars}⭐).
       </div>
     </article>`;
-    const unequip = state.shop.skill !== "none"
+    const unequip = state.shop.skill && state.shop.skill !== "none"
       ? `<article class="shop-card">
           <div class="ico"><span class="relic-ico skill-ico">∅</span></div>
           <div class="name">Без скилла</div>
           <button type="button" class="buy ghost" data-act="equip-skill" data-id="none">Снять</button>
-          <div class="desc">Убрать активный скилл с персонажа</div>
+          <div class="desc">Убрать активный скилл</div>
         </article>`
       : "";
     els.shopList.innerHTML = header + unequip + Object.values(SKILLS).map((sk) => {
       const gate = skillGateOpen(sk);
-      const owned = state.shop.skills.includes(sk.id);
+      const owned = (state.shop.skills || []).includes(sk.id);
       const on = state.shop.skill === sk.id;
-      const needRankMin = sk.rankMin || ARCHMAGE_MIN;
+      const needRankMin = sk.rankMin || 0;
       const hasRank = state.stars >= needRankMin;
-      const canBuy = gate && hasRank && (owned || state.coins >= sk.price);
-      const action = owned ? (on ? "on" : "equip-skill") : "buy-skill";
-      const label = on ? "Надет" : owned ? "Надеть" : "Купить";
+      const canPurchase = !owned && gate && hasRank && state.coins >= sk.price;
+      let action;
+      let label;
+      let disabled;
+      if (owned) {
+        action = on ? "on" : "equip-skill";
+        label = on ? "Надет" : "Надеть";
+        disabled = on; // купленный всегда можно надеть
+      } else {
+        action = "buy-skill";
+        label = "Купить";
+        disabled = !canPurchase;
+      }
       const price = owned ? 0 : sk.price;
-      let needGate;
-      let reqLine;
+      let needGate = "";
+      let reqLine = "";
       if (sk.battleOnly) {
-        needGate = `<span class="rank-need ok">для босса</span>`;
-        reqLine = "<br><strong>Только в бою.</strong>";
+        needGate = `<span class="rank-need ok">босс</span>`;
+        reqLine = "<br>Только в бою с боссом.";
       } else if (sk.needProfession) {
         const profName = Object.values(PROFESSIONS).flat().find((p) => p.id === sk.needProfession)?.name || sk.needProfession;
         needGate = gate
-          ? `<span class="rank-need ok">профессия «${profName}» ✓</span>`
-          : `<span class="rank-need">нужна профессия «${profName}»</span>`;
-        reqLine = `<br><strong>Требования:</strong> профессия «${profName}» + ${sk.rank || "Считальщик"} + ${sk.price} монет.`;
-      } else {
+          ? `<span class="rank-need ok">«${profName}» ✓</span>`
+          : `<span class="rank-need">нужна «${profName}»</span>`;
+      } else if (sk.secretMode) {
         const secretName = sk.secretMode === MODE_CHAIN ? "2 действия" : "База";
         needGate = gate
-          ? `<span class="rank-need ok">секрет «${secretName}» ✓</span>`
-          : `<span class="rank-need">нужен секрет «${secretName}»</span>`;
-        reqLine = `<br><strong>Требования:</strong> секрет «${secretName}» + ${sk.rank || "Архимаг"} + ${sk.price} монет.`;
+          ? `<span class="rank-need ok">секрет ✓</span>`
+          : `<span class="rank-need">секрет «${secretName}» 10/10</span>`;
       }
       const needRank = hasRank
-        ? `<span class="rank-need ok">${sk.rank || "Архимаг"} ✓</span>`
-        : `<span class="rank-need warn">нужно звание ${sk.rank || "Архимаг"} (${needRankMin}⭐)</span>`;
-      const locked = !owned && (!gate || !hasRank);
-      return `<article class="shop-card ${locked ? "locked-rank" : ""}">
+        ? `<span class="rank-need ok">${sk.rank || "OK"} ✓</span>`
+        : `<span class="rank-need warn">${sk.rank || "ранг"} (${needRankMin}⭐)</span>`;
+      const lockedLook = !owned && (!gate || !hasRank);
+      return `<article class="shop-card ${lockedLook ? "locked-rank" : ""}${on ? " skill-on" : ""}">
         <div class="ico"><span class="relic-ico skill-ico">${sk.icon}</span></div>
         <div class="name">${sk.name}${needGate}${needRank}</div>
-        <button type="button" class="buy ${(!canBuy && !owned) || locked ? "ghost" : ""}" data-act="${action}" data-id="${sk.id}" ${(!canBuy && !owned) || locked || action === "on" ? "disabled" : ""}>${label}${price ? ` · ${price}&nbsp;<span class="coin sm" aria-hidden="true"></span>` : ""}</button>
+        <button type="button" class="buy ${disabled && !on ? "ghost" : ""}${on ? " ghost" : ""}" data-act="${action}" data-id="${sk.id}" ${disabled ? "disabled" : ""}>${label}${price ? ` · ${price}&nbsp;<span class="coin sm" aria-hidden="true"></span>` : ""}</button>
         <div class="desc">${sk.desc}${reqLine}</div>
       </article>`;
     }).join("");
@@ -6879,22 +6959,34 @@ function shopAction(act, id) {
   } else if (act === "buy-skill") {
     const item = SKILLS[id];
     if (!item) return;
-    if (!skillGateOpen(item)) return;
-    if (state.stars < (item.rankMin || ARCHMAGE_MIN)) {
-      showToasts([{ plain: true, icon: "👑", name: `Нужен ${item.rank || "Архимаг"}`, desc: `Скилл доступен с ранга ${item.rank || "Архимаг"}.` }]);
+    if (!skillGateOpen(item)) {
+      showToasts([{ plain: true, icon: "🔒", name: "Пока закрыто", desc: "Смотри требования на карточке скилла." }]);
+      return;
+    }
+    if (state.stars < (item.rankMin || 0)) {
+      showToasts([{ plain: true, icon: "👑", name: `Нужен ${item.rank || "ранг"}`, desc: `Скилл с ${item.rankMin || 0}⭐.` }]);
       return;
     }
     if (state.coins < item.price) return notEnough();
     state.coins -= item.price;
+    if (!state.shop.skills) state.shop.skills = [];
     if (!state.shop.skills.includes(id)) state.shop.skills.push(id);
     state.shop.skill = id;
     pingBuy(item.icon, item.name);
+    showToasts([{ plain: true, icon: item.icon, name: "Скилл надет!", desc: `${item.name} — кнопка в игре` }]);
   } else if (act === "equip-skill") {
     if (id === "none") {
       state.shop.skill = "none";
+      showToasts([{ plain: true, icon: "∅", name: "Скилл снят", desc: "Можно надеть другой." }]);
     } else {
-      if (!state.shop.skills.includes(id)) return;
+      if (!state.shop.skills) state.shop.skills = [];
+      if (!state.shop.skills.includes(id)) {
+        showToasts([{ plain: true, icon: "🔒", name: "Сначала купи", desc: "Скилл нужно купить." }]);
+        return;
+      }
       state.shop.skill = id;
+      const item = SKILLS[id];
+      showToasts([{ plain: true, icon: item?.icon || "⚡", name: "Надето!", desc: item?.name || id }]);
     }
   }
   saveState();
