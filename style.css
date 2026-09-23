@@ -433,6 +433,141 @@ h1 {
   margin-top: 4px;
 }
 
+.daily-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #fff4c8, #ffe0a0 55%, #ffd166);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  position: relative;
+  overflow: hidden;
+}
+.daily-box::after {
+  content: "";
+  position: absolute;
+  inset: -40% auto auto -20%;
+  width: 60%;
+  height: 120%;
+  background: linear-gradient(110deg, transparent, rgba(255,255,255,.45), transparent);
+  transform: translateX(-120%) rotate(12deg);
+  pointer-events: none;
+}
+.daily-box.ready:not(:disabled)::after {
+  animation: daily-shine 2.8s ease-in-out infinite;
+}
+.daily-box.ready {
+  animation: daily-pulse 1.8s ease-in-out infinite;
+}
+.daily-box.claimed {
+  background: linear-gradient(135deg, #efe8dc, #e4ddd0);
+  box-shadow: 0 6px 0 rgba(61, 58, 74, 0.08);
+  opacity: 0.88;
+  cursor: default;
+}
+.daily-box-ico {
+  font-size: 32px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.daily-box.ready .daily-box-ico {
+  animation: daily-wiggle 1.6s ease-in-out infinite;
+}
+.daily-box-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.daily-box-text strong {
+  font-size: 16px;
+  font-weight: 900;
+}
+.daily-box-text small {
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.72;
+}
+.daily-box-badge {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--coral);
+  color: #fff;
+  box-shadow: 0 2px 0 var(--btn-shadow);
+}
+.daily-box.claimed .daily-box-badge {
+  background: #9aa0a8;
+  box-shadow: none;
+  color: #fff;
+}
+
+.daily-modal .daily-chest {
+  font-size: 64px;
+  line-height: 1;
+  margin: 6px 0 10px;
+  display: inline-block;
+}
+.daily-modal.opening .daily-chest {
+  animation: daily-shake 0.55s ease;
+}
+.daily-modal.opened .daily-chest {
+  animation: daily-pop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+.daily-modal-lead {
+  margin: 0 0 12px;
+  font-weight: 800;
+  font-size: 15px;
+}
+.daily-modal-reward {
+  margin: 0 0 14px;
+  font-size: 20px;
+  font-weight: 900;
+  color: #7a4a00;
+  min-height: 1.4em;
+}
+.daily-modal .btn {
+  width: 100%;
+  margin-top: 4px;
+}
+
+@keyframes daily-pulse {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+@keyframes daily-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-8deg); }
+  75% { transform: rotate(8deg); }
+}
+@keyframes daily-shine {
+  0%, 40% { transform: translateX(-120%) rotate(12deg); }
+  70%, 100% { transform: translateX(280%) rotate(12deg); }
+}
+@keyframes daily-shake {
+  0%, 100% { transform: translateX(0) rotate(0); }
+  20% { transform: translateX(-6px) rotate(-8deg); }
+  40% { transform: translateX(6px) rotate(8deg); }
+  60% { transform: translateX(-4px) rotate(-5deg); }
+  80% { transform: translateX(4px) rotate(5deg); }
+}
+@keyframes daily-pop {
+  0% { transform: scale(0.7) rotate(-8deg); opacity: 0.6; }
+  60% { transform: scale(1.18) rotate(4deg); }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+
 .six-seven-modal {
   background:
     linear-gradient(145deg, rgba(255, 209, 102, 0.45), rgba(255, 122, 89, 0.25)),

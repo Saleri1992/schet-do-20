@@ -936,6 +936,16 @@ const els = {
   xpLabel: document.getElementById("xpLabel"),
   xpFill: document.getElementById("xpFill"),
   unlockHint: document.getElementById("unlockHint"),
+  dailyBoxBtn: document.getElementById("dailyBoxBtn"),
+  dailyBoxTitle: document.getElementById("dailyBoxTitle"),
+  dailyBoxHint: document.getElementById("dailyBoxHint"),
+  dailyBoxBadge: document.getElementById("dailyBoxBadge"),
+  dailyModal: document.getElementById("dailyModal"),
+  dailyModalLead: document.getElementById("dailyModalLead"),
+  dailyModalReward: document.getElementById("dailyModalReward"),
+  dailyClaimBtn: document.getElementById("dailyClaimBtn"),
+  dailyCloseBtn: document.getElementById("dailyCloseBtn"),
+  dailyChest: document.getElementById("dailyChest"),
   startTimePill: document.getElementById("startTimePill"),
   gradeRow: document.getElementById("gradeRow"),
   gradePill: document.getElementById("gradePill"),
@@ -1122,7 +1132,17 @@ function normalizeShop(raw) {
 }
 
 function loadState() {
-  const empty = { stars: 0, coins: 0, runs: [], achievements: [], lastLevel: 1, version: DATA_VERSION, shop: emptyShop() };
+  const empty = {
+    stars: 0,
+    coins: 0,
+    runs: [],
+    achievements: [],
+    lastLevel: 1,
+    version: DATA_VERSION,
+    shop: emptyShop(),
+    dailyClaimDay: "",
+    dailyStreak: 0,
+  };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return empty;
@@ -1145,6 +1165,8 @@ function loadState() {
       lastLevel,
       version: DATA_VERSION,
       shop: normalizeShop(data.shop),
+      dailyClaimDay: typeof data.dailyClaimDay === "string" ? data.dailyClaimDay : "",
+      dailyStreak: Math.max(0, Number(data.dailyStreak) || 0),
     };
   } catch {
     return empty;
@@ -1166,6 +1188,141 @@ function rankIndexOf(stars) {
     if (stars >= r.min) idx = i;
   });
   return idx;
+}
+
+function todayKey(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function yesterdayKey() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return todayKey(d);
+}
+
+function isDailyReady() {
+  return state.dailyClaimDay !== todayKey();
+}
+
+function pickDailyReward() {
+  const roll = Math.random() * 100;
+  let stars = 0;
+  let coins = 0;
+  let kind = "coins";
+  if (roll < 45) {
+    kind = "coins";
+    const pool = [10, 12, 15, 18, 20, 25];
+    coins = pool[Math.floor(Math.random() * pool.length)];
+  } else if (roll < 85) {
+    kind = "stars";
+    const pool = [3, 4, 5, 6, 8];
+    stars = pool[Math.floor(Math.random() * pool.length)];
+  } else {
+    kind = "both";
+    coins = 8 + Math.floor(Math.random() * 8);
+    stars = 2 + Math.floor(Math.random() * 3);
+  }
+  const streak = Math.max(1, Number(state.dailyStreak) || 0);
+  if (streak > 0 && streak % 7 === 0) coins += 5;
+  return { kind, stars, coins, streak };
+}
+
+function formatDailyReward(reward) {
+  const bits = [];
+  if (reward.stars) bits.push(`+${reward.stars} опыта`);
+  if (reward.coins) bits.push(`+${reward.coins} монет`);
+  return bits.join(" · ") || "Пусто";
+}
+
+function renderDailyBox() {
+  if (!els.dailyBoxBtn) return;
+  const ready = isDailyReady();
+  const streak = Math.max(0, Number(state.dailyStreak) || 0);
+  els.dailyBoxBtn.classList.toggle("ready", ready);
+  els.dailyBoxBtn.classList.toggle("claimed", !ready);
+  els.dailyBoxBtn.disabled = false;
+  if (ready) {
+    els.dailyBoxTitle.textContent = "Ежедневный бокс";
+    els.dailyBoxHint.textContent = streak > 1
+      ? `Серия ${streak} дн. · монеты или опыт`
+      : "Случайные монеты или опыт";
+    els.dailyBoxBadge.textContent = "Новый";
+    els.dailyBoxBtn.setAttribute("aria-label", "Открыть ежедневный бокс");
+  } else {
+    els.dailyBoxTitle.textContent = "Бокс открыт";
+    els.dailyBoxHint.textContent = streak > 1
+      ? `Серия ${streak} дн. · завтра снова`
+      : "Завтра будет новый подарок";
+    els.dailyBoxBadge.textContent = "Завтра";
+    els.dailyBoxBtn.setAttribute("aria-label", "Ежедневный бокс уже открыт сегодня");
+  }
+}
+
+function openDailyModal() {
+  if (!els.dailyModal) return;
+  const card = els.dailyModal.querySelector(".daily-modal");
+  card?.classList.remove("opening", "opened");
+  els.dailyChest.textContent = "📦";
+  els.dailyModalLead.textContent = isDailyReady()
+    ? "Что спрятано сегодня?"
+    : "Сегодня уже открывали — загляни завтра!";
+  els.dailyModalReward.classList.add("hidden");
+  els.dailyModalReward.textContent = "";
+  els.dailyClaimBtn.disabled = false;
+  els.dailyClaimBtn.classList.toggle("hidden", !isDailyReady());
+  els.dailyCloseBtn.classList.toggle("hidden", isDailyReady());
+  els.dailyCloseBtn.textContent = isDailyReady() ? "Ура!" : "Понятно";
+  els.dailyModal.classList.remove("hidden");
+}
+
+function closeDailyModal() {
+  els.dailyModal?.classList.add("hidden");
+}
+
+function claimDailyBox() {
+  if (!isDailyReady()) {
+    openDailyModal();
+    return;
+  }
+  const today = todayKey();
+  const yday = yesterdayKey();
+  if (state.dailyClaimDay === yday) state.dailyStreak = (Number(state.dailyStreak) || 0) + 1;
+  else state.dailyStreak = 1;
+
+  const reward = pickDailyReward();
+  const card = els.dailyModal.querySelector(".daily-modal");
+  card?.classList.add("opening");
+  els.dailyClaimBtn.disabled = true;
+  els.dailyModalLead.textContent = "Открываем…";
+
+  setTimeout(() => {
+    state.stars += reward.stars;
+    state.coins += reward.coins;
+    state.dailyClaimDay = today;
+    const fresh = unlockAchievements();
+    saveState();
+
+    card?.classList.remove("opening");
+    card?.classList.add("opened");
+    els.dailyChest.textContent = reward.kind === "stars" ? "⭐" : reward.kind === "both" ? "🎁" : "🪙";
+    els.dailyModalLead.textContent = reward.streak >= 7 && reward.streak % 7 === 0
+      ? `Серия ${reward.streak} дней — бонус!`
+      : "Ура, подарок!";
+    els.dailyModalReward.textContent = formatDailyReward(reward);
+    els.dailyModalReward.classList.remove("hidden");
+    els.dailyClaimBtn.classList.add("hidden");
+    els.dailyClaimBtn.disabled = false;
+    els.dailyCloseBtn.classList.remove("hidden");
+    els.dailyCloseBtn.textContent = "Ура!";
+
+    spawnLoot(reward.stars, reward.coins);
+    renderHome();
+    if (fresh.length) {
+      showToasts(fresh.slice(0, 3).map((a) => ({ icon: a.icon, name: a.name, desc: a.desc })));
+    } else {
+      showToasts([{ plain: true, icon: els.dailyChest.textContent, name: "Ежедневный бокс", desc: formatDailyReward(reward) }]);
+    }
+  }, 520);
 }
 
 function levelCfg(level, mode = selectedMode) {
@@ -2470,6 +2627,7 @@ function renderHome() {
     els.unlockHint.textContent = `Все уровни «${modeInfo.unlockText}» открыты — включая секрет!`;
   }
   renderLevels();
+  renderDailyBox();
 
   const done = unlockedCount();
   const total = ACHIEVEMENTS.length;
@@ -4212,6 +4370,19 @@ document.getElementById("boardModeFilters").addEventListener("click", (e) => {
 els.openShopBtn.addEventListener("click", () => {
   renderShop();
   showScreen("shop");
+});
+
+els.dailyBoxBtn?.addEventListener("click", () => {
+  openDailyModal();
+});
+els.dailyClaimBtn?.addEventListener("click", () => {
+  claimDailyBox();
+});
+els.dailyCloseBtn?.addEventListener("click", () => {
+  closeDailyModal();
+});
+els.dailyModal?.addEventListener("click", (e) => {
+  if (e.target === els.dailyModal && !isDailyReady()) closeDailyModal();
 });
 
 document.getElementById("shopTabs").addEventListener("click", (e) => {
