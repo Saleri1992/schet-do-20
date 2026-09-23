@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=30" />
+  <link rel="stylesheet" href="style.css?v=31" />
 </head>
 <body data-theme="easy">
   <div class="sky">
@@ -78,11 +78,33 @@
             <div class="bar"><div id="petEnergyFill"></div></div>
             <em id="petEnergyVal">78</em>
           </div>
+          <div class="pet-bar ok" data-pet-stat="petHygiene">
+            <span class="pet-ico" title="Чистота">✨</span>
+            <div class="bar"><div id="petHygieneFill"></div></div>
+            <em id="petHygieneVal">78</em>
+          </div>
+          <div class="pet-bar ok" data-pet-stat="petToilet">
+            <span class="pet-ico" title="Туалет">🚽</span>
+            <div class="bar"><div id="petToiletFill"></div></div>
+            <em id="petToiletVal">78</em>
+          </div>
+          <div class="pet-bar ok" data-pet-stat="petBoredom">
+            <span class="pet-ico" title="Скука (выше = скучнее)">😐</span>
+            <div class="bar"><div id="petBoredomFill"></div></div>
+            <em id="petBoredomVal">15</em>
+          </div>
         </div>
+        <div class="pet-sick-row hidden" id="petSickRow">
+          <span>🤒 Заболел!</span>
+          <button type="button" class="btn primary pet-btn" id="petHealBtn" data-pet="heal">💉 Укольчик</button>
+        </div>
+        <p class="pet-bag" id="petBag"></p>
         <div class="pet-actions">
-          <button type="button" class="btn ghost-btn pet-btn" id="petFeedBtn" data-pet="feed">🍎 Кормить · 4🪙</button>
-          <button type="button" class="btn ghost-btn pet-btn" id="petPlayBtn" data-pet="play">🎾 Играть</button>
+          <button type="button" class="btn ghost-btn pet-btn" id="petFeedBtn" data-pet="feed">🍎 Кормить</button>
+          <button type="button" class="btn ghost-btn pet-btn" id="petToiletBtn" data-pet="toilet">🚽 Туалет</button>
+          <button type="button" class="btn ghost-btn pet-btn" id="petWashBtn" data-pet="wash">🧼 Мыться</button>
           <button type="button" class="btn ghost-btn pet-btn" id="petSleepBtn" data-pet="sleep">😴 Спать</button>
+          <button type="button" class="btn ghost-btn pet-btn" id="petPlayBtn" data-pet="play">🎾 Играть</button>
         </div>
         <p class="pet-status" id="petStatus"></p>
       </div>
@@ -344,6 +366,7 @@
       <div id="paperDoll" class="paper-doll-wrap"></div>
       <div class="filters shop-tabs" id="shopTabs">
         <button type="button" class="filter-btn selected" data-tab="boosts">Бусты</button>
+        <button type="button" class="filter-btn" data-tab="care">Уход</button>
         <button type="button" class="filter-btn" data-tab="looks">Облик</button>
         <button type="button" class="filter-btn" data-tab="gear">Экип</button>
         <button type="button" class="filter-btn" data-tab="toys">Штучки</button>
@@ -498,6 +521,39 @@
     </div>
   </div>
   
+  <div class="modal-overlay pet-pick-modal hidden" id="petFoodModal" aria-hidden="true">
+    <div class="modal-card pet-pick-card-wrap" role="dialog" aria-label="Выбор еды">
+      <p class="modal-kicker">Чем покормить?</p>
+      <div class="pet-pick-list" id="petFoodList"></div>
+      <button type="button" class="btn ghost-btn" data-pet-food-close>Отмена</button>
+    </div>
+  </div>
+  <div class="modal-overlay pet-pick-modal hidden" id="petWashModal" aria-hidden="true">
+    <div class="modal-card pet-pick-card-wrap" role="dialog" aria-label="Гигиена">
+      <p class="modal-kicker">Чем помыться?</p>
+      <div class="pet-pick-list" id="petWashList"></div>
+      <button type="button" class="btn ghost-btn" data-pet-wash-close>Отмена</button>
+    </div>
+  </div>
+  <div class="modal-overlay pet-shot-modal hidden" id="petShotModal" aria-hidden="true">
+    <div class="modal-card pet-shot-card" role="dialog" aria-label="Укольчик">
+      <p class="modal-kicker">💉 Укольчик</p>
+      <p class="pet-shot-tip" id="petShotTip">Поймай момент: жми, когда шприц над зелёной зоной!</p>
+      <div class="pet-shot-stage" aria-hidden="true">
+        <div class="pet-shot-arm">💪</div>
+        <div class="pet-shot-track" id="petShotTrack">
+          <div class="pet-shot-zone" id="petShotZone"></div>
+          <div class="pet-shot-needle" id="petShotNeedle">💉</div>
+        </div>
+      </div>
+      <p class="pet-shot-result hidden" id="petShotResult"></p>
+      <div class="pet-shot-actions">
+        <button type="button" class="btn primary" id="petShotFire" data-pet-shot-fire>Укол!</button>
+        <button type="button" class="btn ghost-btn" data-pet-shot-close>Позже</button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-overlay kd-gate hidden" id="kingdomGate" aria-hidden="true">
     <div class="modal-card kd-gate-card" role="dialog" aria-labelledby="kdGateLabel">
       <p class="modal-kicker" id="kdGateLabel">Закрепление</p>
@@ -524,6 +580,6 @@
       <button type="button" class="btn ghost-btn" data-kd-gate-close>Отмена</button>
     </div>
   </div>
-  <script src="app.js?v=30"></script>
+  <script src="app.js?v=31"></script>
 </body>
 </html>

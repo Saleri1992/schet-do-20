@@ -1,7 +1,7 @@
 const STORAGE_KEY = "schet-do-20";
 const NICK_KEY = "schet-do-20-nick";
 const SCORE_QUEUE_KEY = "schet-do-20-score-queue";
-const DATA_VERSION = 11;
+const DATA_VERSION = 12;
 const TOTAL = 10;
 const HARD_LIMIT_MS = 60 * 1000;
 const SECRET_SPEED_MS = 40 * 1000;
@@ -1868,10 +1868,43 @@ const els = {
 
 /* ——— Уход за маскотом (тамагочи) ——— */
 const CARE_MAX = 100;
-const CARE_FEED_COST = 4;
-const CARE_DECAY_PER_HOUR = { hunger: 7, happiness: 5, energy: 4 };
-const CARE_PLAY_CD_MS = 40 * 1000;
+const CARE_DECAY_PER_HOUR = {
+  hunger: 7,
+  happiness: 3,
+  energy: 4,
+  hygiene: 5,
+  toilet: 8,
+  boredom: -6, // скука растёт (значение boredom ↑)
+};
+const CARE_PLAY_CD_MS = 45 * 1000;
 const CARE_SLEEP_CD_MS = 70 * 1000;
+const CARE_TOILET_CD_MS = 25 * 1000;
+const CARE_WASH_CD_MS = 35 * 1000;
+
+/** Еда: покупаешь → лежит в запасе → кормишь. */
+const CARE_FOOD = {
+  apple: { id: "apple", name: "Яблоко", icon: "🍎", price: 5, hunger: 28, happiness: 4, desc: "Простой перекус." },
+  cookie: { id: "cookie", name: "Печенька", icon: "🍪", price: 8, hunger: 36, happiness: 10, desc: "Вкусно и весело." },
+  soup: { id: "soup", name: "Супчик", icon: "🥣", price: 12, hunger: 52, happiness: 6, energy: 4, desc: "Сытно и полезно." },
+  berry: { id: "berry", name: "Ягодки", icon: "🫐", price: 7, hunger: 22, happiness: 12, desc: "Сладенькие." },
+  cake: { id: "cake", name: "Тортик", icon: "🍰", price: 18, hunger: 40, happiness: 18, desc: "Праздник для животика." },
+};
+
+/** Предметы комнаты: один раз купил — лучше спит. */
+const CARE_ROOM = {
+  pillow: { id: "pillow", name: "Подушка", icon: "🛏️", price: 22, sleepBonus: 12, desc: "Мягче спать (+энергия)." },
+  blanket: { id: "blanket", name: "Одеялко", icon: "🧣", price: 28, sleepBonus: 10, desc: "Тепло и уютно." },
+  bed: { id: "bed", name: "Кроватка", icon: "🛌", price: 55, sleepBonus: 22, desc: "Настоящий сон богатыря." },
+  lamp: { id: "lamp", name: "Ночник", icon: "💡", price: 32, sleepBonus: 8, happiness: 2, desc: "Спокойный свет перед сном." },
+  plant: { id: "plant", name: "Цветок", icon: "🪴", price: 20, sleepBonus: 4, happiness: 3, desc: "В комнате свежее." },
+};
+
+/** Гигиена: расходники. */
+const CARE_WASH = {
+  soap: { id: "soap", name: "Мыло", icon: "🧼", price: 6, hygiene: 34, desc: "Помыть лапки." },
+  shampoo: { id: "shampoo", name: "Шампунь", icon: "🧴", price: 10, hygiene: 55, happiness: 4, desc: "Блестящая шёрстка." },
+  towel: { id: "towel", name: "Полотенце", icon: "🧺", price: 8, hygiene: 28, energy: 2, desc: "Вытереться насухо." },
+};
 
 function emptyCare() {
   const now = Date.now();
@@ -1879,12 +1912,23 @@ function emptyCare() {
     hunger: 78,
     happiness: 78,
     energy: 78,
+    hygiene: 78,
+    toilet: 78,
+    boredom: 15,
+    sick: false,
+    sickSince: 0,
     lastTickAt: now,
     playAt: 0,
     sleepAt: 0,
+    toiletAt: 0,
+    washAt: 0,
     feeds: 0,
     plays: 0,
     sleeps: 0,
+    heals: 0,
+    food: { apple: 1, cookie: 0, soup: 0, berry: 0, cake: 0 },
+    room: [],
+    wash: { soap: 1, shampoo: 0, towel: 0 },
   };
 }
 
@@ -1892,19 +1936,41 @@ function clampCare(n) {
   return Math.max(0, Math.min(CARE_MAX, Math.round(Number(n) || 0)));
 }
 
+function normalizeCareBag(raw, catalog) {
+  const out = {};
+  Object.keys(catalog).forEach((id) => {
+    out[id] = Math.max(0, Math.min(99, Number(raw && raw[id]) || 0));
+  });
+  return out;
+}
+
 function normalizeCare(raw) {
   const base = emptyCare();
   if (!raw || typeof raw !== "object") return base;
+  const room = Array.isArray(raw.room)
+    ? raw.room.filter((id) => CARE_ROOM[id])
+    : [];
   return {
     hunger: clampCare(raw.hunger != null ? raw.hunger : base.hunger),
     happiness: clampCare(raw.happiness != null ? raw.happiness : base.happiness),
     energy: clampCare(raw.energy != null ? raw.energy : base.energy),
+    hygiene: clampCare(raw.hygiene != null ? raw.hygiene : base.hygiene),
+    toilet: clampCare(raw.toilet != null ? raw.toilet : base.toilet),
+    boredom: clampCare(raw.boredom != null ? raw.boredom : base.boredom),
+    sick: !!raw.sick,
+    sickSince: Math.max(0, Number(raw.sickSince) || 0),
     lastTickAt: Math.max(0, Number(raw.lastTickAt) || Date.now()),
     playAt: Math.max(0, Number(raw.playAt) || 0),
     sleepAt: Math.max(0, Number(raw.sleepAt) || 0),
+    toiletAt: Math.max(0, Number(raw.toiletAt) || 0),
+    washAt: Math.max(0, Number(raw.washAt) || 0),
     feeds: Math.max(0, Number(raw.feeds) || 0),
     plays: Math.max(0, Number(raw.plays) || 0),
     sleeps: Math.max(0, Number(raw.sleeps) || 0),
+    heals: Math.max(0, Number(raw.heals) || 0),
+    food: normalizeCareBag(raw.food, CARE_FOOD),
+    room: [...new Set(room)],
+    wash: normalizeCareBag(raw.wash, CARE_WASH),
   };
 }
 
@@ -1915,7 +1981,34 @@ function ensureCare() {
   return state.care;
 }
 
-/** Спад показателей по реальному времени (офлайн тоже). */
+function careSleepBonus() {
+  const c = ensureCare();
+  return (c.room || []).reduce((sum, id) => sum + (CARE_ROOM[id]?.sleepBonus || 0), 0);
+}
+
+function careRoomOwned(id) {
+  return (ensureCare().room || []).includes(id);
+}
+
+function careFoodCount(id) {
+  return (ensureCare().food && ensureCare().food[id]) || 0;
+}
+
+function careWashCount(id) {
+  return (ensureCare().wash && ensureCare().wash[id]) || 0;
+}
+
+function careTotalFood() {
+  const f = ensureCare().food || {};
+  return Object.values(f).reduce((a, n) => a + (n || 0), 0);
+}
+
+function careTotalWash() {
+  const w = ensureCare().wash || {};
+  return Object.values(w).reduce((a, n) => a + (n || 0), 0);
+}
+
+/** Спад показателей по реальному времени. */
 function tickCare(doSave = true) {
   if (!state.care) state.care = emptyCare();
   const c = state.care;
@@ -1926,6 +2019,26 @@ function tickCare(doSave = true) {
     c.hunger = clampCare(c.hunger - CARE_DECAY_PER_HOUR.hunger * hours);
     c.happiness = clampCare(c.happiness - CARE_DECAY_PER_HOUR.happiness * hours);
     c.energy = clampCare(c.energy - CARE_DECAY_PER_HOUR.energy * hours);
+    c.hygiene = clampCare(c.hygiene - CARE_DECAY_PER_HOUR.hygiene * hours);
+    c.toilet = clampCare(c.toilet - CARE_DECAY_PER_HOUR.toilet * hours);
+    // boredom растёт (decay negative → add)
+    c.boredom = clampCare(c.boredom - CARE_DECAY_PER_HOUR.boredom * hours);
+    // болезнь: шанс если грязно/голодно/туалет
+    if (!c.sick) {
+      const risk = (c.hygiene < 30 ? 0.08 : 0) + (c.hunger < 25 ? 0.05 : 0) + (c.toilet < 20 ? 0.06 : 0);
+      const rolls = Math.min(8, Math.floor(hours * 2));
+      for (let i = 0; i < rolls; i++) {
+        if (Math.random() < risk) {
+          c.sick = true;
+          c.sickSince = now;
+          break;
+        }
+      }
+    } else {
+      // больной слабеет
+      c.energy = clampCare(c.energy - 2 * hours);
+      c.happiness = clampCare(c.happiness - 3 * hours);
+    }
     c.lastTickAt = now;
     if (doSave) saveState();
   } else if (!c.lastTickAt) {
@@ -1936,9 +2049,9 @@ function tickCare(doSave = true) {
 
 function careAdd(delta, opts = {}) {
   const c = ensureCare();
-  if (delta.hunger) c.hunger = clampCare(c.hunger + delta.hunger);
-  if (delta.happiness) c.happiness = clampCare(c.happiness + delta.happiness);
-  if (delta.energy) c.energy = clampCare(c.energy + delta.energy);
+  ["hunger", "happiness", "energy", "hygiene", "toilet", "boredom"].forEach((k) => {
+    if (delta[k]) c[k] = clampCare(c[k] + delta[k]);
+  });
   c.lastTickAt = Date.now();
   if (!opts.silent) {
     saveState();
@@ -1949,25 +2062,30 @@ function careAdd(delta, opts = {}) {
 
 function careAvg() {
   const c = ensureCare();
-  return (c.hunger + c.happiness + c.energy) / 3;
+  const boreOk = CARE_MAX - c.boredom;
+  return (c.hunger + c.happiness + c.energy + c.hygiene + c.toilet + boreOk) / 6;
 }
 
 function careNeedLabel() {
   const c = ensureCare();
   const needs = [];
+  if (c.sick) needs.push("болеет");
   if (c.hunger < 35) needs.push("голоден");
-  if (c.happiness < 35) needs.push("скучает");
+  if (c.toilet < 30) needs.push("в туалет");
+  if (c.hygiene < 35) needs.push("грязный");
+  if (c.boredom > 65) needs.push("скучает");
   if (c.energy < 30) needs.push("устал");
+  if (c.happiness < 30) needs.push("грустный");
   return needs;
 }
 
-/** Настроение от ухода; null = смотри на последний прогон. */
 function careMoodHint() {
   const c = ensureCare();
+  if (c.sick) return "sad";
   const avg = careAvg();
-  if (c.hunger < 22 || c.happiness < 22 || c.energy < 18) return "sad";
+  if (c.hunger < 22 || c.hygiene < 22 || c.toilet < 18 || c.boredom > 80 || c.energy < 18) return "sad";
   if (avg < 42) return "neutral";
-  if (avg >= 72 && c.hunger >= 45 && c.happiness >= 45 && c.energy >= 40) return "happy";
+  if (avg >= 72 && !c.sick) return "happy";
   return null;
 }
 
@@ -1981,74 +2099,217 @@ function displayMascotMood() {
 }
 
 function careStatusText() {
+  const c = ensureCare();
   const needs = careNeedLabel();
-  const avg = Math.round(careAvg());
-  if (needs.length >= 2) return `Маскоту плохо: ${needs.join(", ")}. Позаботься!`;
-  if (needs.length === 1) {
-    if (needs[0] === "голоден") return "Животик урчит — покорми маскота.";
-    if (needs[0] === "скучает") return "Скучает без тебя — поиграй!";
-    return "Глазки слипаются — пора вздремнуть.";
+  if (c.sick) return "Маскот заболел! Нужен укольчик — мини-игра лечения.";
+  if (needs.includes("в туалет")) return "Срочно в туалет!";
+  if (needs.includes("голоден")) return "Голоден — купи еду в магазине «Уход» и покорми.";
+  if (needs.includes("грязный")) return "Пора мыться — купи мыло или шампунь.";
+  if (needs.includes("скучает")) return "Скучает! Поиграй в обучалки — станет веселее.";
+  if (needs.includes("устал")) {
+    const bonus = careSleepBonus();
+    return bonus
+      ? `Хочет спать (комната +${bonus} к сну).`
+      : "Хочет спать. Предметы комнаты в магазине улучшают сон.";
   }
-  if (avg >= 80) return "Маскот счастлив и полон сил!";
-  if (avg >= 55) return "Всё нормально — можно чуть подкормить или поиграть.";
-  return "Маскоту нужна забота.";
+  if (Math.round(careAvg()) >= 80) return "Маскот чистый, сытый и довольный!";
+  return "Всё ок — можно чуть подкормить или поучиться.";
 }
 
-function careBarClass(v) {
-  if (v < 28) return "low";
-  if (v < 55) return "mid";
+function careBarClass(v, invert = false) {
+  const score = invert ? (CARE_MAX - v) : v;
+  if (score < 28) return "low";
+  if (score < 55) return "mid";
   return "ok";
+}
+
+function careNeedSpeech() {
+  const needs = careNeedLabel();
+  if (!needs.length) return "";
+  const map = {
+    болеет: "Мне плохо… нужен укольчик.",
+    голоден: "Покорми меня едой из запаса!",
+    "в туалет": "Хочу в туалет!",
+    грязный: "Я весь грязный…",
+    скучает: "Давай поучимся вместе!",
+    устал: "Хочу спать…",
+    грустный: "Обними меня игрой!",
+  };
+  return map[needs[0]] || "Позаботься обо мне!";
 }
 
 function renderPetCare() {
   const panel = document.getElementById("petCare");
   if (!panel) return;
   const c = ensureCare();
-  const setBar = (id, val) => {
+  const setBar = (id, val, invert = false) => {
     const fill = document.getElementById(`${id}Fill`);
     const num = document.getElementById(`${id}Val`);
     const row = document.querySelector(`[data-pet-stat="${id}"]`);
-    if (fill) fill.style.width = `${clampCare(val)}%`;
-    if (num) num.textContent = String(clampCare(val));
-    if (row) row.className = `pet-bar ${careBarClass(val)}`;
+    const shown = clampCare(val);
+    const width = invert ? shown : shown;
+    if (fill) fill.style.width = `${width}%`;
+    if (num) num.textContent = String(shown);
+    if (row) {
+      row.className = `pet-bar ${careBarClass(val, invert)}`;
+      if (id === "petSick") row.classList.toggle("sick-on", !!c.sick);
+    }
   };
   setBar("petHunger", c.hunger);
   setBar("petHappy", c.happiness);
   setBar("petEnergy", c.energy);
+  setBar("petHygiene", c.hygiene);
+  setBar("petToilet", c.toilet);
+  setBar("petBoredom", c.boredom, true);
+
+  const sickRow = document.getElementById("petSickRow");
+  if (sickRow) sickRow.classList.toggle("hidden", !c.sick);
+
   const status = document.getElementById("petStatus");
   if (status) status.textContent = careStatusText();
+
+  const bag = document.getElementById("petBag");
+  if (bag) {
+    const foods = Object.keys(CARE_FOOD)
+      .filter((id) => (c.food[id] || 0) > 0)
+      .map((id) => `${CARE_FOOD[id].icon}×${c.food[id]}`)
+      .join(" ");
+    const rooms = (c.room || []).map((id) => CARE_ROOM[id].icon).join("") || "—";
+    bag.textContent = `Запас: ${foods || "нет еды"} · Комната: ${rooms}`;
+  }
+
   const now = Date.now();
+  const feedBtn = document.getElementById("petFeedBtn");
   const playBtn = document.getElementById("petPlayBtn");
   const sleepBtn = document.getElementById("petSleepBtn");
-  const feedBtn = document.getElementById("petFeedBtn");
+  const toiletBtn = document.getElementById("petToiletBtn");
+  const washBtn = document.getElementById("petWashBtn");
+  const healBtn = document.getElementById("petHealBtn");
+
   if (feedBtn) {
-    feedBtn.disabled = state.coins < CARE_FEED_COST;
-    feedBtn.textContent = `🍎 Кормить · ${CARE_FEED_COST}🪙`;
+    const n = careTotalFood();
+    feedBtn.disabled = n < 1 || c.sick;
+    feedBtn.textContent = n ? `🍎 Кормить (${n})` : "🍎 Нет еды — в магазин";
   }
   if (playBtn) {
     const left = Math.max(0, (c.playAt || 0) - now);
-    playBtn.disabled = left > 0;
-    playBtn.textContent = left > 0 ? `🎾 Подожди ${Math.ceil(left / 1000)}с` : "🎾 Играть";
+    playBtn.disabled = left > 0 || c.sick;
+    playBtn.textContent = left > 0 ? `🎾 ${Math.ceil(left / 1000)}с` : "🎾 Играть";
   }
   if (sleepBtn) {
     const left = Math.max(0, (c.sleepAt || 0) - now);
+    const bonus = careSleepBonus();
     sleepBtn.disabled = left > 0;
-    sleepBtn.textContent = left > 0 ? `😴 Ещё ${Math.ceil(left / 1000)}с` : "😴 Спать";
+    sleepBtn.textContent = left > 0
+      ? `😴 ${Math.ceil(left / 1000)}с`
+      : (bonus ? `😴 Спать (+${bonus})` : "😴 Спать");
+  }
+  if (toiletBtn) {
+    const left = Math.max(0, (c.toiletAt || 0) - now);
+    toiletBtn.disabled = left > 0;
+    toiletBtn.textContent = left > 0 ? `🚽 ${Math.ceil(left / 1000)}с` : "🚽 Туалет";
+  }
+  if (washBtn) {
+    const left = Math.max(0, (c.washAt || 0) - now);
+    const n = careTotalWash();
+    washBtn.disabled = left > 0 || n < 1;
+    washBtn.textContent = left > 0
+      ? `🧼 ${Math.ceil(left / 1000)}с`
+      : (n ? `🧼 Мыться (${n})` : "🧼 Нет мыла");
+  }
+  if (healBtn) {
+    healBtn.classList.toggle("hidden", !c.sick);
+    healBtn.disabled = !c.sick;
   }
 }
 
-function petFeed() {
-  ensureCare();
-  if (state.coins < CARE_FEED_COST) {
-    showToasts([{ plain: true, icon: "🪙", name: "Маловато монет", desc: "Сыграй или собери с королевства." }]);
+function openPetFoodPicker() {
+  const c = ensureCare();
+  const modal = document.getElementById("petFoodModal");
+  const list = document.getElementById("petFoodList");
+  if (!modal || !list) {
+    // fallback: eat first available
+    const id = Object.keys(CARE_FOOD).find((k) => (c.food[k] || 0) > 0);
+    if (id) petFeed(id);
     return;
   }
-  state.coins -= CARE_FEED_COST;
-  const c = careAdd({ hunger: 36, happiness: 8, energy: 2 }, { silent: true });
+  const items = Object.values(CARE_FOOD).filter((f) => (c.food[f.id] || 0) > 0);
+  if (!items.length) {
+    showToasts([{ plain: true, icon: "🛒", name: "Нет еды", desc: "Купи еду во вкладке «Уход» в магазине." }]);
+    return;
+  }
+  list.innerHTML = items.map((f) => `
+    <button type="button" class="pet-pick-card" data-pet-food="${f.id}">
+      <span class="ico">${f.icon}</span>
+      <span class="name">${f.name} ×${c.food[f.id]}</span>
+      <span class="desc">+${f.hunger} сытость</span>
+    </button>`).join("");
+  modal.classList.remove("hidden");
+  modal.setAttribute("aria-hidden", "false");
+}
+
+function closePetFoodPicker() {
+  const modal = document.getElementById("petFoodModal");
+  if (!modal) return;
+  modal.classList.add("hidden");
+  modal.setAttribute("aria-hidden", "true");
+}
+
+function openPetWashPicker() {
+  const c = ensureCare();
+  const modal = document.getElementById("petWashModal");
+  const list = document.getElementById("petWashList");
+  if (!modal || !list) {
+    const id = Object.keys(CARE_WASH).find((k) => (c.wash[k] || 0) > 0);
+    if (id) petWash(id);
+    return;
+  }
+  const items = Object.values(CARE_WASH).filter((w) => (c.wash[w.id] || 0) > 0);
+  if (!items.length) {
+    showToasts([{ plain: true, icon: "🛒", name: "Нет средств", desc: "Купи мыло во вкладке «Уход»." }]);
+    return;
+  }
+  list.innerHTML = items.map((w) => `
+    <button type="button" class="pet-pick-card" data-pet-wash="${w.id}">
+      <span class="ico">${w.icon}</span>
+      <span class="name">${w.name} ×${c.wash[w.id]}</span>
+      <span class="desc">+${w.hygiene} чистота</span>
+    </button>`).join("");
+  modal.classList.remove("hidden");
+  modal.setAttribute("aria-hidden", "false");
+}
+
+function closePetWashPicker() {
+  const modal = document.getElementById("petWashModal");
+  if (!modal) return;
+  modal.classList.add("hidden");
+  modal.setAttribute("aria-hidden", "true");
+}
+
+function petFeed(foodId) {
+  const c = ensureCare();
+  if (c.sick) {
+    showToasts([{ plain: true, icon: "🤒", name: "Болеет", desc: "Сначала вылечи укольчиком." }]);
+    return;
+  }
+  const item = CARE_FOOD[foodId];
+  if (!item || (c.food[foodId] || 0) < 1) {
+    showToasts([{ plain: true, icon: "🛒", name: "Нет еды", desc: "Купи еду в магазине → Уход." }]);
+    return;
+  }
+  c.food[foodId] -= 1;
+  careAdd({
+    hunger: item.hunger || 0,
+    happiness: item.happiness || 0,
+    energy: item.energy || 0,
+  }, { silent: true });
   c.feeds = (c.feeds || 0) + 1;
+  // после еды чуть хочет в туалет
+  c.toilet = clampCare(c.toilet - 6);
   saveState();
+  closePetFoodPicker();
   const fresh = unlockAchievements();
-  showToasts([{ plain: true, icon: "🍎", name: "Ням!", desc: "Сытость + счастье" }]);
+  showToasts([{ plain: true, icon: item.icon, name: "Ням!", desc: item.name }]);
   if (fresh.length) showToasts(fresh.slice(0, 1).map((a) => ({ icon: a.icon, name: a.name, desc: a.desc })));
   if (els.totalCoins) els.totalCoins.textContent = String(state.coins);
   renderPetCare();
@@ -2058,17 +2319,21 @@ function petFeed() {
 function petPlay() {
   const c = ensureCare();
   const now = Date.now();
-  if ((c.playAt || 0) > now) return;
-  if (c.energy < 12) {
-    showToasts([{ plain: true, icon: "😴", name: "Нет сил", desc: "Сначала пусть поспит." }]);
+  if (c.sick) {
+    showToasts([{ plain: true, icon: "🤒", name: "Болеет", desc: "Сначала укольчик." }]);
     return;
   }
-  careAdd({ happiness: 30, energy: -12, hunger: -7 }, { silent: true });
+  if ((c.playAt || 0) > now) return;
+  if (c.energy < 12) {
+    showToasts([{ plain: true, icon: "😴", name: "Нет сил", desc: "Сначала поспит." }]);
+    return;
+  }
+  careAdd({ happiness: 22, energy: -10, hunger: -5, boredom: -12 }, { silent: true });
   c.playAt = now + CARE_PLAY_CD_MS;
   c.plays = (c.plays || 0) + 1;
   saveState();
   unlockAchievements();
-  showToasts([{ plain: true, icon: "🎾", name: "Ура, игра!", desc: "Счастье вверх" }]);
+  showToasts([{ plain: true, icon: "🎾", name: "Игра!", desc: "Веселее, но учёба лечит скуку лучше" }]);
   renderPetCare();
   paintMascots();
 }
@@ -2077,26 +2342,223 @@ function petSleep() {
   const c = ensureCare();
   const now = Date.now();
   if ((c.sleepAt || 0) > now) return;
-  careAdd({ energy: 40, hunger: -5, happiness: 4 }, { silent: true });
+  const bonus = careSleepBonus();
+  careAdd({
+    energy: 32 + bonus,
+    hunger: -6,
+    happiness: 3 + Math.floor(bonus / 8),
+    hygiene: -4,
+  }, { silent: true });
   c.sleepAt = now + CARE_SLEEP_CD_MS;
   c.sleeps = (c.sleeps || 0) + 1;
   saveState();
   unlockAchievements();
-  showToasts([{ plain: true, icon: "😴", name: "Сладкий сон", desc: "Энергия восстановлена" }]);
+  showToasts([{
+    plain: true,
+    icon: "😴",
+    name: bonus ? "Сон в уюте!" : "Сон",
+    desc: bonus ? `Комната дала +${bonus} энергии` : "Купи кровать/подушку — сон сильнее",
+  }]);
   renderPetCare();
   paintMascots();
 }
 
+function petToilet() {
+  const c = ensureCare();
+  const now = Date.now();
+  if ((c.toiletAt || 0) > now) return;
+  careAdd({ toilet: 55, hygiene: -8, happiness: 4 }, { silent: true });
+  c.toiletAt = now + CARE_TOILET_CD_MS;
+  saveState();
+  showToasts([{ plain: true, icon: "🚽", name: "Уф, легче!", desc: "После туалета лучше помыться." }]);
+  renderPetCare();
+  paintMascots();
+}
+
+function petWash(washId) {
+  const c = ensureCare();
+  const now = Date.now();
+  if ((c.washAt || 0) > now) return;
+  const item = CARE_WASH[washId];
+  if (!item || (c.wash[washId] || 0) < 1) {
+    showToasts([{ plain: true, icon: "🛒", name: "Нет средства", desc: "Купи мыло в «Уход»." }]);
+    return;
+  }
+  c.wash[washId] -= 1;
+  careAdd({
+    hygiene: item.hygiene || 0,
+    happiness: item.happiness || 0,
+    energy: item.energy || 0,
+  }, { silent: true });
+  c.washAt = now + CARE_WASH_CD_MS;
+  saveState();
+  closePetWashPicker();
+  showToasts([{ plain: true, icon: item.icon, name: "Чистюля!", desc: item.name }]);
+  renderPetCare();
+  paintMascots();
+}
+
+/* ——— Мини-игра: укольчик ——— */
+let shotGame = null;
+let shotRaf = 0;
+
+function openShotGame() {
+  const c = ensureCare();
+  if (!c.sick) return;
+  const modal = document.getElementById("petShotModal");
+  if (!modal) return;
+  closePetFoodPicker();
+  closePetWashPicker();
+  shotGame = {
+    t: 0,
+    hit: false,
+    done: false,
+    // target zone center 0..1
+    zone: 0.55 + Math.random() * 0.2,
+    zoneW: 0.14,
+  };
+  modal.classList.remove("hidden");
+  modal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("pet-shot-open");
+  const tip = document.getElementById("petShotTip");
+  if (tip) tip.textContent = "Поймай момент: жми, когда шприц над зелёной зоной!";
+  const result = document.getElementById("petShotResult");
+  if (result) {
+    result.classList.add("hidden");
+    result.textContent = "";
+  }
+  const fire = document.getElementById("petShotFire");
+  if (fire) fire.disabled = false;
+  cancelAnimationFrame(shotRaf);
+  const loop = () => {
+    if (!shotGame || shotGame.done) return;
+    shotGame.t += 0.018;
+    const x = (Math.sin(shotGame.t * 2.2) + 1) / 2; // 0..1
+    shotGame.pos = x;
+    const needle = document.getElementById("petShotNeedle");
+    const track = document.getElementById("petShotTrack");
+    if (needle && track) {
+      needle.style.left = `${x * 100}%`;
+    }
+    shotRaf = requestAnimationFrame(loop);
+  };
+  // paint zone
+  const zoneEl = document.getElementById("petShotZone");
+  if (zoneEl) {
+    zoneEl.style.left = `${(shotGame.zone - shotGame.zoneW / 2) * 100}%`;
+    zoneEl.style.width = `${shotGame.zoneW * 100}%`;
+  }
+  shotRaf = requestAnimationFrame(loop);
+}
+
+function closeShotGame() {
+  shotGame = null;
+  cancelAnimationFrame(shotRaf);
+  const modal = document.getElementById("petShotModal");
+  if (modal) {
+    modal.classList.add("hidden");
+    modal.setAttribute("aria-hidden", "true");
+  }
+  document.body.classList.remove("pet-shot-open");
+}
+
+function fireShotGame() {
+  if (!shotGame || shotGame.done) return;
+  const pos = shotGame.pos == null ? 0.5 : shotGame.pos;
+  const lo = shotGame.zone - shotGame.zoneW / 2;
+  const hi = shotGame.zone + shotGame.zoneW / 2;
+  const ok = pos >= lo && pos <= hi;
+  shotGame.done = true;
+  cancelAnimationFrame(shotRaf);
+  const fire = document.getElementById("petShotFire");
+  if (fire) fire.disabled = true;
+  const result = document.getElementById("petShotResult");
+  if (ok) {
+    const c = ensureCare();
+    c.sick = false;
+    c.sickSince = 0;
+    c.heals = (c.heals || 0) + 1;
+    careAdd({ happiness: 18, energy: 12, boredom: -8 }, { silent: true });
+    saveState();
+    unlockAchievements();
+    if (result) {
+      result.classList.remove("hidden");
+      result.textContent = "Попал! Маскот уже поправляется 💚";
+    }
+    showToasts([{ plain: true, icon: "💉", name: "Вылечен!", desc: "Больше не болеет" }]);
+    setTimeout(() => {
+      closeShotGame();
+      renderPetCare();
+      paintMascots();
+    }, 900);
+  } else {
+    if (result) {
+      result.classList.remove("hidden");
+      result.textContent = "Мимо… Попробуй ещё раз, когда шприц в зелёной зоне!";
+    }
+    setTimeout(() => {
+      // restart round
+      openShotGame();
+    }, 1100);
+  }
+}
+
 function applyCareAfterStudy(correct, total, timedOut) {
   const mistakes = Math.max(0, (total || TOTAL) - (correct || 0));
-  let happiness = 4 + Math.round((correct || 0) * 1.2);
-  if (mistakes === 0) happiness += 10;
-  else if (mistakes <= 2) happiness += 4;
-  else happiness -= Math.min(8, mistakes);
-  if (timedOut) happiness -= 4;
-  const hunger = -Math.max(5, Math.floor((correct || 0) / 2) + 3);
-  const energy = -Math.max(4, 3 + Math.floor(mistakes / 2));
-  careAdd({ happiness, hunger, energy }, { silent: true });
+  let happiness = 3 + Math.round((correct || 0) * 0.8);
+  if (mistakes === 0) happiness += 6;
+  else if (mistakes <= 2) happiness += 2;
+  // Скука лечится учёбой в приложении
+  let boredom = -18 - Math.round((correct || 0) * 2.2);
+  if (mistakes === 0) boredom -= 12;
+  if (timedOut) {
+    happiness -= 3;
+    boredom += 4;
+  }
+  const hunger = -Math.max(4, Math.floor((correct || 0) / 2) + 2);
+  const energy = -Math.max(3, 2 + Math.floor(mistakes / 2));
+  careAdd({ happiness, hunger, energy, boredom, toilet: -4 }, { silent: true });
+}
+
+function buyCareFood(id) {
+  const item = CARE_FOOD[id];
+  if (!item) return;
+  if (state.coins < item.price) return notEnough();
+  const c = ensureCare();
+  state.coins -= item.price;
+  c.food[id] = (c.food[id] || 0) + 1;
+  saveState();
+  pingBuy(item.icon, item.name);
+  renderShop();
+  renderPetCare();
+}
+
+function buyCareRoom(id) {
+  const item = CARE_ROOM[id];
+  if (!item) return;
+  if (careRoomOwned(id)) return;
+  if (state.coins < item.price) return notEnough();
+  const c = ensureCare();
+  state.coins -= item.price;
+  if (!c.room.includes(id)) c.room.push(id);
+  if (item.happiness) careAdd({ happiness: item.happiness }, { silent: true });
+  saveState();
+  pingBuy(item.icon, item.name);
+  renderShop();
+  renderPetCare();
+}
+
+function buyCareWash(id) {
+  const item = CARE_WASH[id];
+  if (!item) return;
+  if (state.coins < item.price) return notEnough();
+  const c = ensureCare();
+  state.coins -= item.price;
+  c.wash[id] = (c.wash[id] || 0) + 1;
+  saveState();
+  pingBuy(item.icon, item.name);
+  renderShop();
+  renderPetCare();
 }
 
 let petCareTimerId = 0;
@@ -2347,7 +2809,7 @@ function loadState() {
     if (!raw) return empty;
     const data = JSON.parse(raw);
     const ver = Number(data.version);
-    if (ver !== 2 && ver !== 3 && ver !== 4 && ver !== 5 && ver !== 6 && ver !== 7 && ver !== 8 && ver !== 9 && ver !== 10 && ver !== DATA_VERSION) {
+    if (ver !== 2 && ver !== 3 && ver !== 4 && ver !== 5 && ver !== 6 && ver !== 7 && ver !== 8 && ver !== 9 && ver !== 10 && ver !== 11 && ver !== DATA_VERSION) {
       return { ...empty, lastLevel: 1 };
     }
     let runs = Array.isArray(data.runs) ? data.runs : [];
@@ -4148,14 +4610,7 @@ function paintMascots() {
   const live = Date.now() < speech.until;
   let homeTalk = live && speech.showHome ? speech.tip : "";
   if (!homeTalk) {
-    const needs = careNeedLabel();
-    if (needs.length) {
-      homeTalk = needs[0] === "голоден"
-        ? "Покорми меня, пожалуйста!"
-        : needs[0] === "скучает"
-          ? "Давай поиграем!"
-          : "Хочу вздремнуть…";
-    }
+    homeTalk = careNeedSpeech();
   }
   const resultTalk = live ? speech.tip : "";
   paintStage("homeStage", els.homeMascot, 140, mood, homeTalk);
@@ -6000,6 +6455,36 @@ function renderShop() {
     }).join("");
     return;
   }
+  if (shopTab === "care") {
+    const c = ensureCare();
+    let html = `<div class="shop-section">🍎 Еда (в запас)</div>`;
+    html += Object.values(CARE_FOOD).map((f) => {
+      const n = (c.food && c.food[f.id]) || 0;
+      return shopCard(f.icon, f.name, `${f.desc} В запасе: ${n}`, f.price, state.coins >= f.price, "buy-care-food", f.id, "Купить");
+    }).join("");
+    html += `<div class="shop-section">🛏️ Комната (лучше сон)</div>`;
+    html += Object.values(CARE_ROOM).map((r) => {
+      const owned = careRoomOwned(r.id);
+      return shopCard(
+        r.icon,
+        r.name,
+        `${r.desc} · сон +${r.sleepBonus}`,
+        owned ? 0 : r.price,
+        owned || state.coins >= r.price,
+        owned ? "on" : "buy-care-room",
+        r.id,
+        owned ? "Куплено" : "Купить",
+        owned
+      );
+    }).join("");
+    html += `<div class="shop-section">🧼 Гигиена</div>`;
+    html += Object.values(CARE_WASH).map((w) => {
+      const n = (c.wash && c.wash[w.id]) || 0;
+      return shopCard(w.icon, w.name, `${w.desc} В запасе: ${n}`, w.price, state.coins >= w.price, "buy-care-wash", w.id, "Купить");
+    }).join("");
+    els.shopList.innerHTML = html;
+    return;
+  }
   if (shopTab === "looks" || shopEquipFilter === "head") {
     const skins = Object.values(SKINS).map((s) => {
       const owned = state.shop.skins.includes(s.id);
@@ -6233,6 +6718,18 @@ function shopCard(ico, name, desc, price, can, action, id, label, on) {
 }
 
 function shopAction(act, id) {
+  if (act === "buy-care-food") {
+    buyCareFood(id);
+    return;
+  }
+  if (act === "buy-care-room") {
+    buyCareRoom(id);
+    return;
+  }
+  if (act === "buy-care-wash") {
+    buyCareWash(id);
+    return;
+  }
   if (act === "buy-boost") {
     const item = BOOSTS.find((b) => b.id === id);
     if (!item || state.coins < item.price) return notEnough();
@@ -7260,6 +7757,22 @@ ACHIEVEMENTS.push(
     },
   },
   {
+    id: "pet_heal",
+    icon: "💉",
+    name: "Доктор",
+    desc: "Вылечи маскота укольчиком",
+    check: () => (ensureCare().heals || 0) >= 1,
+    progress: () => ({ current: Math.min(ensureCare().heals || 0, 1), target: 1 }),
+  },
+  {
+    id: "pet_room",
+    icon: "🛌",
+    name: "Уютный дом",
+    desc: "Купи 2 предмета для комнаты",
+    check: () => (ensureCare().room || []).length >= 2,
+    progress: () => ({ current: Math.min((ensureCare().room || []).length, 2), target: 2 }),
+  },
+  {
     id: "pet_feed5",
     icon: "🍎",
     name: "Заботливый",
@@ -7700,9 +8213,40 @@ document.getElementById("petCare")?.addEventListener("click", (e) => {
   const btn = e.target.closest("[data-pet]");
   if (!btn) return;
   const act = btn.dataset.pet;
-  if (act === "feed") petFeed();
+  if (act === "feed") openPetFoodPicker();
   else if (act === "play") petPlay();
   else if (act === "sleep") petSleep();
+  else if (act === "toilet") petToilet();
+  else if (act === "wash") openPetWashPicker();
+  else if (act === "heal") openShotGame();
+});
+
+document.getElementById("petFoodModal")?.addEventListener("click", (e) => {
+  if (e.target.id === "petFoodModal" || e.target.closest("[data-pet-food-close]")) {
+    closePetFoodPicker();
+    return;
+  }
+  const food = e.target.closest("[data-pet-food]");
+  if (food) petFeed(food.dataset.petFood);
+});
+
+document.getElementById("petWashModal")?.addEventListener("click", (e) => {
+  if (e.target.id === "petWashModal" || e.target.closest("[data-pet-wash-close]")) {
+    closePetWashPicker();
+    return;
+  }
+  const wash = e.target.closest("[data-pet-wash]");
+  if (wash) petWash(wash.dataset.petWash);
+});
+
+document.getElementById("petShotModal")?.addEventListener("click", (e) => {
+  if (e.target.closest("[data-pet-shot-close]")) {
+    closeShotGame();
+    return;
+  }
+  if (e.target.closest("#petShotFire") || e.target.closest("[data-pet-shot-fire]")) {
+    fireShotGame();
+  }
 });
 
 els.dailyBoxBtn?.addEventListener("click", () => {

@@ -4439,4 +4439,83 @@ body.kd-gate-open .kingdom-screen { pointer-events: none; opacity: .55; }
   opacity: .8;
   line-height: 1.3;
 }
+.pet-bag {
+  margin: 0 0 8px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  opacity: .75;
+}
+.pet-sick-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 8px;
+  border-radius: 12px;
+  background: #ffe3e3;
+  font-weight: 800;
+  color: #9b2226;
+}
+.pet-sick-row.hidden { display: none; }
+.pet-pick-list { display: grid; gap: 8px; margin: 10px 0 14px; }
+.pet-pick-card {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  grid-template-rows: auto auto;
+  gap: 2px 10px;
+  text-align: left;
+  border: 0;
+  border-radius: 14px;
+  padding: 10px;
+  background: #fff;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 3px 0 rgba(0,0,0,.08);
+}
+.pet-pick-card .ico { grid-row: 1 / span 2; font-size: 26px; align-self: center; }
+.pet-pick-card .name { font-weight: 900; }
+.pet-pick-card .desc { font-size: 12px; opacity: .7; font-weight: 700; }
+.pet-shot-card { max-width: 340px; }
+.pet-shot-tip { text-align: center; font-weight: 700; margin: 0 0 12px; }
+.pet-shot-stage { display: grid; gap: 8px; justify-items: center; margin-bottom: 12px; }
+.pet-shot-arm { font-size: 42px; }
+.pet-shot-track {
+  position: relative;
+  width: 100%;
+  height: 44px;
+  border-radius: 14px;
+  background: #eef2ff;
+  overflow: hidden;
+  box-shadow: inset 0 2px 0 rgba(0,0,0,.06);
+}
+.pet-shot-zone {
+  position: absolute;
+  top: 6px; bottom: 6px;
+  border-radius: 10px;
+  background: rgba(76, 201, 140, .55);
+  border: 2px solid #2d9b6a;
+}
+.pet-shot-needle {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 28px;
+  filter: drop-shadow(0 2px 0 rgba(0,0,0,.12));
+  pointer-events: none;
+}
+.pet-shot-result {
+  text-align: center;
+  font-weight: 800;
+  margin: 0 0 10px;
+  color: #2d6a4f;
+}
+.pet-shot-result.hidden { display: none; }
+.pet-shot-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+body.pet-shot-open { overflow: hidden; }
+.pet-bar[data-pet-stat="petBoredom"].low .bar > div { background: linear-gradient(90deg, #ff6b6b, #ee6c4d); }
+.pet-bar[data-pet-stat="petBoredom"].ok .bar > div { background: linear-gradient(90deg, #7ed957, #4ecdc4); }
+.pet-bar[data-pet-stat="petBoredom"].mid .bar > div { background: linear-gradient(90deg, #ffd166, #f4a261); }
+
 
