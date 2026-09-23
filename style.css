@@ -3582,6 +3582,9 @@ body.fw-perfect .fw-canvas {
   grid-column: 2 / -1;
   line-height: 1.45;
 }
+.shop-card.skill-on {
+  outline: 3px solid #4ecdc4;
+}
 .relic-ico {
   width: 36px;
   height: 36px;
