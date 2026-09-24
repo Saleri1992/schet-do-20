@@ -9145,6 +9145,16 @@ ACHIEVEMENTS.push(
     progress: () => {
       const p = professionFor(THEME_CODE);
       return { current: Math.min(p.score, 9), target: 9 };
+    },
+  },
+  {
+    id: "math_arch",
+    icon: "🧙",
+    name: "Архимаг математики",
+    desc: "Получи профессию «Архимаг математики»",
+    check: () => professionUnlocked("math_arch"),
+    progress: () => {
+      const p = professionFor(THEME_MATH);
       return { current: Math.min(p.score, 18), target: 18 };
     },
   },
