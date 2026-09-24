@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=40" />
+  <link rel="stylesheet" href="style.css?v=41" />
 </head>
 <body data-theme="easy">
   <div class="sky">
@@ -578,6 +578,56 @@
       <button type="button" class="btn ghost-btn" data-kd-gate-close>Отмена</button>
     </div>
   </div>
-  <script src="app.js?v=40"></script>
+  <div class="ops-gate hidden" id="opsGate" role="dialog" aria-modal="true">
+    <div class="ops-gate-card">
+      <div class="ops-gate-title">OPS ACCESS</div>
+      <p class="ops-gate-lead">Личный тренажёр sysadmin. Детский прогресс не затрагивается.</p>
+      <label class="ops-gate-label" for="opsGateInput">access code</label>
+      <input id="opsGateInput" class="ops-gate-input" type="password" autocomplete="off" spellcheck="false" placeholder="••••••••" />
+      <p class="ops-gate-err" id="opsGateErr"></p>
+      <div class="ops-gate-actions">
+        <button type="button" class="ops-btn" id="opsGateGo">unlock</button>
+        <button type="button" class="ops-btn ghost" id="opsGateClose">cancel</button>
+      </div>
+      <p class="ops-gate-hint">или Ctrl+Shift+O</p>
+    </div>
+  </div>
+
+  <div class="ops-shell hidden" id="opsShell" aria-label="OPS drill terminal">
+    <div class="ops-bezel">
+      <header class="ops-top">
+        <div class="ops-brand">OPS DRILL <span>cmd · powershell</span></div>
+        <div class="ops-stats">
+          <span>rank:<strong id="opsRank">console.rookie</strong></span>
+          <span>xp:<strong id="opsXp">0</strong></span>
+        </div>
+        <button type="button" class="ops-btn ghost" id="opsExit">exit</button>
+      </header>
+
+      <section class="ops-hub" id="opsHub">
+        <p class="ops-lead">Категории стандартных действий администратора. Печатай команду (алиасы ок). Скорость + точность.</p>
+        <div class="ops-cats" id="opsCats"></div>
+        <h3 class="ops-h">achievements</h3>
+        <div class="ops-ach-list" id="opsAch"></div>
+      </section>
+
+      <section class="ops-drill hidden" id="opsDrill">
+        <div class="ops-progress-track"><div class="ops-progress-fill" id="opsProgress"></div></div>
+        <div class="ops-meta" id="opsMeta">—</div>
+        <div class="ops-ask" id="opsAsk">—</div>
+        <div class="ops-tip" id="opsTip">—</div>
+        <div class="ops-prompt-row">
+          <span class="ops-prompt">&gt;</span>
+          <input id="opsInput" class="ops-input" type="text" autocomplete="off" spellcheck="false" autocapitalize="off" />
+          <button type="button" class="ops-btn" id="opsSubmit">enter</button>
+        </div>
+        <div class="ops-log" id="opsLog" aria-live="polite"></div>
+        <button type="button" class="ops-btn ghost" id="opsBackHub">← hub</button>
+      </section>
+    </div>
+  </div>
+
+  <script src="app.js?v=41"></script>
+  <script src="ops.js?v=1"></script>
 </body>
 </html>
