@@ -1,5 +1,5 @@
 /**
- * OPS DRILL — личный тренажёр (CMD/PS + SQL + Java + Parse + HTTP).
+ * OPS DRILL — личный тренажёр (CMD/PS + SQL + Java + Parse + HTTP + docs).
  * Вход: Ctrl+Shift+O или кнопка ⌘ на главной → код `sys.ops`
  */
 (function () {
@@ -20,6 +20,7 @@
       id: "files",
       name: "Files",
       blurb: "Каталоги и файлы",
+      intro: "Работа с папками и файлами в CMD и PowerShell. В PS многие привычные команды — алиасы на Verb-Noun командлеты.",
       drills: [
         { ask: "Список файлов в текущей папке (CMD)", answer: "dir", shell: "cmd", alts: ["dir /b"], tip: "dir = directory listing" },
         { ask: "Список файлов (PowerShell)", answer: "get-childitem", shell: "ps", alts: ["gci", "ls"], tip: "GCI — алиас Get-ChildItem" },
@@ -42,6 +43,7 @@
       id: "proc",
       name: "Processes",
       blurb: "Процессы",
+      intro: "Процесс — запущенная программа. Смотри список, ищи по имени, завершай по PID.",
       drills: [
         { ask: "Список процессов (CMD)", answer: "tasklist", shell: "cmd", tip: "tasklist — все процессы" },
         { ask: "Список процессов (PowerShell)", answer: "get-process", shell: "ps", alts: ["gps", "ps"] },
@@ -55,6 +57,7 @@
       id: "svc",
       name: "Services",
       blurb: "Службы",
+      intro: "Служба — фоновый сервис Windows. Можно смотреть статус, стартовать и останавливать.",
       drills: [
         { ask: "Список запущенных служб (CMD/net)", answer: "net start", shell: "cmd" },
         { ask: "Список служб (PowerShell)", answer: "get-service", shell: "ps", alts: ["gsv"] },
@@ -68,6 +71,7 @@
       id: "net",
       name: "Network",
       blurb: "Сеть",
+      intro: "Базовая диагностика сети: IP, ping, DNS, порты, маршруты. Сначала ipconfig/ping, потом глубже.",
       drills: [
         { ask: "IP-конфигурация (CMD)", answer: "ipconfig", shell: "cmd", alts: ["ipconfig /all"] },
         { ask: "IP-адреса (PowerShell)", answer: "get-netipaddress", shell: "ps", alts: ["get-netipconfiguration"] },
@@ -87,6 +91,7 @@
       id: "users",
       name: "Users",
       blurb: "Учётки и группы",
+      intro: "Кто залогинен, какие локальные пользователи и группы, права на файлы (ACL).",
       drills: [
         { ask: "Кто я (CMD/PS)", answer: "whoami", shell: "both" },
         { ask: "Группы текущего пользователя", answer: "whoami /groups", shell: "cmd", alts: ["whoami /group"] },
@@ -102,6 +107,7 @@
       id: "sys",
       name: "System",
       blurb: "Система и логи",
+      intro: "Имя машины, сводка железа/ОС, переменные среды, диски, журнал событий, планировщик.",
       drills: [
         { ask: "Имя компьютера (CMD)", answer: "hostname", shell: "cmd" },
         { ask: "Сводка о системе (CMD)", answer: "systeminfo", shell: "cmd" },
@@ -117,6 +123,7 @@
       id: "diff",
       name: "CMD vs PS",
       blurb: "Отличия",
+      intro: "CMD работает с текстом. PowerShell — с объектами и конвейером. Имена: Verb-Noun (Get-Process).",
       drills: [
         { ask: "PowerShell-эквивалент dir", answer: "get-childitem", shell: "ps", alts: ["gci", "ls"], tip: "dir в PS часто алиас Get-ChildItem" },
         { ask: "Ключевое отличие PS от CMD: вывод — это…", answer: "objects", shell: "concept", alts: ["объекты", "object"], tip: "CMD — текст; PS — объекты" },
@@ -134,6 +141,7 @@
       name: "SQL",
       blurb: "С нуля → закрепление",
       learn: true,
+      intro: "SQL — язык запросов к таблицам. Ниже теория с нуля и шпаргалка команд для закрепления.",
       lessons: [
         {
           title: "Что такое SQL",
@@ -201,6 +209,7 @@
       name: "Java",
       blurb: "База → закрепление",
       learn: true,
+      intro: "Java: классы, типы, if/циклы, методы. Читай блоки по порядку — потом drill.",
       lessons: [
         {
           title: "Что такое Java",
@@ -259,6 +268,7 @@
       name: "Parse",
       blurb: "Текст → структура",
       learn: true,
+      intro: "Парсинг: JSON, CSV, regex, ConvertFrom-Json / Select-String. Сырой текст → удобные объекты.",
       lessons: [
         {
           title: "Что такое парсинг",
@@ -326,6 +336,7 @@
       name: "HTTP",
       blurb: "Веб-запросы",
       learn: true,
+      intro: "HTTP: методы, коды ответа, Invoke-RestMethod / curl. Как клиент просит данные у сервера.",
       lessons: [
         {
           title: "Что такое HTTP-запрос",
@@ -495,6 +506,9 @@
       hub: document.getElementById("opsHub"),
       drill: document.getElementById("opsDrill"),
       lesson: document.getElementById("opsLesson"),
+      docs: document.getElementById("opsDocs"),
+      docsToc: document.getElementById("opsDocsToc"),
+      docsBody: document.getElementById("opsDocsBody"),
       cats: document.getElementById("opsCats"),
       rank: document.getElementById("opsRank"),
       xp: document.getElementById("opsXp"),
@@ -560,6 +574,7 @@
     if (e.hub) e.hub.classList.add("hidden");
     if (e.drill) e.drill.classList.add("hidden");
     if (e.lesson) e.lesson.classList.add("hidden");
+    if (e.docs) e.docs.classList.add("hidden");
   }
 
   function openShell() {
@@ -598,6 +613,68 @@
     hidePanels();
     const e = els();
     if (e.lesson) e.lesson.classList.remove("hidden");
+  }
+
+  function showDocs() {
+    stopTimer();
+    hidePanels();
+    const e = els();
+    if (e.docs) e.docs.classList.remove("hidden");
+  }
+
+  function shellLabel(shell) {
+    if (shell === "cmd") return "CMD";
+    if (shell === "ps") return "PS";
+    if (shell === "both") return "CMD/PS";
+    if (shell === "concept") return "concept";
+    return shell || "";
+  }
+
+  function renderDocs(focusId) {
+    const e = els();
+    if (e.docsToc) {
+      e.docsToc.innerHTML = CATEGORIES.map((c) =>
+        `<button type="button" data-ops-doc="${c.id}" class="${focusId === c.id ? "on" : ""}">${escapeHtml(c.name)}</button>`
+      ).join("");
+    }
+    if (e.docsBody) {
+      e.docsBody.innerHTML = CATEGORIES.map((c) => {
+        const lessonsHtml = Array.isArray(c.lessons) && c.lessons.length
+          ? c.lessons.map((lesson) => `
+              <h3>${escapeHtml(lesson.title)}</h3>
+              <ul>${lesson.points.map((p) => `<li>${escapeHtml(p)}</li>`).join("")}</ul>
+              ${lesson.tip ? `<p class="ops-doc-tip">tip: ${escapeHtml(lesson.tip)}</p>` : ""}
+            `).join("")
+          : "";
+        const sheetHtml = `
+          <h3>шпаргалка · drill</h3>
+          <div class="ops-doc-sheet">
+            ${c.drills.map((d) => `
+              <div class="ops-doc-row">
+                <div class="ops-doc-q">${escapeHtml(d.ask)}${d.shell ? ` · ${escapeHtml(shellLabel(d.shell))}` : ""}</div>
+                <div class="ops-doc-a">${escapeHtml(d.answer)}${(d.alts && d.alts.length) ? ` · alt: ${escapeHtml(d.alts.join(" | "))}` : ""}</div>
+                ${d.tip ? `<div class="ops-doc-note">${escapeHtml(d.tip)}</div>` : ""}
+              </div>
+            `).join("")}
+          </div>`;
+        return `
+          <article class="ops-doc-article" id="ops-doc-${c.id}">
+            <h2>${escapeHtml(c.name)} <span class="ops-doc-note">· ${escapeHtml(c.blurb)}</span></h2>
+            ${c.intro ? `<p class="ops-doc-intro">${escapeHtml(c.intro)}</p>` : ""}
+            ${lessonsHtml}
+            ${sheetHtml}
+          </article>`;
+      }).join("");
+    }
+    showDocs();
+    if (focusId) {
+      const node = document.getElementById(`ops-doc-${focusId}`);
+      if (node && e.docsBody) {
+        e.docsBody.scrollTop = Math.max(0, node.offsetTop - e.docsBody.offsetTop - 8);
+      }
+    } else if (e.docsBody) {
+      e.docsBody.scrollTop = 0;
+    }
   }
 
   function renderHub() {
@@ -921,6 +998,17 @@
       pendingCat = null;
       showHub();
       renderHub();
+    });
+
+    document.getElementById("opsDocsOpen")?.addEventListener("click", () => renderDocs());
+    document.getElementById("opsDocsBack")?.addEventListener("click", () => {
+      showHub();
+      renderHub();
+    });
+    e.docsToc?.addEventListener("click", (ev) => {
+      const btn = ev.target.closest("[data-ops-doc]");
+      if (!btn) return;
+      renderDocs(btn.dataset.opsDoc);
     });
 
     bindMobileEntry();

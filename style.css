@@ -4856,3 +4856,118 @@ body.ops-on .toast-stack {
 }
 .ops-lesson-body li { margin-bottom: 8px; }
 .ops-prompt-row { flex-wrap: wrap; }
+.ops-hub-actions {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 12px;
+  flex-wrap: wrap;
+}
+.ops-docs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  flex: 1;
+}
+.ops-docs.hidden { display: none !important; }
+.ops-docs-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ops-docs-h {
+  margin: 0;
+  font-size: 12px;
+  color: #d6ffe0;
+  letter-spacing: 0.04em;
+}
+.ops-docs-toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ops-docs-toc button {
+  font: inherit;
+  font-size: 8px;
+  padding: 6px 8px;
+  border: 1px solid #1f4a2e;
+  background: #0a1810;
+  color: #7CFF9A;
+  cursor: pointer;
+}
+.ops-docs-toc button:hover,
+.ops-docs-toc button.on {
+  border-color: #3ecf6e;
+  background: #0c1f14;
+  color: #d6ffe0;
+}
+.ops-docs-body {
+  overflow: auto;
+  max-height: min(62vh, 520px);
+  padding-right: 4px;
+  border-top: 1px solid #1f4a2e;
+  padding-top: 10px;
+}
+.ops-doc-article {
+  margin: 0 0 22px;
+  padding-bottom: 16px;
+  border-bottom: 1px dashed #1f4a2e;
+}
+.ops-doc-article:last-child { border-bottom: 0; margin-bottom: 0; }
+.ops-doc-article h2 {
+  margin: 0 0 6px;
+  font-size: 11px;
+  color: #d6ffe0;
+}
+.ops-doc-intro {
+  margin: 0 0 10px;
+  font-size: 9px;
+  line-height: 1.65;
+  color: #4a9a62;
+}
+.ops-doc-article h3 {
+  margin: 12px 0 6px;
+  font-size: 10px;
+  color: #b8ffcc;
+}
+.ops-doc-article ul {
+  margin: 0 0 8px;
+  padding-left: 18px;
+  font-size: 9px;
+  line-height: 1.7;
+  color: #7CFF9A;
+}
+.ops-doc-article li { margin-bottom: 6px; }
+.ops-doc-tip {
+  margin: 0 0 10px;
+  font-size: 8px;
+  color: #4a9a62;
+}
+.ops-doc-sheet {
+  margin: 8px 0 0;
+  display: grid;
+  gap: 8px;
+}
+.ops-doc-row {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid #1f4a2e;
+  background: #07140c;
+}
+.ops-doc-q {
+  font-size: 8px;
+  color: #4a9a62;
+  line-height: 1.4;
+}
+.ops-doc-a {
+  font-size: 9px;
+  color: #d6ffe0;
+  font-family: ui-monospace, Consolas, monospace;
+  word-break: break-word;
+}
+.ops-doc-note {
+  font-size: 8px;
+  color: #3ecf6e;
+}

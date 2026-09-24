@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=42" />
+  <link rel="stylesheet" href="style.css?v=43" />
 </head>
 <body data-theme="easy">
   <div class="sky">
@@ -597,7 +597,7 @@
   <div class="ops-shell hidden" id="opsShell" aria-label="OPS drill terminal">
     <div class="ops-bezel">
       <header class="ops-top">
-        <div class="ops-brand">OPS DRILL <span>cmd · ps · sql · java</span></div>
+        <div class="ops-brand">OPS DRILL <span>cmd · ps · sql · http</span></div>
         <div class="ops-stats">
           <span>rank:<strong id="opsRank">console.rookie</strong></span>
           <span>xp:<strong id="opsXp">0</strong></span>
@@ -607,10 +607,23 @@
       </header>
 
       <section class="ops-hub" id="opsHub">
-        <p class="ops-lead">Sysadmin drills + обучалки SQL/Java. Время идёт без лимита. Подсказка — кнопка hint.</p>
+        <p class="ops-lead">Drills + обучалки. Время без лимита · hint · отдельная справка для чтения.</p>
+        <div class="ops-hub-actions">
+          <button type="button" class="ops-btn" id="opsDocsOpen">docs · справка</button>
+        </div>
         <div class="ops-cats" id="opsCats"></div>
         <h3 class="ops-h">achievements</h3>
         <div class="ops-ach-list" id="opsAch"></div>
+      </section>
+
+      <section class="ops-docs hidden" id="opsDocs">
+        <div class="ops-docs-bar">
+          <h2 class="ops-docs-h">manual · справка</h2>
+          <button type="button" class="ops-btn ghost" id="opsDocsBack">← hub</button>
+        </div>
+        <p class="ops-lead">Читай на досуге. Без таймера и очков — только материал по всем разделам.</p>
+        <nav class="ops-docs-toc" id="opsDocsToc" aria-label="Содержание"></nav>
+        <div class="ops-docs-body" id="opsDocsBody"></div>
       </section>
 
       <section class="ops-lesson hidden" id="opsLesson">
@@ -644,6 +657,6 @@
   </div>
 
   <script src="app.js?v=42"></script>
-  <script src="ops.js?v=3"></script>
+  <script src="ops.js?v=4"></script>
 </body>
 </html>
