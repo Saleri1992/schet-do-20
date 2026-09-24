@@ -1,7 +1,7 @@
 const STORAGE_KEY = "schet-do-20";
 const NICK_KEY = "schet-do-20-nick";
 const SCORE_QUEUE_KEY = "schet-do-20-score-queue";
-const DATA_VERSION = 12;
+const DATA_VERSION = 13;
 const TOTAL = 10;
 const HARD_LIMIT_MS = 60 * 1000;
 const SECRET_SPEED_MS = 40 * 1000;
@@ -134,6 +134,104 @@ async function fetchScores(levelFilter, modeFilter = "all", { limit = BOARD_FETC
   if (modeFilter === MODE_CODE) return list.filter((r) => r.mode === MODE_CODE);
   if (modeFilter === MODE_BASIC) return list.filter((r) => !r.mode || r.mode === MODE_BASIC);
   return list;
+}
+
+/** Все 10/10 конкретного ника из облака — для восстановления открытых уровней. */
+async function fetchNickScores(nick, { limit = 400 } = {}) {
+  const name = normalizeNick(nick);
+  if (!isNickOk(name)) return [];
+  const makeParams = (withMode = true) => {
+    const params = new URLSearchParams({
+      select: withMode
+        ? "nick,level,correct,ms,grade,timed_out,created_at,mode"
+        : "nick,level,correct,ms,grade,timed_out,created_at",
+      nick: `eq.${name}`,
+      correct: "eq.10",
+      timed_out: "eq.false",
+      order: "created_at.desc",
+      limit: String(limit),
+    });
+    return params;
+  };
+  let res = await fetch(`${SUPABASE_URL}/rest/v1/scores?${makeParams(supabaseHasMode !== false)}`, {
+    headers: supabaseHeaders(),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    if (/mode|column/i.test(text)) {
+      supabaseHasMode = false;
+      res = await fetch(`${SUPABASE_URL}/rest/v1/scores?${makeParams(false)}`, {
+        headers: supabaseHeaders(),
+      });
+    }
+    if (!res.ok) throw new Error(await res.text() || `HTTP ${res.status}`);
+  } else if (supabaseHasMode !== false) {
+    supabaseHasMode = true;
+  }
+  const rows = await res.json();
+  return (Array.isArray(rows) ? rows : []).filter(isBoardScore);
+}
+
+function mergeRemoteProgress(rows) {
+  if (!Array.isArray(rows) || !rows.length) return 0;
+  if (!state.cleared) state.cleared = {};
+  let added = 0;
+  const seenStub = new Set();
+  rows.forEach((row) => {
+    const mode = row.mode || MODE_BASIC;
+    const level = Number(row.level) || 1;
+    const ms = Math.max(0, Number(row.ms) || 0);
+    const at = row.created_at || null;
+    const key = progressKey(mode, level);
+    const had = !!state.cleared[key];
+    markCleared(mode, level, { ms, at, battleWin: false });
+    if (!had) added += 1;
+    // Запись в историю, если локально нет ни одного 10/10 по этой связке
+    const hasLocal = (state.runs || []).some((r) =>
+      (r.mode || MODE_BASIC) === mode && (r.level || 1) === level && r.correct === 10
+    );
+    const stubId = `${mode}:${level}`;
+    if (!hasLocal && !seenStub.has(stubId)) {
+      seenStub.add(stubId);
+      state.runs.push({
+        startedAt: at,
+        date: at || new Date().toISOString(),
+        correct: 10,
+        total: 10,
+        ms,
+        level,
+        mode,
+        timedOut: false,
+        synced: true,
+        restored: true,
+        answers: [],
+      });
+      added += 1;
+    }
+  });
+  if (added) saveState();
+  return added;
+}
+
+async function restoreProgressFromCloud({ quiet = true } = {}) {
+  const nick = normalizeNick(playerNick);
+  if (!isNickOk(nick)) return { restored: 0 };
+  try {
+    const rows = await fetchNickScores(nick);
+    const restored = mergeRemoteProgress(rows);
+    if (!quiet && restored > 0) {
+      showToasts([{
+        plain: true,
+        icon: "☁️",
+        name: "Прогресс восстановлен",
+        desc: `Из облака подтянуто уровней: ${restored}. Карта снова открыта.`,
+      }]);
+    }
+    return { restored };
+  } catch (err) {
+    console.warn("restoreProgressFromCloud failed", err);
+    return { restored: 0, error: err };
+  }
 }
 
 /** В общий топ только идеальные 10/10 без срыва по времени. */
@@ -1735,11 +1833,23 @@ function bestGradeOn(s, level, extra = () => true) {
 }
 
 function levelPerfected(s, level) {
+  if (s.cleared && typeof s.cleared === "object") {
+    const hit = Object.keys(s.cleared).some((k) => Number(String(k).split(":")[1]) === level);
+    if (hit) return true;
+  }
   return s.runs.some((r) => {
     if ((r.level || 1) !== level || r.correct !== 10) return false;
     if (level >= 4 && r.timedOut) return false;
     return true;
   });
+}
+
+function stateHasPerfect(s, mode, level) {
+  const key = `${mode || MODE_BASIC}:${Number(level) || 1}`;
+  if (s.cleared && s.cleared[key]) return true;
+  return (s.runs || []).some((r) =>
+    (r.mode || MODE_BASIC) === mode && (r.level || 1) === Number(level) && r.correct === 10 && !r.timedOut
+  );
 }
 
 function perfectedLevelsCount(s) {
@@ -1797,18 +1907,18 @@ const ACHIEVEMENTS = [
   { id: "boost_extra_5", icon: "⏳", name: "Запас времени", desc: "Используй +15 сек 5 раз", check: (s) => (s.shop?.boostUsed?.extra || 0) >= 5, progress: (s) => ({ current: s.shop?.boostUsed?.extra || 0, target: 5 }) },
   { id: "boost_cheat_5", icon: "🕵️", name: "Хитрый план", desc: "Используй читер 5 раз", check: (s) => (s.shop?.boostUsed?.cheat || 0) >= 5, progress: (s) => ({ current: s.shop?.boostUsed?.cheat || 0, target: 5 }) },
   { id: "boost_any_10", icon: "⚡", name: "Буст-мастер", desc: "Используй любые бусты суммарно 10 раз", check: (s) => ((s.shop?.boostUsed?.slow || 0) + (s.shop?.boostUsed?.extra || 0) + (s.shop?.boostUsed?.cheat || 0)) >= 10, progress: (s) => ({ current: (s.shop?.boostUsed?.slow || 0) + (s.shop?.boostUsed?.extra || 0) + (s.shop?.boostUsed?.cheat || 0), target: 10 }) },
-  { id: "units_convert", icon: "📏", name: "Переводчик", desc: "10/10 на «Составные»", check: (s) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_UNITS && (r.level || 1) === 1 && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_UNITS && (r.level || 1) === 1).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
-  { id: "units_meters", icon: "🏠", name: "Метры", desc: "10/10 на этапе «Метры»", check: (s) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_UNITS && r.level === 2 && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_UNITS && r.level === 2).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
-  { id: "units_simple", icon: "🧠", name: "Через единицы", desc: "10/10 на простых переводах", check: (s) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_UNITS && r.level === 3 && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_UNITS && r.level === 3).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
-  { id: "units_compare", icon: "⚖️", name: "Весы", desc: "10/10 на сравнении мер", check: (s) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_UNITS && r.level === 4 && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_UNITS && r.level === 4).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
-  { id: "mul_easy", icon: "💡", name: "Понял суть", desc: "10/10 на этапе «Суть» умножения", check: (s) => s.runs.some((r) => r.mode === MODE_MUL && (r.level || 1) === 1 && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => r.mode === MODE_MUL && (r.level || 1) === 1).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
-  { id: "mul_table", icon: "2️⃣", name: "Двойки и тройки", desc: "10/10 на этапе «×2 и ×3»", check: (s) => s.runs.some((r) => r.mode === MODE_MUL && r.level === 2 && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => r.mode === MODE_MUL && r.level === 2).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
-  { id: "mul_hard", icon: "🎲", name: "Смешанный мастер", desc: "10/10 на этапе «Смешанно»", check: (s) => s.runs.some((r) => r.mode === MODE_MUL && r.level === 5 && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => r.mode === MODE_MUL && r.level === 5).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
-  { id: "mul_secret", icon: "✖️", name: "Вся лестница ×", desc: "Пройди все 5 этапов умножения на 10/10", check: (s) => [1, 2, 3, 4, 5].every((lvl) => s.runs.some((r) => r.mode === MODE_MUL && (r.level || 1) === lvl && r.correct === 10)), progress: (s) => ({ current: [1, 2, 3, 4, 5].filter((lvl) => s.runs.some((r) => r.mode === MODE_MUL && (r.level || 1) === lvl && r.correct === 10)).length, target: 5 }) },
-  { id: "div_easy", icon: "🧩", name: "Понял деление", desc: "10/10 на этапе «Суть» деления", check: (s) => s.runs.some((r) => r.mode === MODE_DIV && (r.level || 1) === 1 && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => r.mode === MODE_DIV && (r.level || 1) === 1).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
-  { id: "div_table", icon: "3️⃣", name: "Делю на 2 и 3", desc: "10/10 на этапе «÷2 и ÷3»", check: (s) => s.runs.some((r) => r.mode === MODE_DIV && r.level === 2 && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => r.mode === MODE_DIV && r.level === 2).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
-  { id: "div_hard", icon: "🎯", name: "Мастер деления", desc: "10/10 на этапе «Смешанно» деления", check: (s) => s.runs.some((r) => r.mode === MODE_DIV && r.level === 5 && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => r.mode === MODE_DIV && r.level === 5).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
-  { id: "div_secret", icon: "➗", name: "Вся лестница ÷", desc: "Пройди все 5 этапов деления на 10/10", check: (s) => [1, 2, 3, 4, 5].every((lvl) => s.runs.some((r) => r.mode === MODE_DIV && (r.level || 1) === lvl && r.correct === 10)), progress: (s) => ({ current: [1, 2, 3, 4, 5].filter((lvl) => s.runs.some((r) => r.mode === MODE_DIV && (r.level || 1) === lvl && r.correct === 10)).length, target: 5 }) },
+  { id: "units_convert", icon: "📏", name: "Переводчик", desc: "10/10 на «Составные»", check: (s) => stateHasPerfect(s, MODE_UNITS, 1), progress: (s) => ({ current: stateHasPerfect(s, MODE_UNITS, 1) ? 10 : (s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_UNITS && (r.level || 1) === 1).reduce((m, r) => Math.max(m, r.correct || 0), 0)), target: 10 }) },
+  { id: "units_meters", icon: "🏠", name: "Метры", desc: "10/10 на этапе «Метры»", check: (s) => stateHasPerfect(s, MODE_UNITS, 2), progress: (s) => ({ current: stateHasPerfect(s, MODE_UNITS, 2) ? 10 : (s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_UNITS && r.level === 2).reduce((m, r) => Math.max(m, r.correct || 0), 0)), target: 10 }) },
+  { id: "units_simple", icon: "🧠", name: "Через единицы", desc: "10/10 на простых переводах", check: (s) => stateHasPerfect(s, MODE_UNITS, 3), progress: (s) => ({ current: stateHasPerfect(s, MODE_UNITS, 3) ? 10 : (s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_UNITS && r.level === 3).reduce((m, r) => Math.max(m, r.correct || 0), 0)), target: 10 }) },
+  { id: "units_compare", icon: "⚖️", name: "Весы", desc: "10/10 на сравнении мер", check: (s) => stateHasPerfect(s, MODE_UNITS, 4), progress: (s) => ({ current: stateHasPerfect(s, MODE_UNITS, 4) ? 10 : (s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_UNITS && r.level === 4).reduce((m, r) => Math.max(m, r.correct || 0), 0)), target: 10 }) },
+  { id: "mul_easy", icon: "💡", name: "Понял суть", desc: "10/10 на этапе «Суть» умножения", check: (s) => stateHasPerfect(s, MODE_MUL, 1), progress: (s) => ({ current: stateHasPerfect(s, MODE_MUL, 1) ? 10 : (s.runs.filter((r) => r.mode === MODE_MUL && (r.level || 1) === 1).reduce((m, r) => Math.max(m, r.correct || 0), 0)), target: 10 }) },
+  { id: "mul_table", icon: "2️⃣", name: "Двойки и тройки", desc: "10/10 на этапе «×2 и ×3»", check: (s) => stateHasPerfect(s, MODE_MUL, 2), progress: (s) => ({ current: stateHasPerfect(s, MODE_MUL, 2) ? 10 : (s.runs.filter((r) => r.mode === MODE_MUL && r.level === 2).reduce((m, r) => Math.max(m, r.correct || 0), 0)), target: 10 }) },
+  { id: "mul_hard", icon: "🎲", name: "Смешанный мастер", desc: "10/10 на этапе «Смешанно»", check: (s) => stateHasPerfect(s, MODE_MUL, 5), progress: (s) => ({ current: stateHasPerfect(s, MODE_MUL, 5) ? 10 : (s.runs.filter((r) => r.mode === MODE_MUL && r.level === 5).reduce((m, r) => Math.max(m, r.correct || 0), 0)), target: 10 }) },
+  { id: "mul_secret", icon: "✖️", name: "Вся лестница ×", desc: "Пройди все 5 этапов умножения на 10/10", check: (s) => [1, 2, 3, 4, 5].every((lvl) => stateHasPerfect(s, MODE_MUL, lvl)), progress: (s) => ({ current: [1, 2, 3, 4, 5].filter((lvl) => stateHasPerfect(s, MODE_MUL, lvl)).length, target: 5 }) },
+  { id: "div_easy", icon: "🧩", name: "Понял деление", desc: "10/10 на этапе «Суть» деления", check: (s) => stateHasPerfect(s, MODE_DIV, 1), progress: (s) => ({ current: stateHasPerfect(s, MODE_DIV, 1) ? 10 : (s.runs.filter((r) => r.mode === MODE_DIV && (r.level || 1) === 1).reduce((m, r) => Math.max(m, r.correct || 0), 0)), target: 10 }) },
+  { id: "div_table", icon: "3️⃣", name: "Делю на 2 и 3", desc: "10/10 на этапе «÷2 и ÷3»", check: (s) => stateHasPerfect(s, MODE_DIV, 2), progress: (s) => ({ current: stateHasPerfect(s, MODE_DIV, 2) ? 10 : (s.runs.filter((r) => r.mode === MODE_DIV && r.level === 2).reduce((m, r) => Math.max(m, r.correct || 0), 0)), target: 10 }) },
+  { id: "div_hard", icon: "🎯", name: "Мастер деления", desc: "10/10 на этапе «Смешанно» деления", check: (s) => stateHasPerfect(s, MODE_DIV, 5), progress: (s) => ({ current: stateHasPerfect(s, MODE_DIV, 5) ? 10 : (s.runs.filter((r) => r.mode === MODE_DIV && r.level === 5).reduce((m, r) => Math.max(m, r.correct || 0), 0)), target: 10 }) },
+  { id: "div_secret", icon: "➗", name: "Вся лестница ÷", desc: "Пройди все 5 этапов деления на 10/10", check: (s) => [1, 2, 3, 4, 5].every((lvl) => stateHasPerfect(s, MODE_DIV, lvl)), progress: (s) => ({ current: [1, 2, 3, 4, 5].filter((lvl) => stateHasPerfect(s, MODE_DIV, lvl)).length, target: 5 }) },
   { id: "speed_gate", icon: "⏱️", name: "Спринтер режимов", desc: "Все обычные уровни Базы, 2 действий, Умножения, Деления и Мер — 10/10 быстрее 40 сек", check: () => isSecretGateReady(), progress: () => ({ current: secretGateProgress().current, target: secretGateProgress().target }) },
   { id: "secret_open", icon: "🔓", name: "Дверь приоткрыта", desc: "Открой секретный уровень", check: () => isSecretUnlocked(), progress: () => ({ current: isSecretUnlocked() ? 1 : 0, target: 1 }) },
   { id: "secret_basic", icon: "🗝️", name: "Секрет базы", desc: "10/10 на секретном уровне Базы", check: (s) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_BASIC && r.level === SECRET_LEVEL && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_BASIC && r.level === SECRET_LEVEL).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
@@ -2911,6 +3021,7 @@ function loadState() {
     stars: 0,
     coins: 0,
     runs: [],
+    cleared: {},
     achievements: [],
     lastLevel: 1,
     version: DATA_VERSION,
@@ -2926,7 +3037,7 @@ function loadState() {
     if (!raw) return empty;
     const data = JSON.parse(raw);
     const ver = Number(data.version);
-    if (ver !== 2 && ver !== 3 && ver !== 4 && ver !== 5 && ver !== 6 && ver !== 7 && ver !== 8 && ver !== 9 && ver !== 10 && ver !== 11 && ver !== DATA_VERSION) {
+    if (ver !== 2 && ver !== 3 && ver !== 4 && ver !== 5 && ver !== 6 && ver !== 7 && ver !== 8 && ver !== 9 && ver !== 10 && ver !== 11 && ver !== 12 && ver !== DATA_VERSION) {
       return { ...empty, lastLevel: 1 };
     }
     let runs = Array.isArray(data.runs) ? data.runs : [];
@@ -2935,10 +3046,12 @@ function loadState() {
       runs = runs.map((r) => ({ ...r, level: r.level === 3 ? 4 : r.level }));
       lastLevel = lastLevel === 3 ? 4 : lastLevel;
     }
-    return {
+    const cleared = (data.cleared && typeof data.cleared === "object") ? { ...data.cleared } : {};
+    const stateObj = {
       stars: Number(data.stars) || 0,
       coins: Number(data.coins) || 0,
       runs,
+      cleared,
       achievements: Array.isArray(data.achievements) ? data.achievements : [],
       lastLevel,
       version: DATA_VERSION,
@@ -2949,24 +3062,95 @@ function loadState() {
       kingdom: normalizeKingdom(data.kingdom),
       care: normalizeCare(data.care),
     };
+    harvestClearedFromRuns(stateObj);
+    return stateObj;
   } catch {
     return empty;
   }
 }
 
-const RUNS_KEEP = 60;
+const RUNS_KEEP = 80;
+
+function progressKey(mode, level) {
+  return `${mode || MODE_BASIC}:${Number(level) || 1}`;
+}
+
+function harvestClearedFromRuns(target = state) {
+  if (!target.cleared || typeof target.cleared !== "object") target.cleared = {};
+  (target.runs || []).forEach((r) => {
+    if (Number(r.correct) !== 10 || r.timedOut) return;
+    const mode = r.mode || MODE_BASIC;
+    const level = r.level || 1;
+    const key = progressKey(mode, level);
+    const prev = target.cleared[key] || {};
+    const ms = Math.max(0, Number(r.ms) || 0);
+    const next = {
+      ms: prev.ms && prev.ms > 0 && (ms === 0 || prev.ms <= ms) ? prev.ms : (ms || prev.ms || 0),
+      at: r.date || r.startedAt || prev.at || null,
+      battleWin: !!(prev.battleWin || r.battleWin),
+    };
+    target.cleared[key] = next;
+  });
+}
+
+function markCleared(mode, level, { ms = 0, battleWin = false, at = null } = {}) {
+  if (!state.cleared) state.cleared = {};
+  const key = progressKey(mode, level);
+  const prev = state.cleared[key] || {};
+  const nextMs = Math.max(0, Number(ms) || 0);
+  state.cleared[key] = {
+    ms: prev.ms && prev.ms > 0 && (nextMs === 0 || prev.ms <= nextMs) ? prev.ms : (nextMs || prev.ms || 0),
+    at: at || prev.at || new Date().toISOString(),
+    battleWin: !!(prev.battleWin || battleWin),
+  };
+}
+
+function isCleared(mode, level) {
+  const key = progressKey(mode, level);
+  if (state.cleared && state.cleared[key]) return true;
+  return (state.runs || []).some((r) =>
+    (r.mode || MODE_BASIC) === mode && (r.level || 1) === Number(level) && r.correct === 10 && !r.timedOut
+  );
+}
+
+function trimRunsKeepProgress(maxKeep) {
+  harvestClearedFromRuns();
+  if (!Array.isArray(state.runs) || state.runs.length <= maxKeep) return;
+  const keepIdx = new Set();
+  // Свежие сверху
+  for (let i = 0; i < Math.min(maxKeep, state.runs.length); i += 1) keepIdx.add(i);
+  // Минимум один идеальный / победа в бою на связку режим+уровень
+  const best = new Map();
+  state.runs.forEach((r, idx) => {
+    if (r.battleWin || (r.correct === 10 && !r.timedOut)) {
+      const key = progressKey(r.mode || MODE_BASIC, r.level || 1);
+      const prev = best.get(key);
+      const ms = r.ms || Infinity;
+      if (!prev || ms < prev.ms || (r.battleWin && !prev.battleWin)) {
+        best.set(key, { idx, ms, battleWin: !!r.battleWin });
+      }
+    }
+  });
+  best.forEach((v) => keepIdx.add(v.idx));
+  const kept = state.runs.filter((_, i) => keepIdx.has(i));
+  // Если всё ещё много — режем старые, но cleared уже сохранён
+  state.runs = kept.length > maxKeep * 2
+    ? kept.slice(0, maxKeep)
+    : kept;
+}
 
 function saveState() {
   state.version = DATA_VERSION;
   try {
+    harvestClearedFromRuns();
     if (Array.isArray(state.runs) && state.runs.length > RUNS_KEEP) {
-      state.runs = state.runs.slice(0, RUNS_KEEP);
+      trimRunsKeepProgress(RUNS_KEEP);
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch (err) {
-    // Квота localStorage — режем историю и пробуем ещё раз
     try {
-      if (Array.isArray(state.runs)) state.runs = state.runs.slice(0, 20);
+      harvestClearedFromRuns();
+      if (Array.isArray(state.runs)) trimRunsKeepProgress(24);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch (err2) {
       console.warn("saveState failed", err2);
@@ -3167,7 +3351,7 @@ function themePerfectCount(themeId) {
   let n = 0;
   modes.forEach((mode) => {
     for (let lvl = 1; lvl <= 5; lvl += 1) {
-      if (state.runs.some((r) => (r.mode || MODE_BASIC) === mode && (r.level || 1) === lvl && r.correct === 10)) n += 1;
+      if (isCleared(mode, lvl)) n += 1;
     }
   });
   return n;
@@ -3188,6 +3372,9 @@ function saveTheme() {
 }
 
 function fastPerfect(modeId, levelId) {
+  const key = progressKey(modeId, levelId);
+  const c = state.cleared && state.cleared[key];
+  if (c && c.ms > 0 && c.ms < SECRET_SPEED_MS) return true;
   return state.runs.some((r) =>
     (r.mode || MODE_BASIC) === modeId
     && (r.level || 1) === levelId
@@ -3282,6 +3469,8 @@ function battleCfg(id = selectedLevel) {
 }
 
 function hasBattleWin(levelId, mode = selectedMode) {
+  const key = progressKey(mode, levelId);
+  if (state.cleared && state.cleared[key] && state.cleared[key].battleWin) return true;
   return state.runs.some((r) =>
     (r.mode || MODE_BASIC) === mode && Number(r.level) === Number(levelId) && r.battleWin
   );
@@ -3375,9 +3564,7 @@ function skillCooldownLeft(runObj = run) {
 }
 
 function hasPerfect(levelId) {
-  return state.runs.some((r) =>
-    (r.mode || MODE_BASIC) === selectedMode && (r.level || 1) === levelId && r.correct === 10
-  );
+  return isCleared(selectedMode, levelId);
 }
 
 function isLevelOpen(id) {
@@ -3410,7 +3597,7 @@ function maxOpenLevel() {
 }
 
 function modeProgress(modeId, levelId) {
-  return state.runs.some((r) => (r.mode || MODE_BASIC) === modeId && (r.level || 1) === levelId && r.correct === 10);
+  return isCleared(modeId, levelId);
 }
 
 function schoolGrade(correct, forgive = 0) {
@@ -4952,9 +5139,11 @@ function historyItemHtml(r, detailed) {
     : "";
   const answers = r.answers || [];
   const mistakes = answers.filter((a) => !a.ok).length;
-  const errLabel = answers.length
-    ? (mistakes ? `ошибок: ${mistakes}` : "без ошибок")
-    : "примеры не записаны";
+  const errLabel = r.restored
+    ? "из облака"
+    : answers.length
+      ? (mistakes ? `ошибок: ${mistakes}` : "без ошибок")
+      : "примеры не записаны";
   return `<li>
     <details class="hist-fold">
       <summary>
@@ -6156,10 +6345,26 @@ function finishRun({ timedOut = false } = {}) {
       op2: a.op2,
       text: a.text,
       answer: a.answer,
+      answerLabel: a.answerLabel,
+      multi: a.multi,
+      parts: a.parts,
       given: a.given,
       ok: a.ok,
     })),
   });
+  if (correct === 10 && !timedOut) {
+    markCleared(selectedMode, run.battle ? (run.battleId || run.level) : run.level, {
+      ms,
+      battleWin: !!(run.battle && run.battleWin),
+      at: run.startedIso,
+    });
+  } else if (run.battle && run.battleWin) {
+    markCleared(selectedMode, run.battleId || run.level, {
+      ms,
+      battleWin: true,
+      at: run.startedIso,
+    });
+  }
   if (run.level === SECRET_LEVEL && correct === 10) {
     grantSecretReward();
   }
@@ -8875,7 +9080,10 @@ els.boardRefreshBtn.addEventListener("click", () => {
 });
 if (els.syncNowBtn) {
   els.syncNowBtn.addEventListener("click", () => {
-    syncScoreQueue({ quiet: false }).then(() => renderHome());
+    Promise.all([
+      syncScoreQueue({ quiet: false }),
+      restoreProgressFromCloud({ quiet: false }),
+    ]).then(() => renderHome());
   });
 }
 els.nickSaveBtn.addEventListener("click", () => {
@@ -8887,6 +9095,9 @@ els.nickSaveBtn.addEventListener("click", () => {
   }
   showToasts([{ plain: true, icon: "✅", name: "Ник сохранён", desc: `Привет, ${nick}! Больше спрашивать не будем.` }]);
   renderHome();
+  restoreProgressFromCloud({ quiet: false }).then(({ restored }) => {
+    if (restored > 0) renderHome();
+  });
 });
 els.nickChangeBtn.addEventListener("click", () => {
   renderNickCard(true);
@@ -8974,6 +9185,12 @@ renderHome();
 queueLocalUnsyncedRuns();
 updateSyncHint();
 syncScoreQueue({ quiet: true });
+restoreProgressFromCloud({ quiet: true }).then(({ restored }) => {
+  if (restored > 0) {
+    try { unlockAchievements(); } catch { /* ignore */ }
+    renderHome();
+  }
+});
 refreshCoopStats();
 setInterval(() => {
   if (pendingScoreCount() > 0) syncScoreQueue({ quiet: true });
