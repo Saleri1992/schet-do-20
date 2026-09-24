@@ -764,23 +764,25 @@ const MODE_META = {
     id: MODE_ENG,
     name: "Английский",
     unlockText: "Лестница английского",
-    maxLevel: 5,
-    levelNames: ["Слова", "Цвета", "Школа", "Фразы", "Смешанно"],
+    maxLevel: 7,
+    levelNames: ["Слова", "Цвета", "Школа", "Фразы", "Смешанно", "Пиши слова", "Пиши ещё"],
     levelDescs: [
       "Животные и вещи: выбери перевод (1/2/3)",
       "Цвета и числа на английском",
       "Школьные слова",
       "Простые фразы",
-      "Всё вместе",
+      "Всё вместе (выбор)",
+      "Набери слово сам: кот → cat",
+      "Набери слова из школы и фраз",
     ],
-    themes: ["easy", "medium", "sharp", "hard", "exam"],
+    themes: ["easy", "medium", "sharp", "hard", "exam", "exam", "exam"],
   },
   [MODE_CODE]: {
     id: MODE_CODE,
     name: "ПК",
     unlockText: "Лестница ПК для игр",
-    maxLevel: 7,
-    levelNames: ["Папки", "Копии", "Память", "Сеть", "Клавиатура", "Обновления", "Смешанно"],
+    maxLevel: 9,
+    levelNames: ["Папки", "Копии", "Память", "Сеть", "Клавиатура", "Обновления", "Смешанно", "Терминал", "Команды"],
     levelDescs: [
       "Папки — как сундуки: куда класть игры и сохранения",
       "Копирование и установка игры",
@@ -789,8 +791,10 @@ const MODE_META = {
       "Клавиши и окна: Ctrl+C, Alt+Tab, диспетчер задач",
       "Обновления, браузер и защита ПК",
       "Всё вместе: викторина про игровой ПК",
+      "Зачем командная строка и что значат команды",
+      "Набери простые команды: dir, cd, cls…",
     ],
-    themes: ["easy", "medium", "sharp", "hard", "exam", "exam", "exam"],
+    themes: ["easy", "medium", "sharp", "hard", "exam", "exam", "exam", "exam", "exam"],
   },
 };
 
@@ -807,14 +811,14 @@ const THEME_META = {
     name: "Английский",
     icon: "🇬🇧",
     modes: [MODE_ENG],
-    blurb: "Слова и фразы для начальной школы",
+    blurb: "Слова, фразы и набор по-английски",
   },
   [THEME_CODE]: {
     id: THEME_CODE,
     name: "ПК",
     icon: "💻",
     modes: [MODE_CODE],
-    blurb: "Папки, память, сеть — чтобы ставить и играть",
+    blurb: "Папки, сеть, терминал — чтобы понимать ПК",
   },
   [THEME_SAFE]: {
     id: THEME_SAFE,
@@ -846,12 +850,12 @@ const PROFESSIONS = {
   [THEME_ENG]: [
     { id: "eng_reader", name: "Читатель", icon: "📖", need: 1, desc: "Первая 10/10 по английскому" },
     { id: "eng_talker", name: "Говорун", icon: "🗣️", need: 3, desc: "3 этапа английского на 10/10" },
-    { id: "eng_poly", name: "Полиглот", icon: "🌍", need: 5, desc: "Вся лестница английского" },
+    { id: "eng_poly", name: "Полиглот", icon: "🌍", need: 7, desc: "Вся лестница английского" },
   ],
   [THEME_CODE]: [
     { id: "code_hatch", name: "Юный геймер-ПК", icon: "🎮", need: 1, desc: "Первая 10/10 по ПК" },
     { id: "code_dev", name: "Мастер установки", icon: "📦", need: 4, desc: "4 этапа ПК на 10/10" },
-    { id: "code_arch", name: "Админ игрового ПК", icon: "🖥️", need: 7, desc: "Вся лестница ПК" },
+    { id: "code_arch", name: "Админ игрового ПК", icon: "🖥️", need: 9, desc: "Вся лестница ПК" },
   ],
   [THEME_SAFE]: [
     { id: "safe_scout", name: "Юный защитник", icon: "🛡️", need: 4, desc: "4 квеста безопасности" },
@@ -1233,7 +1237,9 @@ const ENG_LEVELS = {
   2: { id: 2, name: "Цвета", theme: "medium", coin: 2, eng: "colors", balloons: ["🔴", "🇬🇧", "🔵"], subtitle: "Цвета и простые числа." },
   3: { id: 3, name: "Школа", theme: "sharp", coin: 3, eng: "school", balloons: ["📚", "🇬🇧", "✏️"], subtitle: "Школьные слова." },
   4: { id: 4, name: "Фразы", theme: "hard", coin: 4, eng: "phrases", balloons: ["💬", "🇬🇧", "👋"], subtitle: "Короткие фразы." },
-  5: { id: 5, name: "Смешанно", theme: "exam", coin: 5, eng: "mixed", balloons: ["🎲", "🇬🇧", "🎲"], subtitle: "Всё вместе." },
+  5: { id: 5, name: "Смешанно", theme: "exam", coin: 5, eng: "mixed", balloons: ["🎲", "🇬🇧", "🎲"], subtitle: "Всё вместе — выбор ответа." },
+  6: { id: 6, name: "Пиши слова", theme: "exam", coin: 5, eng: "type_easy", typeText: true, balloons: ["⌨️", "🇬🇧", "✏️"], subtitle: "Набери английское слово сам: кот → cat." },
+  7: { id: 7, name: "Пиши ещё", theme: "exam", coin: 6, eng: "type_more", typeText: true, balloons: ["⌨️", "🇬🇧", "📝"], subtitle: "Школа и короткие фразы — набери правильно." },
 };
 
 const CODE_LEVELS = {
@@ -1244,6 +1250,8 @@ const CODE_LEVELS = {
   5: { id: 5, name: "Клавиатура", theme: "exam", coin: 4, code: "keys", intro: true, balloons: ["⌨️", "⌨️", "🪟"], subtitle: "Горячие клавиши: копировать, переключать окна, диспетчер задач." },
   6: { id: 6, name: "Обновления", theme: "exam", coin: 5, code: "updates", intro: true, balloons: ["🛡️", "🌐", "⬇️"], subtitle: "Обновления, браузер и защита ПК." },
   7: { id: 7, name: "Смешанно", theme: "exam", coin: 6, code: "mixed", intro: true, balloons: ["🎲", "💻", "🎮"], subtitle: "Вся викторина про игровой ПК." },
+  8: { id: 8, name: "Терминал", theme: "exam", coin: 6, code: "terminal", intro: true, balloons: ["⬛", "💻", ">_"], subtitle: "Командная строка: зачем она и что значат команды." },
+  9: { id: 9, name: "Команды", theme: "exam", coin: 7, code: "cmdtype", typeText: true, intro: true, balloons: ["⌨️", "⬛", ">_"], subtitle: "Набери команду сам: dir, cd, cls…" },
 };
 
 const CODE_INTRO_MS = 18 * 1000;
@@ -1326,6 +1334,28 @@ const CODE_LESSONS = {
       { ico: "🛡️", text: "Обновления и защита — не с рекламных сайтов." },
     ],
     tip: "Сейчас викторина по всем темам. Вспоминай игровые примеры!",
+  },
+  terminal: {
+    title: "Командная строка",
+    lead: "Терминал (cmd) — чёрное окно, где ПК слушает короткие команды текстом. Это простой «язык» компьютера.",
+    points: [
+      { ico: "🧒", text: "Зачем ребёнку: найти папку с сейвами, понять, куда делась игра, не бояться «чёрного окна»." },
+      { ico: "🎮", text: "Игры и моды иногда просят открыть терминал — лучше знать, что это безопасно, если команда знакомая." },
+      { ico: "📁", text: "dir — список файлов (directory). cd — перейти в папку (change directory)." },
+      { ico: "✨", text: "cls — очистить экран. mkdir — создать папку. help — справка. echo — напечатать текст." },
+    ],
+    tip: "Не вводи чужие длинные команды из интернета без взрослых. Сначала учись на dir, cd, cls.",
+  },
+  cmdtype: {
+    title: "Набери команду",
+    lead: "Сейчас ты сам напечатаешь простые команды Windows — как заклинания для проводника.",
+    points: [
+      { ico: ">_", text: "dir = покажи, что в папке. cd Games = зайди в папку Games." },
+      { ico: "⬆️", text: "cd .. = выйди на уровень выше (как «назад» в проводнике)." },
+      { ico: "🧹", text: "cls = clear screen — убери старый текст с экрана." },
+      { ico: "🆕", text: "mkdir Saves = make directory — создай папку Saves." },
+    ],
+    tip: "Пиши маленькими буквами. Пробел тоже важен: cd .. — два слова.",
   },
 };
 
@@ -1595,7 +1625,83 @@ const CODE_QUIZ = {
       hint: "Страх продаёт липовые «очистители».",
     },
   ],
+  terminal: [
+    {
+      q: "Командная строка (терминал) — это…",
+      choices: ["окно, где ПК выполняет текстовые команды", "только для рисования обоев", "кнопка питания"],
+      ok: "окно, где ПК выполняет текстовые команды",
+      hint: "Ты пишешь команду — компьютер делает дело.",
+    },
+    {
+      q: "Зачем ребёнку знать простые команды?",
+      choices: ["чтобы не бояться чёрного окна и находить папки с играми", "чтобы отключить всех друзей в сети", "чтобы удалить Windows ради скорости"],
+      ok: "чтобы не бояться чёрного окна и находить папки с играми",
+      hint: "Это инструмент, не «хакерская магия».",
+    },
+    {
+      q: "Команда dir (directory) значит…",
+      choices: ["показать список файлов и папок", "удалить все игры", "включить микрофон"],
+      ok: "показать список файлов и папок",
+      hint: "dir = «что здесь лежит?»",
+    },
+    {
+      q: "Команда cd (change directory)…",
+      choices: ["переходит в другую папку", "меняет цвет курсора", "скачивает Steam"],
+      ok: "переходит в другую папку",
+      hint: "cd Games = зайти в папку Games.",
+    },
+    {
+      q: "cd .. делает…",
+      choices: ["выход на уровень выше (как «назад»)", "создание новой папки", "очистку экрана"],
+      ok: "выход на уровень выше (как «назад»)",
+      hint: ".. = родительская папка.",
+    },
+    {
+      q: "cls (clear screen)…",
+      choices: ["очищает текст на экране терминала", "удаляет папку Saves", "меняет IP"],
+      ok: "очищает текст на экране терминала",
+      hint: "Экран чистый — команды те же.",
+    },
+    {
+      q: "mkdir (make directory)…",
+      choices: ["создаёт новую папку", "копирует файл", "выключает Wi‑Fi"],
+      ok: "создаёт новую папку",
+      hint: "mkdir Saves = новая папка Saves.",
+    },
+    {
+      q: "help в командной строке…",
+      choices: ["показывает справку по командам", "даёт бесплатные Robux", "открывает камеру"],
+      ok: "показывает справку по командам",
+      hint: "help = «помоги вспомнить».",
+    },
+    {
+      q: "echo hello обычно…",
+      choices: ["печатает текст hello на экране", "устанавливает игру Hello", "меняет пароль"],
+      ok: "печатает текст hello на экране",
+      hint: "echo = повтори / напечатай.",
+    },
+    {
+      q: "Чужую длинную команду из чата…",
+      choices: ["не вводить без взрослых", "сразу запускать — так круче", "отправлять всем одноклассникам"],
+      ok: "не вводить без взрослых",
+      hint: "Сначала понятные короткие команды.",
+    },
+  ],
 };
+
+/** Простые команды Windows для набора и викторины. */
+const CLI_COMMANDS = [
+  { cmd: "dir", ru: "показать список файлов и папок", en: "directory — list files" },
+  { cmd: "cd", ru: "перейти в папку (change directory)", en: "change directory" },
+  { cmd: "cd ..", ru: "выйти на уровень выше", en: "go up one folder" },
+  { cmd: "cd games", ru: "зайти в папку games", en: "enter games folder" },
+  { cmd: "cls", ru: "очистить экран терминала", en: "clear screen" },
+  { cmd: "mkdir", ru: "создать новую папку", en: "make directory" },
+  { cmd: "mkdir saves", ru: "создать папку saves", en: "make folder saves" },
+  { cmd: "help", ru: "показать справку", en: "show help" },
+  { cmd: "echo hello", ru: "напечатать слово hello", en: "print hello" },
+];
+
 
 
 const ENG_WORDS = {
@@ -3731,8 +3837,9 @@ function equippedBattleRelic() {
 function battleRoundsForMode(mode = selectedMode, battleId = selectedLevel) {
   let all;
   if (mode === MODE_UNITS) all = [1, 2, 3, 4];
-  else if (mode === MODE_CODE) all = [1, 2, 3, 4, 5, 6, 7];
-  else if (mode === MODE_MUL || mode === MODE_DIV || mode === MODE_ENG) all = [1, 2, 3, 4, 5];
+  else if (mode === MODE_CODE) all = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+  else if (mode === MODE_ENG) all = [1, 2, 3, 4, 5, 6, 7];
+  else if (mode === MODE_MUL || mode === MODE_DIV) all = [1, 2, 3, 4, 5];
   else all = [1, 2, 3, 4, 5];
   const frac = (battleCfg(battleId).roundFrac != null) ? battleCfg(battleId).roundFrac : 1;
   const n = Math.max(1, Math.ceil(all.length * frac));
@@ -3883,9 +3990,11 @@ function mapLayoutForMode(mode = selectedMode) {
     return [
       { id: 1, kind: "level", col: 2, row: 1 },
       { id: 2, kind: "level", col: 4, row: 1 },
-      { id: 3, kind: "level", col: 3, row: 2 },
-      { id: 4, kind: "level", col: 1, row: 3 },
-      { id: 5, kind: "level", col: 5, row: 3 },
+      { id: 3, kind: "level", col: 1, row: 2 },
+      { id: 4, kind: "level", col: 3, row: 2 },
+      { id: 5, kind: "level", col: 5, row: 2 },
+      { id: 6, kind: "level", col: 2, row: 3 },
+      { id: 7, kind: "level", col: 4, row: 3 },
     ];
   }
   if (mode === MODE_CODE) {
@@ -3897,6 +4006,8 @@ function mapLayoutForMode(mode = selectedMode) {
       { id: 5, kind: "level", col: 5, row: 2 },
       { id: 6, kind: "level", col: 2, row: 3 },
       { id: 7, kind: "level", col: 4, row: 3 },
+      { id: 8, kind: "level", col: 1, row: 4 },
+      { id: 9, kind: "level", col: 5, row: 4 },
     ];
   }
   if (mode === MODE_MUL || mode === MODE_DIV) {
@@ -4587,6 +4698,18 @@ function shuffleChoices(correct, pool) {
   return { choices: opts, answer: opts.indexOf(correct) + 1 };
 }
 
+function normalizeTypeAnswer(s) {
+  return String(s || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[!?.,]/g, "")
+    .replace(/\s+/g, " ");
+}
+
+function typeAnswersMatch(given, expected) {
+  return normalizeTypeAnswer(given) === normalizeTypeAnswer(expected);
+}
+
 function generateEngQuiz(bank) {
   const item = bank[rand(0, bank.length - 1)];
   const askEn = Math.random() < 0.55;
@@ -4616,9 +4739,30 @@ function generateEngQuiz(bank) {
   };
 }
 
+function generateEngType(bank) {
+  const item = bank[rand(0, bank.length - 1)];
+  return {
+    text: `${item.ico || ""}  ${item.ru}\n→ набери ENGLISH`,
+    hint: "Напиши английское слово (можно с клавиатуры)",
+    answer: item.en,
+    typeText: true,
+    a: item.ru,
+    b: item.en,
+    op: "EN",
+  };
+}
+
 function generateEngProblem(level) {
   const cfg = levelCfg(level, MODE_ENG);
   const kind = cfg.eng || "mixed";
+  if (kind === "type_easy") {
+    const bank = [...ENG_WORDS.animals, ...ENG_WORDS.colors];
+    return generateEngType(bank);
+  }
+  if (kind === "type_more") {
+    const bank = [...ENG_WORDS.school, ...ENG_WORDS.phrases.filter((p) => !/\s/.test(p.en) || p.en.split(" ").length <= 2)];
+    return generateEngType(bank);
+  }
   if (kind === "mixed") {
     const keys = Object.keys(ENG_WORDS);
     const bank = ENG_WORDS[keys[rand(0, keys.length - 1)]];
@@ -4629,7 +4773,7 @@ function generateEngProblem(level) {
 
 function pickCodeQuizItem(kind) {
   if (kind === "mixed") {
-    const keys = ["folders", "copy", "memory", "net", "keys", "updates"];
+    const keys = ["folders", "copy", "memory", "net", "keys", "updates", "terminal"];
     const k = keys[rand(0, keys.length - 1)];
     const bank = CODE_QUIZ[k];
     return { kind: k, item: bank[rand(0, bank.length - 1)] };
@@ -4638,9 +4782,25 @@ function pickCodeQuizItem(kind) {
   return { kind, item: bank[rand(0, bank.length - 1)] };
 }
 
+function generateCodeTypeCmd() {
+  const item = CLI_COMMANDS[rand(0, CLI_COMMANDS.length - 1)];
+  return {
+    text: `>_ ${item.ru}\n→ набери команду`,
+    hint: item.en || "Команда Windows cmd",
+    answer: item.cmd,
+    typeText: true,
+    a: item.ru,
+    b: item.cmd,
+    op: "CMD",
+  };
+}
+
 function generateCodeProblem(level) {
   const cfg = levelCfg(level, MODE_CODE);
   const kind = cfg.code || "mixed";
+  if (kind === "cmdtype" || cfg.typeText) {
+    return generateCodeTypeCmd();
+  }
   const { item } = pickCodeQuizItem(kind);
   const q = shuffleChoices(item.ok, item.choices);
   return {
@@ -4834,6 +4994,9 @@ function showScreen(name) {
   document.body.classList.toggle("screen-kingdom", name === "kingdom");
   if (name !== "safe") {
     document.body.classList.remove("safe-fail", "safe-win");
+  }
+  if (name !== "game") {
+    document.body.classList.remove("type-mode", "choice-mode");
   }
   if (name !== "kingdom" && kingdomTimerId) {
     clearInterval(kingdomTimerId);
@@ -6127,6 +6290,8 @@ function renderProblem() {
       document.body.classList.remove("choice-mode");
     }
   }
+  document.body.classList.toggle("type-mode", Boolean(item.typeText));
+  ensureLetterPad(item);
   setupAnswerBox(item);
   els.problemCard.classList.remove("pop");
   void els.problemCard.offsetWidth;
@@ -6134,10 +6299,43 @@ function renderProblem() {
   drawAnswer();
 }
 
+function ensureLetterPad(item) {
+  let pad = document.getElementById("letterPad");
+  if (!pad) {
+    pad = document.createElement("div");
+    pad.id = "letterPad";
+    pad.className = "letter-pad hidden";
+    const host = document.querySelector("#game .pad") || els.problemCard;
+    if (host && host.parentNode) host.parentNode.insertBefore(pad, host);
+    else if (els.problemCard) els.problemCard.appendChild(pad);
+  }
+  if (!item || !item.typeText) {
+    pad.classList.add("hidden");
+    pad.innerHTML = "";
+    return;
+  }
+  const rows = [
+    "qwertyuiop".split(""),
+    "asdfghjkl".split(""),
+    "zxcvbnm".split(""),
+  ];
+  pad.innerHTML = rows.map((row) =>
+    `<div class="letter-row">${row.map((ch) =>
+      `<button type="button" class="key letter-key" data-key="${ch}">${ch}</button>`
+    ).join("")}</div>`
+  ).join("")
+    + `<div class="letter-row">
+        <button type="button" class="key letter-key wide" data-key=" ">пробел</button>
+        <button type="button" class="key letter-key ghost" data-key="back">⌫</button>
+      </div>`;
+  pad.classList.remove("hidden");
+}
+
 function setupAnswerBox(item) {
   const box = els.answerBox;
   if (!box) return;
   if (item.multi && Array.isArray(item.parts)) {
+    box.classList.remove("type-text");
     box.classList.add("multi");
     box.innerHTML = item.parts.map((p, i) => `
       <button type="button" class="part-field" data-part="${i}" aria-label="${escapeHtml(p.unit)}">
@@ -6148,7 +6346,9 @@ function setupAnswerBox(item) {
     `).join("");
   } else {
     box.classList.remove("multi");
-    box.innerHTML = `<span class="placeholder" id="placeholder">?</span><span id="answerText"></span>`;
+    box.classList.toggle("type-text", Boolean(item.typeText));
+    const ph = item.typeText ? (item.op === "CMD" ? "команда…" : "слово…") : "?";
+    box.innerHTML = `<span class="placeholder" id="placeholder">${ph}</span><span id="answerText"></span>`;
     els.answerText = document.getElementById("answerText");
   }
 }
@@ -6199,6 +6399,19 @@ function pressKey(key) {
     }
     return;
   }
+  if (item && item.typeText) {
+    if (key === "back") {
+      run.input = run.input.slice(0, -1);
+      drawAnswer();
+      return;
+    }
+    if (key === " " || /^[a-zA-Z.]$/.test(key)) {
+      if (run.input.length >= 24) return;
+      run.input += key === " " ? " " : key.toLowerCase();
+      drawAnswer();
+    }
+    return;
+  }
   if (key === "back") {
     run.input = run.input.slice(0, -1);
     drawAnswer();
@@ -6241,6 +6454,16 @@ function captureCurrent(emptyMark) {
     run.answers.push({
       ...item,
       given,
+      ok,
+    });
+    return;
+  }
+  if (item.typeText) {
+    const typed = run.input.trim();
+    const ok = typed !== "" && typeAnswersMatch(typed, item.answer);
+    run.answers.push({
+      ...item,
+      given: typed === "" ? emptyMark : typed,
       ok,
     });
     return;
@@ -8834,9 +9057,9 @@ ACHIEVEMENTS.push(
     id: "eng_all",
     icon: "🌍",
     name: "Вся лестница EN",
-    desc: "10/10 на всех 5 этапах английского",
-    check: (s) => [1, 2, 3, 4, 5].every((lvl) => s.runs.some((r) => r.mode === MODE_ENG && (r.level || 1) === lvl && r.correct === 10)),
-    progress: (s) => ({ current: [1, 2, 3, 4, 5].filter((lvl) => s.runs.some((r) => r.mode === MODE_ENG && (r.level || 1) === lvl && r.correct === 10)).length, target: 5 }),
+    desc: "10/10 на всех 7 этапах английского",
+    check: (s) => [1, 2, 3, 4, 5, 6, 7].every((lvl) => stateHasPerfect(s, MODE_ENG, lvl)),
+    progress: (s) => ({ current: [1, 2, 3, 4, 5, 6, 7].filter((lvl) => stateHasPerfect(s, MODE_ENG, lvl)).length, target: 7 }),
   },
   {
     id: "eng_poly",
@@ -8846,8 +9069,16 @@ ACHIEVEMENTS.push(
     check: () => professionUnlocked("eng_poly"),
     progress: () => {
       const p = professionFor(THEME_ENG);
-      return { current: Math.min(p.score, 5), target: 5 };
+      return { current: Math.min(p.score, 7), target: 7 };
     },
+  },
+  {
+    id: "eng_type",
+    icon: "⌨️",
+    name: "Печатная машинка",
+    desc: "10/10 на этапе «Пиши слова»",
+    check: (s) => stateHasPerfect(s, MODE_ENG, 6),
+    progress: (s) => ({ current: stateHasPerfect(s, MODE_ENG, 6) ? 10 : 0, target: 10 }),
   },
   {
     id: "code_open",
@@ -8885,9 +9116,25 @@ ACHIEVEMENTS.push(
     id: "code_all",
     icon: "🖥️",
     name: "Вся лестница ПК",
-    desc: "10/10 на всех 7 этапах ПК",
-    check: (s) => [1, 2, 3, 4, 5, 6, 7].every((lvl) => stateHasPerfect(s, MODE_CODE, lvl)),
-    progress: (s) => ({ current: [1, 2, 3, 4, 5, 6, 7].filter((lvl) => stateHasPerfect(s, MODE_CODE, lvl)).length, target: 7 }),
+    desc: "10/10 на всех 9 этапах ПК",
+    check: (s) => [1, 2, 3, 4, 5, 6, 7, 8, 9].every((lvl) => stateHasPerfect(s, MODE_CODE, lvl)),
+    progress: (s) => ({ current: [1, 2, 3, 4, 5, 6, 7, 8, 9].filter((lvl) => stateHasPerfect(s, MODE_CODE, lvl)).length, target: 9 }),
+  },
+  {
+    id: "code_terminal",
+    icon: "⬛",
+    name: "Терминал открыт",
+    desc: "10/10 на этапе «Терминал»",
+    check: (s) => stateHasPerfect(s, MODE_CODE, 8),
+    progress: (s) => ({ current: stateHasPerfect(s, MODE_CODE, 8) ? 10 : 0, target: 10 }),
+  },
+  {
+    id: "code_cmdtype",
+    icon: ">_",
+    name: "Юный админ",
+    desc: "10/10 на этапе «Команды»",
+    check: (s) => stateHasPerfect(s, MODE_CODE, 9),
+    progress: (s) => ({ current: stateHasPerfect(s, MODE_CODE, 9) ? 10 : 0, target: 10 }),
   },
   {
     id: "code_arch",
@@ -8897,17 +9144,7 @@ ACHIEVEMENTS.push(
     check: () => professionUnlocked("code_arch"),
     progress: () => {
       const p = professionFor(THEME_CODE);
-      return { current: Math.min(p.score, 5), target: 5 };
-    },
-  },
-  {
-    id: "math_arch",
-    icon: "🧙",
-    name: "Архимаг математики",
-    desc: "Получи профессию «Архимаг математики»",
-    check: () => professionUnlocked("math_arch"),
-    progress: () => {
-      const p = professionFor(THEME_MATH);
+      return { current: Math.min(p.score, 9), target: 9 };
       return { current: Math.min(p.score, 18), target: 18 };
     },
   },
@@ -9431,7 +9668,26 @@ document.addEventListener("keydown", (e) => {
     pressKey("back");
     return;
   }
+  const item = run && run.items && run.items[run.index];
+  if (item && item.typeText) {
+    if (e.key === " ") {
+      e.preventDefault();
+      pressKey(" ");
+      return;
+    }
+    if (/^[a-zA-Z.]$/.test(e.key)) {
+      e.preventDefault();
+      pressKey(e.key);
+      return;
+    }
+  }
   if (/^\d$/.test(e.key)) pressKey(e.key);
+});
+
+document.addEventListener("click", (e) => {
+  const letter = e.target.closest("#letterPad [data-key]");
+  if (!letter || !run || run.done) return;
+  pressKey(letter.dataset.key);
 });
 
 window.addEventListener("resize", () => {

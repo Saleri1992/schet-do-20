@@ -2866,6 +2866,50 @@ body[data-theme="exam"] .hist-level.l5 { background: #e8b84a; color: #1a2332; }
 .answer-box .placeholder { opacity: 0.35; }
 .answer-box.has-value .placeholder { display: none; }
 
+.answer-box.type-text {
+  font-family: "Press Start 2P", monospace;
+  font-size: clamp(16px, 4.5vw, 22px);
+  letter-spacing: 0.04em;
+  border-style: solid;
+  border-color: #4ecdc4;
+}
+body.type-mode .pad .key:not(.next):not([data-key="back"]) {
+  display: none;
+}
+body.type-mode .pad {
+  grid-template-columns: 1fr 1.2fr;
+  max-width: 280px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.letter-pad {
+  display: grid;
+  gap: 5px;
+  margin: 0 0 8px;
+  flex-shrink: 0;
+}
+.letter-pad.hidden { display: none !important; }
+.letter-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+}
+.letter-key {
+  min-width: 28px;
+  min-height: 36px;
+  padding: 0 6px;
+  font-size: 14px;
+  text-transform: lowercase;
+}
+.letter-key.wide {
+  min-width: 120px;
+  flex: 1 1 120px;
+}
+@media (max-width: 420px) {
+  .letter-key { min-width: 24px; min-height: 32px; font-size: 12px; }
+}
+
 .answer-box.multi {
   gap: 8px;
   padding: 6px 8px;
