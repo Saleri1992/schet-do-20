@@ -2866,6 +2866,41 @@ body[data-theme="exam"] .hist-level.l5 { background: #e8b84a; color: #1a2332; }
 .answer-box .placeholder { opacity: 0.35; }
 .answer-box.has-value .placeholder { display: none; }
 
+.answer-box.multi {
+  gap: 8px;
+  padding: 6px 8px;
+  flex-wrap: wrap;
+}
+.answer-box.multi .part-field {
+  flex: 1 1 90px;
+  min-width: 88px;
+  min-height: 48px;
+  border: 3px solid var(--track);
+  border-radius: 14px;
+  background: #fff;
+  font: inherit;
+  font-weight: 900;
+  font-size: clamp(22px, 6vw, 30px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  color: var(--ink);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.08);
+}
+.answer-box.multi .part-field.active {
+  border-color: #4ecdc4;
+  box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.35);
+}
+.answer-box.multi .part-field.filled .part-ph { display: none; }
+.answer-box.multi .part-ph { opacity: 0.35; }
+.answer-box.multi .part-unit {
+  font-size: 0.55em;
+  opacity: 0.7;
+  font-weight: 800;
+}
+
 .pad {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

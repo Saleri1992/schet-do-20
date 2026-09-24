@@ -433,7 +433,7 @@ const UNIT_LEVELS = {
     convert: "compound10",
     introKind: "compound10",
     balloons: ["📏", "📐", "📏"],
-    subtitle: "Составные: 4 дм 1 см = ? см. Только ×10 (см↔мм, дм↔см, м↔дм). Без дробей.",
+    subtitle: "Составные и простые ×10. Обратно: 45 мм → 4 см и 5 мм (два поля). Без дробей.",
   },
   2: {
     id: 2,
@@ -625,8 +625,8 @@ const MODE_META = {
     maxLevel: 4,
     levelNames: ["Составные", "Метры", "Через единицы", "Сравнение"],
     levelDescs: [
-      "Составные, только ×10: 4 дм 1 см = ? см",
-      "Составные с метрами: 1 м = 100 см",
+      "Составные и простые ×10 + обратно (два поля)",
+      "Составные с метрами: 1 м = 100 см + обратно",
       "Простые переводы с напоминалкой: мм=см, см=дм, м=см",
       "Сравни длины: 1 / 2 / 0=равно",
     ],
@@ -3733,10 +3733,18 @@ function generateSecretChain() {
 
 function generateLengthConvert(kind = "compound10") {
   // Всегда целое число, без дробей.
-  // compound10 — только ×10 (соседние единицы), упор на составные.
-  // compound100 — составные с единственной «сотней» м↔см.
-  // simple — простые переводы через единицы (сложный этап).
+  // compound10 — ×10: составные + простые + обратные (два поля).
+  // compound100 — с м↔см + обратные.
+  // simple — простые переводы через единицы.
+  const mkMulti = (totalText, parts) => ({
+    text: totalText,
+    multi: true,
+    parts,
+    answerLabel: parts.map((p) => `${p.answer} ${p.unit}`).join(" "),
+  });
+
   const compound10 = [
+    // вперёд
     () => {
       const dm = rand(1, 9);
       const cm = rand(1, 9);
@@ -3752,6 +3760,38 @@ function generateLengthConvert(kind = "compound10") {
       const dm = rand(1, 9);
       return { text: `${m} м ${dm} дм = ? дм`, answer: m * 10 + dm };
     },
+    // обратно — два поля
+    () => {
+      const dm = rand(1, 9);
+      const cm = rand(1, 9);
+      return mkMulti(`${dm * 10 + cm} см = ? дм ? см`, [
+        { unit: "дм", answer: dm },
+        { unit: "см", answer: cm },
+      ]);
+    },
+    () => {
+      const cm = rand(1, 9);
+      const mm = rand(1, 9);
+      return mkMulti(`${cm * 10 + mm} мм = ? см ? мм`, [
+        { unit: "см", answer: cm },
+        { unit: "мм", answer: mm },
+      ]);
+    },
+    () => {
+      const m = rand(1, 5);
+      const dm = rand(1, 9);
+      return mkMulti(`${m * 10 + dm} дм = ? м ? дм`, [
+        { unit: "м", answer: m },
+        { unit: "дм", answer: dm },
+      ]);
+    },
+    // простые ×10
+    () => { const n = rand(1, 9); return { text: `${n} см = ? мм`, answer: n * 10 }; },
+    () => { const n = rand(1, 9); return { text: `${n * 10} мм = ? см`, answer: n }; },
+    () => { const n = rand(1, 9); return { text: `${n} дм = ? см`, answer: n * 10 }; },
+    () => { const n = rand(1, 9); return { text: `${n * 10} см = ? дм`, answer: n }; },
+    () => { const n = rand(1, 9); return { text: `${n} м = ? дм`, answer: n * 10 }; },
+    () => { const n = rand(1, 9); return { text: `${n * 10} дм = ? м`, answer: n }; },
   ];
   const compound100 = [
     () => {
@@ -3761,7 +3801,7 @@ function generateLengthConvert(kind = "compound10") {
     },
     () => {
       const m = rand(1, 3);
-      const dm = rand(0, 9);
+      const dm = rand(1, 9);
       return { text: `${m} м ${dm} дм = ? см`, answer: m * 100 + dm * 10 };
     },
     () => {
@@ -3770,18 +3810,48 @@ function generateLengthConvert(kind = "compound10") {
       const cm = rand(1, 9);
       return { text: `${m} м ${dm} дм ${cm} см = ? см`, answer: m * 100 + dm * 10 + cm };
     },
+    // обратно м↔см
+    () => {
+      const m = rand(1, 3);
+      const cm = rand(1, 99);
+      return mkMulti(`${m * 100 + cm} см = ? м ? см`, [
+        { unit: "м", answer: m },
+        { unit: "см", answer: cm },
+      ]);
+    },
+    () => {
+      const m = rand(1, 3);
+      const dm = rand(1, 9);
+      return mkMulti(`${m * 100 + dm * 10} см = ? м ? дм`, [
+        { unit: "м", answer: m },
+        { unit: "дм", answer: dm },
+      ]);
+    },
+    () => {
+      const m = rand(1, 2);
+      const dm = rand(0, 9);
+      const cm = rand(1, 9);
+      // три части: м дм см
+      return mkMulti(`${m * 100 + dm * 10 + cm} см = ? м ? дм ? см`, [
+        { unit: "м", answer: m },
+        { unit: "дм", answer: dm },
+        { unit: "см", answer: cm },
+      ]);
+    },
     () => { const n = rand(1, 5); return { text: `${n} м = ? см`, answer: n * 100 }; },
     () => { const n = rand(1, 5); return { text: `${n * 100} см = ? м`, answer: n }; },
-    // немного составных ×10 для разнообразия
     () => {
       const dm = rand(1, 9);
       const cm = rand(1, 9);
       return { text: `${dm} дм ${cm} см = ? см`, answer: dm * 10 + cm };
     },
     () => {
-      const m = rand(1, 5);
       const dm = rand(1, 9);
-      return { text: `${m} м ${dm} дм = ? дм`, answer: m * 10 + dm };
+      const cm = rand(1, 9);
+      return mkMulti(`${dm * 10 + cm} см = ? дм ? см`, [
+        { unit: "дм", answer: dm },
+        { unit: "см", answer: cm },
+      ]);
     },
   ];
   const simple = [
@@ -3791,9 +3861,25 @@ function generateLengthConvert(kind = "compound10") {
     () => { const n = rand(1, 9); return { text: `${n * 10} см = ? дм`, answer: n }; },
     () => { const n = rand(1, 9); return { text: `${n} м = ? дм`, answer: n * 10 }; },
     () => { const n = rand(1, 9); return { text: `${n * 10} дм = ? м`, answer: n }; },
-    // единственная сотня
     () => { const n = rand(1, 5); return { text: `${n} м = ? см`, answer: n * 100 }; },
     () => { const n = rand(1, 5); return { text: `${n * 100} см = ? м`, answer: n }; },
+    // составные обратно — тоже на сложном, чтобы не забывали
+    () => {
+      const cm = rand(1, 9);
+      const mm = rand(1, 9);
+      return mkMulti(`${cm * 10 + mm} мм = ? см ? мм`, [
+        { unit: "см", answer: cm },
+        { unit: "мм", answer: mm },
+      ]);
+    },
+    () => {
+      const dm = rand(1, 9);
+      const cm = rand(1, 9);
+      return mkMulti(`${dm * 10 + cm} см = ? дм ? см`, [
+        { unit: "дм", answer: dm },
+        { unit: "см", answer: cm },
+      ]);
+    },
   ];
   const pool = kind === "simple" ? simple
     : kind === "compound100" ? compound100
@@ -4831,10 +4917,15 @@ function answersReviewHtml(answers) {
   return `<ul class="hist-ex">${answers.map((a, i) => {
     const cls = a.ok ? "ok" : "bad";
     const kid = a.given == null || a.given === "" ? "—" : a.given;
-    const mark = a.ok ? "верно" : `нужно ${a.answer}`;
-    const expr = a.text
-      ? escapeHtml(a.text.replace("?", String(kid))).replace(/\n/g, "<br>")
-      : `${a.a} ${a.op} ${a.b} = ${kid}`;
+    const need = a.multi
+      ? (a.answerLabel || (a.parts || []).map((p) => `${p.answer} ${p.unit}`).join(" "))
+      : a.answer;
+    const mark = a.ok ? "верно" : `нужно ${need}`;
+    const expr = a.multi
+      ? `${escapeHtml((a.text || "").split("=")[0].trim())} = ${escapeHtml(String(kid))}`
+      : a.text
+        ? escapeHtml(a.text.replace("?", String(kid))).replace(/\n/g, "<br>")
+        : `${a.a} ${a.op} ${a.b} = ${kid}`;
     return `<li class="${cls}">
       <span class="n">${i + 1}.</span>
       <span class="ex">${expr}</span>
@@ -5186,7 +5277,7 @@ function showUnitsIntro(level = selectedLevel) {
             <li>1 дм = 10 см</li>
             <li>1 м = 10 дм</li>
           </ul>
-          <p class="units-note">Пример: 4 дм 1 см = 41 см. Без сотен и без дробей.</p>`;
+          <p class="units-note">Пример: 4 дм 1 см = 41 см. И обратно: 41 см → 4 дм и 1 см (два поля).</p>`;
       }
     }
     let left = Math.round(UNITS_INTRO_MS / 1000);
@@ -5523,11 +5614,20 @@ function useSkill(id) {
     if (!item) return;
     run.skillReadyAt = Date.now() + skill.cooldownMs;
     run.skillHintUsedOn = run.index;
-    run.input = String(item.answer);
+    if (item.multi && Array.isArray(item.parts)) {
+      run.inputs = item.parts.map((p) => String(p.answer));
+      run.field = item.parts.length - 1;
+      run.input = "";
+    } else {
+      run.input = String(item.answer);
+      run.inputs = null;
+    }
     drawAnswer();
     const choiceHint = item.choice && item.choices
       ? `Вариант ${item.answer}: ${item.choices[item.answer - 1]}`
-      : `Правильный ответ: ${item.answer}`;
+      : item.multi
+        ? `Правильный ответ: ${item.answerLabel || item.parts.map((p) => `${p.answer} ${p.unit}`).join(" ")}`
+        : `Правильный ответ: ${item.answer}`;
     showToasts([{ plain: true, icon: skill.icon, name: skill.name, desc: choiceHint }]);
   } else if (id === "fireBolt" && run.battle) {
     run.skillReadyAt = Date.now() + skill.cooldownMs;
@@ -5558,12 +5658,19 @@ function stopTimer() {
 function renderProblem() {
   const item = run.items[run.index];
   run.input = "";
+  if (item.multi && Array.isArray(item.parts)) {
+    run.inputs = item.parts.map(() => "");
+    run.field = 0;
+  } else {
+    run.inputs = null;
+    run.field = 0;
+  }
   els.stepNow.textContent = String(run.index + 1);
   els.progressFill.style.width = `${((run.index + 1) / TOTAL) * 100}%`;
   const rawText = item.text || `${item.a}  ${item.op}  ${item.b}  =  ?`;
   els.problem.innerHTML = escapeHtml(rawText).replace(/\n/g, "<br>");
   els.problem.classList.toggle("units-cmp", Boolean(item.compare) || Boolean(item.choice) || (item.text && item.text.includes("\n")));
-  els.problem.classList.toggle("mul-long", Boolean(item.hint) || (item.text && item.text.length > 22) || Boolean(item.choice));
+  els.problem.classList.toggle("mul-long", Boolean(item.hint) || (item.text && item.text.length > 22) || Boolean(item.choice) || Boolean(item.multi));
   let hintEl = document.getElementById("mulHint");
   if (!hintEl && els.problemCard) {
     hintEl = document.createElement("div");
@@ -5600,17 +5707,51 @@ function renderProblem() {
       document.body.classList.remove("choice-mode");
     }
   }
+  setupAnswerBox(item);
   els.problemCard.classList.remove("pop");
   void els.problemCard.offsetWidth;
   els.problemCard.classList.add("pop");
   drawAnswer();
 }
 
+function setupAnswerBox(item) {
+  const box = els.answerBox;
+  if (!box) return;
+  if (item.multi && Array.isArray(item.parts)) {
+    box.classList.add("multi");
+    box.innerHTML = item.parts.map((p, i) => `
+      <button type="button" class="part-field" data-part="${i}" aria-label="${escapeHtml(p.unit)}">
+        <span class="part-val" data-part-val="${i}"></span>
+        <span class="part-ph">?</span>
+        <span class="part-unit">${escapeHtml(p.unit)}</span>
+      </button>
+    `).join("");
+  } else {
+    box.classList.remove("multi");
+    box.innerHTML = `<span class="placeholder" id="placeholder">?</span><span id="answerText"></span>`;
+    els.answerText = document.getElementById("answerText");
+  }
+}
+
 function drawAnswer() {
+  const item = run && run.items && run.items[run.index];
+  if (item && item.multi && Array.isArray(run.inputs)) {
+    els.answerBox.classList.toggle("has-value", run.inputs.some((v) => v.length > 0));
+    item.parts.forEach((p, i) => {
+      const valEl = els.answerBox.querySelector(`[data-part-val="${i}"]`);
+      const field = els.answerBox.querySelector(`[data-part="${i}"]`);
+      const v = run.inputs[i] || "";
+      if (valEl) valEl.textContent = v;
+      if (field) {
+        field.classList.toggle("filled", v.length > 0);
+        field.classList.toggle("active", run.field === i);
+      }
+    });
+    return;
+  }
   const has = run.input.length > 0;
   els.answerBox.classList.toggle("has-value", has);
-  els.answerText.textContent = run.input;
-  const item = run && run.items && run.items[run.index];
+  if (els.answerText) els.answerText.textContent = run.input;
   if (item && item.choice) {
     document.querySelectorAll("#choicePad .choice-btn").forEach((b) => {
       b.classList.toggle("picked", has && b.dataset.choice === run.input);
@@ -5620,12 +5761,29 @@ function drawAnswer() {
 
 function pressKey(key) {
   if (!run || run.done) return;
+  const item = run.items[run.index];
+  if (item && item.multi && Array.isArray(run.inputs)) {
+    const i = run.field || 0;
+    if (key === "back") {
+      if ((run.inputs[i] || "").length > 0) {
+        run.inputs[i] = run.inputs[i].slice(0, -1);
+      } else if (i > 0) {
+        run.field = i - 1;
+      }
+      drawAnswer();
+      return;
+    }
+    if (/^\d$/.test(key) && (run.inputs[i] || "").length < 3) {
+      run.inputs[i] = (run.inputs[i] || "") + key;
+      drawAnswer();
+    }
+    return;
+  }
   if (key === "back") {
     run.input = run.input.slice(0, -1);
     drawAnswer();
     return;
   }
-  const item = run.items[run.index];
   if (item && item.choice) {
     if (/^[123]$/.test(key)) {
       run.input = key;
@@ -5639,8 +5797,34 @@ function pressKey(key) {
   }
 }
 
+function formatMultiGiven(item, inputs) {
+  if (!item.parts) return "";
+  return item.parts.map((p, i) => {
+    const v = (inputs && inputs[i]) || "";
+    return v === "" ? `? ${p.unit}` : `${v} ${p.unit}`;
+  }).join(" ");
+}
+
 function captureCurrent(emptyMark) {
   const item = run.items[run.index];
+  if (item.multi && Array.isArray(item.parts)) {
+    const inputs = (run.inputs || []).map((v) => (v == null ? "" : String(v).trim()));
+    const ok = item.parts.every((p, i) => {
+      const typed = inputs[i];
+      if (typed === "") return false;
+      const n = Number(typed);
+      return Number.isFinite(n) && n === p.answer;
+    });
+    const given = inputs.every((v) => v === "")
+      ? emptyMark
+      : formatMultiGiven(item, inputs);
+    run.answers.push({
+      ...item,
+      given,
+      ok,
+    });
+    return;
+  }
   const typed = run.input.trim();
   const given = typed === "" ? null : Number(typed);
   const ok = given !== null && Number.isFinite(given) && given === item.answer;
@@ -5821,6 +6005,19 @@ function finishBattleRoundTimeout() {
 
 function goNext() {
   if (!run || run.done) return;
+  const item = run.items[run.index];
+  if (item && item.multi && Array.isArray(item.parts) && Array.isArray(run.inputs)) {
+    const i = run.field || 0;
+    if (
+      i < item.parts.length - 1
+      && (run.inputs[i] || "") !== ""
+      && !(run.inputs[i + 1] || "")
+    ) {
+      run.field = i + 1;
+      drawAnswer();
+      return;
+    }
+  }
   captureCurrent("—");
   const last = run.answers[run.answers.length - 1];
   if (run.battle) {
@@ -8652,6 +8849,14 @@ els.homeBtn.addEventListener("click", () => {
   renderHome();
 });
 els.nextBtn.addEventListener("click", goNext);
+els.answerBox.addEventListener("click", (e) => {
+  const field = e.target.closest(".part-field");
+  if (!field || !run || run.done) return;
+  const i = Number(field.dataset.part);
+  if (!Number.isFinite(i)) return;
+  run.field = i;
+  drawAnswer();
+});
 els.openGalleryBtn.addEventListener("click", () => {
   renderGallery();
   showScreen("gallery");
