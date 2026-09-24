@@ -166,10 +166,11 @@ async function insertScore(row) {
   });
   if (!res.ok) {
     const text = await res.text();
-    if (/skin|hat|mode|column/i.test(text)) {
-      delete payload.skin;
-      delete payload.hat;
-      delete payload.mode;
+    // Только если колонки нет в схеме — убираем поля. RLS/политику не маскируем.
+    if (/column .* does not exist|Could not find the/i.test(text) && /skin|hat|mode/i.test(text)) {
+      if (/skin/i.test(text)) delete payload.skin;
+      if (/hat/i.test(text)) delete payload.hat;
+      if (/mode/i.test(text)) delete payload.mode;
       res = await fetch(`${SUPABASE_URL}/rest/v1/scores`, {
         method: "POST",
         headers: supabaseHeaders({
