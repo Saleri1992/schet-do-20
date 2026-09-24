@@ -430,8 +430,8 @@ const UNIT_LEVELS = {
     coin: 3,
     limit: null,
     units: "convert",
-    balloons: ["📏", "🧪", "📏"],
-    subtitle: "Переведи в соседние единицы. Длину и объём не смешиваем.",
+    balloons: ["📏", "📐", "📏"],
+    subtitle: "Переведи длину: см↔мм, дм↔см, м↔дм и составные (4 дм 1 см = ? см). Без дробей.",
   },
   2: {
     id: 2,
@@ -441,7 +441,7 @@ const UNIT_LEVELS = {
     limit: null,
     units: "compare",
     balloons: ["⚖️", "📏", "⚖️"],
-    subtitle: "Что больше? Ответ: 1, 2 или 0 если равно. Сначала таблица мер 10 сек.",
+    subtitle: "Что больше по длине? Ответ: 1, 2 или 0 если равно. Сначала таблица 10 сек.",
   },
 };
 
@@ -598,8 +598,8 @@ const MODE_META = {
     maxLevel: 2,
     levelNames: ["Конвертация", "Сравнение"],
     levelDescs: [
-      "см↔мм, дм↔см, дм↔м, см↔м, л↔мл — только ближайшие",
-      "Сравни длины или объёмы: 1 / 2 / 0=равно",
+      "см↔мм, дм↔см, м↔дм, м↔см + составные: 4 дм 1 см = ? см (без дробей)",
+      "Сравни длины: 1 / 2 / 0=равно",
     ],
     themes: ["units", "unitsCmp"],
   },
@@ -3700,7 +3700,8 @@ function generateSecretChain() {
 }
 
 function generateLengthConvert() {
-  const kinds = [
+  // Простые соседние переводы + составные (всегда целое число, без дробей).
+  const simple = [
     () => { const n = rand(1, 9); return { text: `${n} см = ? мм`, answer: n * 10 }; },
     () => { const n = rand(1, 9); return { text: `${n * 10} мм = ? см`, answer: n }; },
     () => { const n = rand(1, 9); return { text: `${n} дм = ? см`, answer: n * 10 }; },
@@ -3709,16 +3710,62 @@ function generateLengthConvert() {
     () => { const n = rand(1, 9); return { text: `${n * 10} дм = ? м`, answer: n }; },
     () => { const n = rand(1, 5); return { text: `${n} м = ? см`, answer: n * 100 }; },
     () => { const n = rand(1, 5); return { text: `${n * 100} см = ? м`, answer: n }; },
+    () => { const n = rand(1, 9); return { text: `${n} дм = ? мм`, answer: n * 100 }; },
+    () => { const n = rand(1, 9); return { text: `${n * 100} мм = ? дм`, answer: n }; },
   ];
-  return kinds[rand(0, kinds.length - 1)]();
-}
-
-function generateVolumeConvert() {
-  const kinds = [
-    () => { const n = rand(1, 5); return { text: `${n} л = ? мл`, answer: n * 1000 }; },
-    () => { const n = rand(1, 5); return { text: `${n * 1000} мл = ? л`, answer: n }; },
+  const compound = [
+    // дм + см → см
+    () => {
+      const dm = rand(1, 9);
+      const cm = rand(1, 9);
+      return { text: `${dm} дм ${cm} см = ? см`, answer: dm * 10 + cm };
+    },
+    // дм + см → мм
+    () => {
+      const dm = rand(1, 5);
+      const cm = rand(0, 9);
+      return { text: `${dm} дм ${cm} см = ? мм`, answer: dm * 100 + cm * 10 };
+    },
+    // см + мм → мм
+    () => {
+      const cm = rand(1, 9);
+      const mm = rand(1, 9);
+      return { text: `${cm} см ${mm} мм = ? мм`, answer: cm * 10 + mm };
+    },
+    // м + дм → дм
+    () => {
+      const m = rand(1, 5);
+      const dm = rand(1, 9);
+      return { text: `${m} м ${dm} дм = ? дм`, answer: m * 10 + dm };
+    },
+    // м + дм → см
+    () => {
+      const m = rand(1, 3);
+      const dm = rand(0, 9);
+      return { text: `${m} м ${dm} дм = ? см`, answer: m * 100 + dm * 10 };
+    },
+    // м + см → см
+    () => {
+      const m = rand(1, 3);
+      const cm = rand(1, 99);
+      return { text: `${m} м ${cm} см = ? см`, answer: m * 100 + cm };
+    },
+    // м + дм + см → см (чуть сложнее)
+    () => {
+      const m = rand(1, 2);
+      const dm = rand(0, 9);
+      const cm = rand(1, 9);
+      return { text: `${m} м ${dm} дм ${cm} см = ? см`, answer: m * 100 + dm * 10 + cm };
+    },
+    // дм + мм → мм
+    () => {
+      const dm = rand(1, 4);
+      const mm = rand(1, 9);
+      return { text: `${dm} дм ${mm} мм = ? мм`, answer: dm * 100 + mm };
+    },
   ];
-  return kinds[rand(0, kinds.length - 1)]();
+  const pool = Math.random() < 0.45 ? simple : compound;
+  return pool[rand(0, pool.length - 1)]();
 }
 
 function toMm(parts) {
@@ -3780,46 +3827,12 @@ function generateLengthCompare() {
   };
 }
 
-function generateVolumeCompare() {
-  const mk = () => (Math.random() < 0.55
-    ? { l: rand(1, 3), ml: rand(0, 9) * 100 }
-    : { ml: rand(1, 25) * 100 });
-  const fmt = (p) => {
-    const bits = [];
-    if (p.l) bits.push(`${p.l} л`);
-    if (p.ml) bits.push(`${p.ml} мл`);
-    return bits.join(" ") || "0 мл";
-  };
-  const val = (p) => (p.l || 0) * 1000 + (p.ml || 0);
-  let left = mk();
-  let right = mk();
-  if (Math.random() < 0.3) {
-    const pairs = [
-      [{ l: 1 }, { ml: 1000 }],
-      [{ l: 1 }, { ml: 900 }],
-      [{ ml: 1500 }, { l: 1, ml: 500 }],
-      [{ l: 2 }, { ml: 2000 }],
-    ];
-    const pick = pairs[rand(0, pairs.length - 1)];
-    left = pick[0];
-    right = pick[1];
-  }
-  const lv = val(left);
-  const rv = val(right);
-  const answer = lv === rv ? 0 : lv > rv ? 1 : 2;
-  return {
-    text: `Что больше?\n1) ${fmt(left)}\n2) ${fmt(right)}\n(0 = равно)`,
-    answer,
-    compare: true,
-  };
+function generateUnitsConvert() {
+  return generateLengthConvert();
 }
 
-function generateUnitsConvert(kind) {
-  return kind === "volume" ? generateVolumeConvert() : generateLengthConvert();
-}
-
-function generateUnitsCompare(kind) {
-  return kind === "volume" ? generateVolumeCompare() : generateLengthCompare();
+function generateUnitsCompare() {
+  return generateLengthCompare();
 }
 
 function generateMedium() {
@@ -4108,9 +4121,8 @@ function generateCodeProblem(level) {
 function generateProblem(level) {
   if (selectedMode === MODE_UNITS) {
     const cfg = levelCfg(level);
-    const kind = Math.random() < 0.72 ? "length" : "volume";
-    if (cfg.units === "compare") return generateUnitsCompare(kind);
-    return generateUnitsConvert(kind);
+    if (cfg.units === "compare") return generateUnitsCompare();
+    return generateUnitsConvert();
   }
   if (selectedMode === MODE_MUL) return generateMulProblem(level);
   if (selectedMode === MODE_DIV) return generateDivProblem(level);
@@ -4163,12 +4175,11 @@ function generateSharpRun() {
 function generateRun(level) {
   if (selectedMode === MODE_UNITS) {
     const cfg = levelCfg(level);
-    const kind = Math.random() < 0.7 ? "length" : "volume";
     const items = [];
     const seen = new Set();
     let guard = 0;
     while (items.length < TOTAL && guard < 160) {
-      const p = cfg.units === "compare" ? generateUnitsCompare(kind) : generateUnitsConvert(kind);
+      const p = cfg.units === "compare" ? generateUnitsCompare() : generateUnitsConvert();
       if (!seen.has(p.text)) {
         seen.add(p.text);
         items.push(p);
@@ -4176,7 +4187,7 @@ function generateRun(level) {
       guard += 1;
     }
     while (items.length < TOTAL) {
-      items.push(cfg.units === "compare" ? generateUnitsCompare(kind) : generateUnitsConvert(kind));
+      items.push(cfg.units === "compare" ? generateUnitsCompare() : generateUnitsConvert());
     }
     return items;
   }
