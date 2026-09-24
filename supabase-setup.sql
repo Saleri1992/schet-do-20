@@ -27,14 +27,14 @@ create policy "read scores"
   using (true);
 
 -- Топ: только идеальные 10/10 без таймаута.
--- Уровни 1–6 (включая секрет), режимы всех академий.
+-- Уровни 1–9 (лестницы + секрет + бои), режимы всех академий.
 create policy "insert scores"
   on scores for insert
   with check (
     char_length(trim(nick)) between 2 and 16
     and correct = 10
     and timed_out is not true
-    and level between 1 and 6
+    and level between 1 and 9
     and (
       mode is null
       or mode in (

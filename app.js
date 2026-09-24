@@ -779,16 +779,18 @@ const MODE_META = {
     id: MODE_CODE,
     name: "ПК",
     unlockText: "Лестница ПК для игр",
-    maxLevel: 5,
-    levelNames: ["Папки", "Копии", "Память", "Сеть", "Смешанно"],
+    maxLevel: 7,
+    levelNames: ["Папки", "Копии", "Память", "Сеть", "Клавиатура", "Обновления", "Смешанно"],
     levelDescs: [
       "Папки — как сундуки: куда класть игры и сохранения",
       "Копирование и установка игры",
       "Память и свободное место на диске",
       "Сеть и IP — как найти друга в онлайне",
+      "Клавиши и окна: Ctrl+C, Alt+Tab, диспетчер задач",
+      "Обновления, браузер и защита ПК",
       "Всё вместе: викторина про игровой ПК",
     ],
-    themes: ["easy", "medium", "sharp", "hard", "exam"],
+    themes: ["easy", "medium", "sharp", "hard", "exam", "exam", "exam"],
   },
 };
 
@@ -848,13 +850,13 @@ const PROFESSIONS = {
   ],
   [THEME_CODE]: [
     { id: "code_hatch", name: "Юный геймер-ПК", icon: "🎮", need: 1, desc: "Первая 10/10 по ПК" },
-    { id: "code_dev", name: "Мастер установки", icon: "📦", need: 3, desc: "3 этапа ПК на 10/10" },
-    { id: "code_arch", name: "Админ игрового ПК", icon: "🖥️", need: 5, desc: "Вся лестница ПК" },
+    { id: "code_dev", name: "Мастер установки", icon: "📦", need: 4, desc: "4 этапа ПК на 10/10" },
+    { id: "code_arch", name: "Админ игрового ПК", icon: "🖥️", need: 7, desc: "Вся лестница ПК" },
   ],
   [THEME_SAFE]: [
-    { id: "safe_scout", name: "Юный защитник", icon: "🛡️", need: 3, desc: "3 квеста безопасности" },
-    { id: "safe_guard", name: "Страж сети", icon: "🔐", need: 7, desc: "7 квестов безопасности" },
-    { id: "safe_hero", name: "Кибер-герой", icon: "🦸", need: 11, desc: "Все квесты безопасности" },
+    { id: "safe_scout", name: "Юный защитник", icon: "🛡️", need: 4, desc: "4 квеста безопасности" },
+    { id: "safe_guard", name: "Страж сети", icon: "🔐", need: 10, desc: "10 квестов безопасности" },
+    { id: "safe_hero", name: "Кибер-герой", icon: "🦸", need: 16, desc: "Все квесты безопасности" },
   ],
 };
 
@@ -1036,6 +1038,86 @@ const SAFE_SCENARIOS = [
     failStory: "В учебной истории на открытом Wi‑Fi могли бы перехватить вход в аккаунт — и забрать игру, почту или даже данные карты.",
     explain: "Это НЕ случилось по‑настоящему. Правильно: на открытом Wi‑Fi не входить в почту, банк, магазины и важные игры. Лучше мобильный интернет родителей или подождать домашнюю сеть. Если очень надо — только с взрослыми и без ввода паролей «на всякий».",
   },
+  {
+    id: "qr_mystery",
+    ico: "📷",
+    title: "Странный QR‑код",
+    tag: "Сканы",
+    scene: "На остановке / в подъезде наклейка: «Бесплатный скин — сканируй QR!» Код кривой, сайт в подсказке незнакомый. Друзья уже достают камеру.",
+    choices: [
+      { text: "Сканировать сразу — вдруг реально скин", ok: false },
+      { text: "Не сканировать. QR с улицы = неизвестная ссылка, спросить взрослых", ok: true },
+      { text: "Сканировать и сразу ввести пароль от игры «для доставки скина»", ok: false },
+    ],
+    win: "Верно! QR — это просто ссылка. Незнакомый код = незнакомый сайт.",
+    failTitle: "ССЫЛКА ИЗ НАКЛЕЙКИ",
+    failStory: "В учебной истории QR открыл бы фишинговую страницу и мог бы украсть вход в аккаунт.",
+    explain: "Не по‑настоящему. Правильно: не сканируй случайные QR на улице и в лифтах. Нужна ссылка — только из официального приложения или с родителями.",
+  },
+  {
+    id: "cam_room",
+    ico: "🎥",
+    title: "Включи камеру",
+    tag: "Камера",
+    scene: "В игре / чате незнакомец пишет: «Включи камеру, покажи комнату и окно — проверю, что ты не бот». Потом просит подойти ближе к окну.",
+    choices: [
+      { text: "Включить камеру и показать комнату — иначе кикнут", ok: false },
+      { text: "Отказать / выйти. Камеру незнакомцам не включают, позвать взрослых", ok: true },
+      { text: "Показать школьную форму крупно и назвать класс", ok: false },
+    ],
+    win: "Правильно! Камера и вид из окна — кусок реальной жизни. Чужим это не показывают.",
+    failTitle: "ОКНО НА УЛИЦУ",
+    failStory: "В сценарии по камере могли бы понять район, этаж и привычки — это уже риск офлайн.",
+    explain: "Учебный пример. Правильно: камеру в чатах с незнакомцами не включать. Если просят — блок и расскажи родителям.",
+  },
+  {
+    id: "voice_mom",
+    ico: "🎙️",
+    title: "Голос «мамы» в сообщении",
+    tag: "Обман",
+    scene: "В мессенджере голосовое «от мамы»: срочный тон, просит купить код/карту или сказать код из смс «я на совещании, не звони». Голос похож, но сообщение странное и торопит.",
+    choices: [
+      { text: "Сразу купить код / продиктовать смс — голос же мамин", ok: false },
+      { text: "Позвонить маме самому / спросить лично. Голос можно подделать", ok: true },
+      { text: "Переслать голосовое одноклассникам «для помощи»", ok: false },
+    ],
+    win: "Умно! Голос и фото сейчас умеют подделывать. Срочность — красный флаг.",
+    failTitle: "ПОДДЕЛЬНЫЙ ГОЛОС",
+    failStory: "В учебной истории это был обман: «мама» оказалась мошенником, а код открыл бы доступ к аккаунту.",
+    explain: "Не случилось по‑настоящему. Правило: при странной просьбе о деньгах/кодах всегда перезвони родителю сами. Не верь только голосовому.",
+  },
+  {
+    id: "game_trade",
+    ico: "🔄",
+    title: "Обмен «редкого» скина",
+    tag: "Игры",
+    scene: "В игре пишут: «Дай логин на 5 минут — закину легендарный скин и верну». Или: «Переведи подарочную карту, верну вдвойне».",
+    choices: [
+      { text: "Отдать логин / карту — скин же редкий", ok: false },
+      { text: "Не отдавать. Логин и карты — только твои, чужим не дают", ok: true },
+      { text: "Попросить друга отдать свой логин вместо тебя", ok: false },
+    ],
+    win: "Супер! Настоящий обмен идёт внутри игры, без чужого логина и карт.",
+    failTitle: "АККАУНТ УШЁЛ",
+    failStory: "В примере «обменщик» забрал бы аккаунт, друзей и мог бы писать родителям от твоего имени.",
+    explain: "Урок, не факт. Правильно: никому не давать логин, пароль и подарочные карты. Сомневаешься — спроси взрослых.",
+  },
+  {
+    id: "fake_update",
+    ico: "⬇️",
+    title: "«Срочно обнови Windows»",
+    tag: "Обновления",
+    scene: "В браузере огромное окно: «Ваш ПК устарел! Скачай обновление ЗДЕСЬ» с кнопкой Download.exe. Настоящие обновления Windows обычно идут через параметры системы, не с рекламы.",
+    choices: [
+      { text: "Скачать файл с рекламы и запустить", ok: false },
+      { text: "Закрыть. Обновления — только через настройки ПК / с родителями", ok: true },
+      { text: "Отключить защиту и поставить «ускоритель» рядом", ok: false },
+    ],
+    win: "Да! Настоящие обновления не прыгают из рекламы на сайтах.",
+    failTitle: "ФАЙЛ С РЕКЛАМЫ",
+    failStory: "В учебной истории «обновление» оказалось вредоносом и могло испортить файлы или украсть пароли.",
+    explain: "Не по‑настоящему. Правильно: закрыть вкладку, ничего не качать с пугающей рекламы. Обновления — через «Параметры → Обновление Windows» вместе со взрослыми.",
+  },
 ];
 
 
@@ -1159,7 +1241,9 @@ const CODE_LEVELS = {
   2: { id: 2, name: "Копии", theme: "medium", coin: 2, code: "copy", intro: true, balloons: ["📋", "💿", "📦"], subtitle: "Копирование и установка игры." },
   3: { id: 3, name: "Память", theme: "sharp", coin: 3, code: "memory", intro: true, balloons: ["🧠", "💾", "📊"], subtitle: "Память и место на диске." },
   4: { id: 4, name: "Сеть", theme: "hard", coin: 4, code: "net", intro: true, balloons: ["🌐", "🏠", "🔢"], subtitle: "Сеть и IP — как найти друга в игре." },
-  5: { id: 5, name: "Смешанно", theme: "exam", coin: 5, code: "mixed", intro: true, balloons: ["🎲", "💻", "🎮"], subtitle: "Вся викторина про игровой ПК." },
+  5: { id: 5, name: "Клавиатура", theme: "exam", coin: 4, code: "keys", intro: true, balloons: ["⌨️", "⌨️", "🪟"], subtitle: "Горячие клавиши: копировать, переключать окна, диспетчер задач." },
+  6: { id: 6, name: "Обновления", theme: "exam", coin: 5, code: "updates", intro: true, balloons: ["🛡️", "🌐", "⬇️"], subtitle: "Обновления, браузер и защита ПК." },
+  7: { id: 7, name: "Смешанно", theme: "exam", coin: 6, code: "mixed", intro: true, balloons: ["🎲", "💻", "🎮"], subtitle: "Вся викторина про игровой ПК." },
 };
 
 const CODE_INTRO_MS = 18 * 1000;
@@ -1210,14 +1294,36 @@ const CODE_LESSONS = {
     ],
     tip: "IP не секретный пароль от аккаунта — это адрес. Пароль не показывай никому.",
   },
+  keys: {
+    title: "Клавиатура — пульт героя",
+    lead: "Горячие клавиши ускоряют игру с файлами и окнами — как быстрые слоты в RPG.",
+    points: [
+      { ico: "📋", text: "Ctrl+C — копировать, Ctrl+V — вставить. Как «дублировать лут»." },
+      { ico: "✂️", text: "Ctrl+X — вырезать (переместить), Ctrl+Z — отменить последний шаг." },
+      { ico: "🪟", text: "Alt+Tab — переключить окно: игра ↔ браузер ↔ папка." },
+      { ico: "📊", text: "Ctrl+Shift+Esc — диспетчер задач: кто ест память, если всё тормозит." },
+    ],
+    tip: "Не жми незнакомые сочетания в важных окнах — сначала спроси взрослых.",
+  },
+  updates: {
+    title: "Обновления и браузер",
+    lead: "ПК тоже «качает патчи»: обновления чинят дыры, браузер — дверь в интернет.",
+    points: [
+      { ico: "⬇️", text: "Обновления Windows — официальные «патчи» системы, не файлы с рекламы." },
+      { ico: "🌐", text: "Браузер (Chrome, Edge…) — программа, чтобы открывать сайты и магазины игр." },
+      { ico: "🛡️", text: "Антивирус и встроенная защита — щит. Не отключай «чтобы быстрее скачалось»." },
+      { ico: "🔒", text: "Замок https в адресной строке — сайт хотя бы шифрует дорогу. Но это не гарантия «хорошего» сайта." },
+    ],
+    tip: "Страшная реклама «СКАЧАЙ ОБНОВЛЕНИЕ.exe» — почти всегда обман. Обновления — из настроек ПК.",
+  },
   mixed: {
     title: "Всё вместе",
-    lead: "Папки + копии + память + сеть = умеешь ставить игры и играть с друзьями.",
+    lead: "Папки + копии + память + сеть + клавиши + обновления = уверенный игрок на ПК.",
     points: [
       { ico: "📁", text: "Папка — сундук для файлов игры." },
       { ico: "📦", text: "Установка — копирование файлов на диск." },
-      { ico: "💾", text: "Место на диске — влезет ли игра; ОЗУ — хватит ли «сейчас»." },
-      { ico: "🌐", text: "IP/сеть — как найти друга в онлайне." },
+      { ico: "⌨️", text: "Ctrl+C / Alt+Tab — быстрые действия." },
+      { ico: "🛡️", text: "Обновления и защита — не с рекламных сайтов." },
     ],
     tip: "Сейчас викторина по всем темам. Вспоминай игровые примеры!",
   },
@@ -1375,6 +1481,118 @@ const CODE_QUIZ = {
       choices: ["нет, пароль — секрет, IP — адрес", "да, это одно и то же", "только по понедельникам"],
       ok: "нет, пароль — секрет, IP — адрес",
       hint: "Пароль никому. IP — просто адрес.",
+    },
+    {
+      q: "Пинг в онлайн-игре — это грубо…",
+      choices: ["задержка сигнала по сети", "размер папки с модами", "цвет обоев"],
+      ok: "задержка сигнала по сети",
+      hint: "Высокий пинг = «письмо долго едет».",
+    },
+    {
+      q: "Роутер дома нужен, чтобы…",
+      choices: ["раздавать интернет устройствам", "увеличить вес сейва", "рисовать курсор"],
+      ok: "раздавать интернет устройствам",
+      hint: "Роутер = перекрёсток дорог сети.",
+    },
+  ],
+  keys: [
+    {
+      q: "Ctrl+C обычно значит…",
+      choices: ["скопировать", "выключить ПК", "удалить Windows"],
+      ok: "скопировать",
+      hint: "C = Copy.",
+    },
+    {
+      q: "Ctrl+V обычно значит…",
+      choices: ["вставить скопированное", "включить микрофон", "сменить IP"],
+      ok: "вставить скопированное",
+      hint: "V = вставить (paste).",
+    },
+    {
+      q: "Alt+Tab помогает…",
+      choices: ["переключаться между окнами", "увеличить ОЗУ", "создать папку"],
+      ok: "переключаться между окнами",
+      hint: "Быстрый прыжок: игра ↔ браузер.",
+    },
+    {
+      q: "Ctrl+Z чаще всего…",
+      choices: ["отменяет последнее действие", "включает авиарежим", "скачивает игру"],
+      ok: "отменяет последнее действие",
+      hint: "Undo — «отмена».",
+    },
+    {
+      q: "Диспетчер задач (Ctrl+Shift+Esc) полезен, когда…",
+      choices: ["ПК тормозит и нужно увидеть тяжёлые программы", "хочется новый скин", "надо сменить ник"],
+      ok: "ПК тормозит и нужно увидеть тяжёлые программы",
+      hint: "Показывает, кто ест память и процессор.",
+    },
+    {
+      q: "Ctrl+X делает…",
+      choices: ["вырезает (перемещает) выделенное", "создаёт скриншот неба", "чинит Wi‑Fi"],
+      ok: "вырезает (перемещает) выделенное",
+      hint: "Cut — убрать из старого места.",
+    },
+    {
+      q: "Win+D (клавиша Windows + D) часто…",
+      choices: ["сразу показывает рабочий стол", "удаляет все игры", "меняет пароль"],
+      ok: "сразу показывает рабочий стол",
+      hint: "D = Desktop.",
+    },
+    {
+      q: "Зачем учить горячие клавиши геймеру?",
+      choices: ["быстрее копировать сейвы и переключать окна", "чтобы пароль стал короче", "чтобы отключить обновления навсегда"],
+      ok: "быстрее копировать сейвы и переключать окна",
+      hint: "Скорость без лишних кликов.",
+    },
+  ],
+  updates: [
+    {
+      q: "Откуда лучше ставить обновления Windows?",
+      choices: ["из параметров системы / с родителями", "с мигающей рекламы на сайте", "из случайного чата"],
+      ok: "из параметров системы / с родителями",
+      hint: "Официальный путь ≠ баннер Download.exe.",
+    },
+    {
+      q: "Браузер — это…",
+      choices: ["программа для открытия сайтов", "вид оперативной памяти", "папка с модами"],
+      ok: "программа для открытия сайтов",
+      hint: "Chrome, Edge, Firefox — браузеры.",
+    },
+    {
+      q: "Зачем нужны обновления системы?",
+      choices: ["чинить дыры в защите и улучшать работу", "удалять все сохранения", "менять цвет курсора обязательно"],
+      ok: "чинить дыры в защите и улучшать работу",
+      hint: "Патчи = ремонт щита.",
+    },
+    {
+      q: "Страшное окно «СКАЧАЙ ОБНОВЛЕНИЕ.exe» на сайте — чаще…",
+      choices: ["обман, закрыть и ничего не качать", "единственный способ обновить ПК", "подарок от Microsoft"],
+      ok: "обман, закрыть и ничего не качать",
+      hint: "Реклама любит пугать.",
+    },
+    {
+      q: "Антивирус / защита Windows…",
+      choices: ["помогает ловить вредные программы", "ускоряет Wi‑Fi в два раза", "рисует обои"],
+      ok: "помогает ловить вредные программы",
+      hint: "Щит не отключают «для скорости».",
+    },
+    {
+      q: "Замочек https в адресной строке значит…",
+      choices: ["дорога к сайту шифруется, но сайт всё равно проверяй", "сайт всегда добрый и безопасный", "можно светить пароль всем"],
+      ok: "дорога к сайту шифруется, но сайт всё равно проверяй",
+      hint: "Шифр ≠ доверие к содержимому.",
+    },
+    {
+      q: "Перед установкой игры из неизвестного сайта лучше…",
+      choices: ["отказаться / спросить взрослых и взять из магазина", "отключить защиту и поставить быстрее", "ввести пароль почты «для активации»"],
+      ok: "отказаться / спросить взрослых и взять из магазина",
+      hint: "Steam / официальный лаунчер безопаснее.",
+    },
+    {
+      q: "Всплывашка «ПК заражён, позвони» в браузере…",
+      choices: ["часто обман — закрыть вкладку, позвать взрослых", "настоящий звонок в Microsoft", "нужно срочно продиктовать код из смс"],
+      ok: "часто обман — закрыть вкладку, позвать взрослых",
+      hint: "Страх продаёт липовые «очистители».",
     },
   ],
 };
@@ -3350,7 +3568,8 @@ function themePerfectCount(themeId) {
   const modes = (THEME_META[themeId] && THEME_META[themeId].modes) || [];
   let n = 0;
   modes.forEach((mode) => {
-    for (let lvl = 1; lvl <= 5; lvl += 1) {
+    const max = (MODE_META[mode] && MODE_META[mode].maxLevel) || 5;
+    for (let lvl = 1; lvl <= max; lvl += 1) {
       if (isCleared(mode, lvl)) n += 1;
     }
   });
@@ -3512,7 +3731,8 @@ function equippedBattleRelic() {
 function battleRoundsForMode(mode = selectedMode, battleId = selectedLevel) {
   let all;
   if (mode === MODE_UNITS) all = [1, 2, 3, 4];
-  else if (mode === MODE_MUL || mode === MODE_DIV || mode === MODE_ENG || mode === MODE_CODE) all = [1, 2, 3, 4, 5];
+  else if (mode === MODE_CODE) all = [1, 2, 3, 4, 5, 6, 7];
+  else if (mode === MODE_MUL || mode === MODE_DIV || mode === MODE_ENG) all = [1, 2, 3, 4, 5];
   else all = [1, 2, 3, 4, 5];
   const frac = (battleCfg(battleId).roundFrac != null) ? battleCfg(battleId).roundFrac : 1;
   const n = Math.max(1, Math.ceil(all.length * frac));
@@ -3659,13 +3879,24 @@ function mapLayoutForMode(mode = selectedMode) {
       { id: 9, kind: "boss", col: 3, row: 6 },
     ];
   }
-  if (mode === MODE_ENG || mode === MODE_CODE) {
+  if (mode === MODE_ENG) {
     return [
       { id: 1, kind: "level", col: 2, row: 1 },
       { id: 2, kind: "level", col: 4, row: 1 },
       { id: 3, kind: "level", col: 3, row: 2 },
       { id: 4, kind: "level", col: 1, row: 3 },
       { id: 5, kind: "level", col: 5, row: 3 },
+    ];
+  }
+  if (mode === MODE_CODE) {
+    return [
+      { id: 1, kind: "level", col: 2, row: 1 },
+      { id: 2, kind: "level", col: 4, row: 1 },
+      { id: 3, kind: "level", col: 1, row: 2 },
+      { id: 4, kind: "level", col: 3, row: 2 },
+      { id: 5, kind: "level", col: 5, row: 2 },
+      { id: 6, kind: "level", col: 2, row: 3 },
+      { id: 7, kind: "level", col: 4, row: 3 },
     ];
   }
   if (mode === MODE_MUL || mode === MODE_DIV) {
@@ -4398,7 +4629,7 @@ function generateEngProblem(level) {
 
 function pickCodeQuizItem(kind) {
   if (kind === "mixed") {
-    const keys = ["folders", "copy", "memory", "net"];
+    const keys = ["folders", "copy", "memory", "net", "keys", "updates"];
     const k = keys[rand(0, keys.length - 1)];
     const bank = CODE_QUIZ[k];
     return { kind: k, item: bank[rand(0, bank.length - 1)] };
@@ -6618,13 +6849,14 @@ async function renderBoard() {
     new Promise((resolve) => setTimeout(resolve, 600)),
   ]);
 
-  const cacheKey = `${boardFilter}|${boardMode}`;
+  const levelFilter = boardFilter === "secret" ? SECRET_LEVEL : boardFilter;
+  const cacheKey = `${levelFilter}|${boardMode}`;
   try {
     let list;
     if (scoresCache.key === cacheKey && Date.now() - scoresCache.at < SCORES_CACHE_MS) {
       list = scoresCache.rows;
     } else {
-      list = await fetchScores(boardFilter, boardMode);
+      list = await fetchScores(levelFilter, boardMode);
       scoresCache = { key: cacheKey, at: Date.now(), rows: list };
     }
     list.forEach((r) => {
@@ -6637,19 +6869,23 @@ async function renderBoard() {
     });
     const top = boardFilter === "all" ? bestScoresByNickAndLevel(list) : bestScoresByNick(list);
     const pending = pendingScoreCount();
+    const filterLabel = boardFilter === "all"
+      ? ""
+      : boardFilter === "secret"
+        ? " на «Секрет»"
+        : ` на «${MODE_META[boardMode].levelNames[Number(boardFilter) - 1] || levelCfg(Number(boardFilter), boardMode).name}»`;
     if (!top.length) {
       const modeName = MODE_META[boardMode]?.name || "база";
-      const lvlName = boardFilter === "all" ? "" : ` на «${MODE_META[boardMode].levelNames[Number(boardFilter) - 1] || levelCfg(Number(boardFilter), boardMode).name}»`;
       els.boardStatus.textContent = pending
-        ? `Пока нет идеальных 10/10 (${modeName})${lvlName}. В очереди ${pending} — ждём сеть.`
-        : `Пока нет идеальных 10/10 (${modeName})${lvlName}. Пройди все примеры вовремя — и появишься здесь!`;
+        ? `Пока нет идеальных 10/10 (${modeName})${filterLabel}. В очереди ${pending} — ждём сеть.`
+        : `Пока нет идеальных 10/10 (${modeName})${filterLabel}. Пройди все примеры вовремя — и появишься здесь!`;
       updateSyncHint();
       return;
     }
     const modeTitle = MODE_META[boardMode]?.name || "база";
     els.boardStatus.textContent = boardFilter === "all"
       ? `Гонка за время · ${modeTitle} · только 10/10 · ${top.length}${pending ? ` · очередь ${pending}` : ""}`
-      : `Топ по времени · ${MODE_META[boardMode].levelNames[Number(boardFilter) - 1] || levelCfg(Number(boardFilter), boardMode).name} · ${modeTitle} · 10/10 · ${top.length}${pending ? ` · очередь ${pending}` : ""}`;
+      : `Топ по времени · ${filterLabel.replace(/^ на «|»$/g, "") || "уровень"} · ${modeTitle} · 10/10 · ${top.length}${pending ? ` · очередь ${pending}` : ""}`;
     els.boardList.innerHTML = top.map((row, i) => {
       const rowMode = row.mode || MODE_BASIC;
       const lvl = levelCfg(row.level || 1, rowMode);
@@ -8557,6 +8793,28 @@ ACHIEVEMENTS.push(
     }),
   },
   {
+    id: "safe_qr_cam",
+    icon: "📷",
+    name: "Осторожный скаут",
+    desc: "Пройди квесты про QR и камеру",
+    check: (s) => !!(s.safeCleared && s.safeCleared.qr_mystery && s.safeCleared.cam_room),
+    progress: (s) => ({
+      current: [s.safeCleared?.qr_mystery, s.safeCleared?.cam_room].filter(Boolean).length,
+      target: 2,
+    }),
+  },
+  {
+    id: "safe_voice_trade",
+    icon: "🎙️",
+    name: "Не ведусь на развод",
+    desc: "Пройди квесты про голос «мамы» и обмен скина",
+    check: (s) => !!(s.safeCleared && s.safeCleared.voice_mom && s.safeCleared.game_trade),
+    progress: (s) => ({
+      current: [s.safeCleared?.voice_mom, s.safeCleared?.game_trade].filter(Boolean).length,
+      target: 2,
+    }),
+  },
+  {
     id: "eng_open",
     icon: "🇬🇧",
     name: "Hello!",
@@ -8604,16 +8862,32 @@ ACHIEVEMENTS.push(
     icon: "📁",
     name: "Сундуки-папки",
     desc: "10/10 на этапе «Папки»",
-    check: (s) => s.runs.some((r) => r.mode === MODE_CODE && (r.level || 1) === 1 && r.correct === 10),
-    progress: (s) => ({ current: s.runs.filter((r) => r.mode === MODE_CODE && (r.level || 1) === 1).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }),
+    check: (s) => stateHasPerfect(s, MODE_CODE, 1),
+    progress: (s) => ({ current: stateHasPerfect(s, MODE_CODE, 1) ? 10 : (s.runs.filter((r) => r.mode === MODE_CODE && (r.level || 1) === 1).reduce((m, r) => Math.max(m, r.correct || 0), 0)), target: 10 }),
+  },
+  {
+    id: "code_keys",
+    icon: "⌨️",
+    name: "Горячие клавиши",
+    desc: "10/10 на этапе «Клавиатура»",
+    check: (s) => stateHasPerfect(s, MODE_CODE, 5),
+    progress: (s) => ({ current: stateHasPerfect(s, MODE_CODE, 5) ? 10 : (s.runs.filter((r) => r.mode === MODE_CODE && r.level === 5).reduce((m, r) => Math.max(m, r.correct || 0), 0)), target: 10 }),
+  },
+  {
+    id: "code_updates",
+    icon: "🛡️",
+    name: "Патчи и щит",
+    desc: "10/10 на этапе «Обновления»",
+    check: (s) => stateHasPerfect(s, MODE_CODE, 6),
+    progress: (s) => ({ current: stateHasPerfect(s, MODE_CODE, 6) ? 10 : (s.runs.filter((r) => r.mode === MODE_CODE && r.level === 6).reduce((m, r) => Math.max(m, r.correct || 0), 0)), target: 10 }),
   },
   {
     id: "code_all",
     icon: "🖥️",
     name: "Вся лестница ПК",
-    desc: "10/10 на всех 5 этапах ПК",
-    check: (s) => [1, 2, 3, 4, 5].every((lvl) => s.runs.some((r) => r.mode === MODE_CODE && (r.level || 1) === lvl && r.correct === 10)),
-    progress: (s) => ({ current: [1, 2, 3, 4, 5].filter((lvl) => s.runs.some((r) => r.mode === MODE_CODE && (r.level || 1) === lvl && r.correct === 10)).length, target: 5 }),
+    desc: "10/10 на всех 7 этапах ПК",
+    check: (s) => [1, 2, 3, 4, 5, 6, 7].every((lvl) => stateHasPerfect(s, MODE_CODE, lvl)),
+    progress: (s) => ({ current: [1, 2, 3, 4, 5, 6, 7].filter((lvl) => stateHasPerfect(s, MODE_CODE, lvl)).length, target: 7 }),
   },
   {
     id: "code_arch",
