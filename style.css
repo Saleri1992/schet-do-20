@@ -4814,3 +4814,45 @@ body.ops-on .toast-stack {
   .ops-brand { font-size: 9px; }
   .ops-input { font-size: 10px; }
 }
+
+.ops-mobile-entry {
+  position: absolute;
+  right: 10px;
+  top: 8px;
+  z-index: 5;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,0.12);
+  background: rgba(255,255,255,0.35);
+  font-size: 14px;
+  cursor: pointer;
+  opacity: 0.45;
+}
+.ops-mobile-entry:active { opacity: 1; }
+#home { position: relative; }
+.ops-hint-box {
+  margin: 8px 0 4px;
+  padding: 10px 12px;
+  border: 1px dashed #3ecf6e;
+  background: #0a1a10;
+  color: #b8ffcc;
+  font-size: 9px;
+  line-height: 1.6;
+}
+.ops-hint-box.hidden { display: none !important; }
+.ops-lesson-title {
+  font-size: 12px;
+  color: #d6ffe0;
+  margin: 8px 0 12px;
+  line-height: 1.5;
+}
+.ops-lesson-body {
+  margin: 0 0 12px;
+  padding-left: 18px;
+  font-size: 9px;
+  line-height: 1.75;
+  color: #7CFF9A;
+}
+.ops-lesson-body li { margin-bottom: 8px; }
+.ops-prompt-row { flex-wrap: wrap; }

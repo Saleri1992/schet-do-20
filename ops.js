@@ -1,7 +1,6 @@
 /**
- * OPS DRILL — личный тренажёр sysadmin (CMD ↔ PowerShell).
- * Вход: Ctrl+Shift+O → код `sys.ops`
- * Прогресс в localStorage отдельно от детской игры.
+ * OPS DRILL — личный тренажёр (CMD/PS + SQL + Java).
+ * Вход: Ctrl+Shift+O или кнопка ⌘ на главной → код `sys.ops`
  */
 (function () {
   const OPS_KEY = "schet-ops-drill-v1";
@@ -22,8 +21,8 @@
       name: "Files",
       blurb: "Каталоги и файлы",
       drills: [
-        { ask: "Список файлов в текущей папке (CMD)", answer: "dir", shell: "cmd", alts: ["dir /b"] },
-        { ask: "Список файлов (PowerShell)", answer: "get-childitem", shell: "ps", alts: ["gci", "ls"] },
+        { ask: "Список файлов в текущей папке (CMD)", answer: "dir", shell: "cmd", alts: ["dir /b"], tip: "dir = directory listing" },
+        { ask: "Список файлов (PowerShell)", answer: "get-childitem", shell: "ps", alts: ["gci", "ls"], tip: "GCI — алиас Get-ChildItem" },
         { ask: "Сменить каталог (CMD)", answer: "cd", shell: "cmd", alts: ["chdir"] },
         { ask: "Сменить каталог (PowerShell)", answer: "set-location", shell: "ps", alts: ["cd", "sl"] },
         { ask: "Создать папку (CMD)", answer: "mkdir", shell: "cmd", alts: ["md"] },
@@ -44,7 +43,7 @@
       name: "Processes",
       blurb: "Процессы",
       drills: [
-        { ask: "Список процессов (CMD)", answer: "tasklist", shell: "cmd" },
+        { ask: "Список процессов (CMD)", answer: "tasklist", shell: "cmd", tip: "tasklist — все процессы" },
         { ask: "Список процессов (PowerShell)", answer: "get-process", shell: "ps", alts: ["gps", "ps"] },
         { ask: "Завершить процесс по PID (CMD)", answer: "taskkill /pid", shell: "cmd", alts: ["taskkill"] },
         { ask: "Остановить процесс (PowerShell)", answer: "stop-process", shell: "ps", alts: ["spps", "kill"] },
@@ -57,7 +56,7 @@
       name: "Services",
       blurb: "Службы",
       drills: [
-        { ask: "Список служб (CMD/net)", answer: "net start", shell: "cmd" },
+        { ask: "Список запущенных служб (CMD/net)", answer: "net start", shell: "cmd" },
         { ask: "Список служб (PowerShell)", answer: "get-service", shell: "ps", alts: ["gsv"] },
         { ask: "Статус службы через sc (CMD)", answer: "sc query", shell: "cmd" },
         { ask: "Запустить службу (PowerShell)", answer: "start-service", shell: "ps", alts: ["sasv"] },
@@ -79,7 +78,7 @@
         { ask: "DNS-запрос (CMD)", answer: "nslookup", shell: "cmd" },
         { ask: "DNS-запрос (PowerShell)", answer: "resolve-dnsname", shell: "ps", alts: ["nslookup"] },
         { ask: "Трассировка (CMD)", answer: "tracert", shell: "cmd" },
-        { ask: "Маршрут/проверка хоста (PowerShell)", answer: "test-netconnection", shell: "ps", alts: ["tnc"] },
+        { ask: "Проверка хоста/порта (PowerShell)", answer: "test-netconnection", shell: "ps", alts: ["tnc"] },
         { ask: "Таблица маршрутов (CMD)", answer: "route print", shell: "cmd" },
         { ask: "ARP-таблица (CMD)", answer: "arp -a", shell: "cmd", alts: ["arp"] },
       ],
@@ -108,9 +107,8 @@
         { ask: "Сводка о системе (CMD)", answer: "systeminfo", shell: "cmd" },
         { ask: "Инфо о системе (PowerShell)", answer: "get-computerinfo", shell: "ps" },
         { ask: "Переменные среды (CMD)", answer: "set", shell: "cmd" },
-        { ask: "Переменная среды PATH (PowerShell)", answer: "$env:path", shell: "ps", alts: ["$env:path", "echo $env:path"] },
+        { ask: "Переменная среды PATH (PowerShell)", answer: "$env:path", shell: "ps", alts: ["echo $env:path"] },
         { ask: "Диски (PowerShell)", answer: "get-psdrive", shell: "ps", alts: ["get-volume", "get-disk"] },
-        { ask: "Свободное место (CMD)", answer: "wmic logicaldisk get size,freespace,caption", shell: "cmd", alts: ["fsutil volume diskfree"] },
         { ask: "Журнал событий (современный PS)", answer: "get-winevent", shell: "ps" },
         { ask: "Планировщик: список задач (CMD)", answer: "schtasks /query", shell: "cmd", alts: ["schtasks"] },
       ],
@@ -118,70 +116,142 @@
     {
       id: "diff",
       name: "CMD vs PS",
-      blurb: "Отличия и привычки",
+      blurb: "Отличия",
       drills: [
+        { ask: "PowerShell-эквивалент dir", answer: "get-childitem", shell: "ps", alts: ["gci", "ls"], tip: "dir в PS часто алиас Get-ChildItem" },
+        { ask: "Ключевое отличие PS от CMD: вывод — это…", answer: "objects", shell: "concept", alts: ["объекты", "object"], tip: "CMD — текст; PS — объекты" },
+        { ask: "Соглашение имён командлетов PowerShell", answer: "verb-noun", shell: "concept", alts: ["verb/noun", "глагол-существительное"] },
+        { ask: "Конвейер PS передаёт…", answer: "objects", shell: "concept", alts: ["объекты", "object"] },
+        { ask: "Очистка экрана (CMD)", answer: "cls", shell: "cmd", alts: ["clear"] },
+        { ask: "Очистка экрана (PowerShell)", answer: "clear-host", shell: "ps", alts: ["cls", "clear"] },
+        { ask: "Справка по командлету (PowerShell)", answer: "get-help", shell: "ps", alts: ["help", "man"] },
+        { ask: "История команд в PowerShell", answer: "get-history", shell: "ps", alts: ["h", "history"] },
+        { ask: "Выполнить CMD из PowerShell явно", answer: "cmd /c", shell: "ps", alts: ["cmd.exe /c"] },
+      ],
+    },
+    {
+      id: "sql",
+      name: "SQL",
+      blurb: "С нуля → закрепление",
+      learn: true,
+      lessons: [
         {
-          ask: "PowerShell-эквивалент команды dir",
-          answer: "get-childitem",
-          shell: "ps",
-          alts: ["gci", "ls"],
-          tip: "dir в PS — часто алиас Get-ChildItem",
+          title: "Что такое SQL",
+          points: [
+            "SQL — язык запросов к базам данных (таблицы как Excel).",
+            "Таблица = набор строк. Строка = одна запись. Столбец = поле (имя, цена…).",
+            "Запрос читает/меняет данные. Самый частый: SELECT.",
+          ],
+          tip: "Думай: «покажи мне … из таблицы …».",
         },
         {
-          ask: "Ключевое отличие PS от CMD: вывод — это…",
-          answer: "objects",
-          shell: "concept",
-          alts: ["объекты", "object"],
-          tip: "CMD — текст; PowerShell — объекты .NET",
+          title: "SELECT и FROM",
+          points: [
+            "SELECT столбцы FROM таблица;",
+            "SELECT * — все столбцы (удобно учиться, в проде осторожнее).",
+            "Пример: SELECT name FROM users;",
+          ],
+          tip: "Порядок: SELECT → FROM.",
         },
         {
-          ask: "Соглашение имён командлетов PowerShell",
-          answer: "verb-noun",
-          shell: "concept",
-          alts: ["verb/noun", "глагол-существительное"],
+          title: "WHERE — фильтр",
+          points: [
+            "WHERE оставляет только нужные строки.",
+            "SELECT * FROM users WHERE age > 18;",
+            "Сравнение: = <> != < > <= >= ; текст в кавычках: WHERE name = 'Ann'",
+          ],
+          tip: "WHERE = «при условии».",
         },
         {
-          ask: "Конвейер PS передаёт…",
-          answer: "objects",
-          shell: "concept",
-          alts: ["объекты", "object"],
+          title: "ORDER BY, LIMIT",
+          points: [
+            "ORDER BY col ASC|DESC — сортировка.",
+            "LIMIT n — сколько строк вернуть (MySQL/SQLite/Postgres).",
+            "SELECT * FROM scores ORDER BY ms ASC LIMIT 10;",
+          ],
+          tip: "Сначала WHERE, потом ORDER BY.",
         },
         {
-          ask: "CMD-команда для очистки экрана",
-          answer: "cls",
-          shell: "cmd",
-          alts: ["clear"],
+          title: "INSERT / UPDATE / DELETE",
+          points: [
+            "INSERT INTO t (a,b) VALUES (1,'x'); — добавить.",
+            "UPDATE t SET a=2 WHERE id=1; — изменить (всегда думай про WHERE!).",
+            "DELETE FROM t WHERE id=1; — удалить строки (без WHERE опасно).",
+          ],
+          tip: "UPDATE/DELETE без WHERE = беда.",
+        },
+      ],
+      drills: [
+        { ask: "Ключевое слово: выбрать данные", answer: "select", tip: "SELECT … FROM …" },
+        { ask: "Ключевое слово: из какой таблицы", answer: "from", tip: "SELECT * FROM users" },
+        { ask: "Все столбцы из таблицы users", answer: "select * from users", alts: ["select * from users;"], tip: "* = все поля" },
+        { ask: "Фильтр строк — ключевое слово", answer: "where", tip: "WHERE условие" },
+        { ask: "Пользователи старше 18 (таблица users, поле age)", answer: "select * from users where age > 18", alts: ["select * from users where age >= 19", "select * from users where age>18"] },
+        { ask: "Сортировка — ключевое слово", answer: "order by", alts: ["order by"] },
+        { ask: "Сортировать scores по ms по возрастанию", answer: "select * from scores order by ms asc", alts: ["select * from scores order by ms", "select * from scores order by ms asc;"] },
+        { ask: "Добавить строку — ключевое слово", answer: "insert", tip: "INSERT INTO … VALUES …" },
+        { ask: "Изменить строку — ключевое слово", answer: "update", tip: "UPDATE … SET … WHERE …" },
+        { ask: "Удалить строки — ключевое слово", answer: "delete", tip: "DELETE FROM … WHERE …" },
+        { ask: "Первичный ключ (термин по-английски)", answer: "primary key", alts: ["pk", "primarykey"], tip: "Уникальный id строки" },
+        { ask: "Связать таблицы — ключевое слово JOIN", answer: "join", tip: "FROM a JOIN b ON …" },
+      ],
+    },
+    {
+      id: "java",
+      name: "Java",
+      blurb: "База → закрепление",
+      learn: true,
+      lessons: [
+        {
+          title: "Что такое Java",
+          points: [
+            "Java — язык: пишешь код → компилятор → программа на JVM.",
+            "Код живёт в классах. Точка входа: public static void main(String[] args).",
+            "Файл обычно называется как публичный класс: Hello.java → class Hello.",
+          ],
+          tip: "Класс = чертёж, объект = экземпляр.",
         },
         {
-          ask: "Очистка экрана в PowerShell",
-          answer: "clear-host",
-          shell: "ps",
-          alts: ["cls", "clear"],
+          title: "Переменные и типы",
+          points: [
+            "int n = 5; — целое. double x = 1.5; — дробь. boolean ok = true;",
+            "String name = \"Ann\"; — текст (заглавная S — класс).",
+            "Тип пишется слева: тип имя = значение;",
+          ],
+          tip: "String — не «string» с маленькой в Java.",
         },
         {
-          ask: "Справка по команде в CMD",
-          answer: "help",
-          shell: "cmd",
-          alts: ["/?"],
+          title: "if и циклы",
+          points: [
+            "if (n > 0) { ... } else { ... }",
+            "for (int i = 0; i < 10; i++) { ... }",
+            "while (ok) { ... } — пока условие истинно.",
+          ],
+          tip: "Условие в круглых скобках, тело в { }.",
         },
         {
-          ask: "Справка по командлету (PowerShell)",
-          answer: "get-help",
-          shell: "ps",
-          alts: ["help", "man"],
+          title: "Методы и массивы",
+          points: [
+            "Метод: int sum(int a, int b) { return a + b; }",
+            "Массив: int[] a = new int[3]; или int[] a = {1,2,3};",
+            "Длина массива: a.length (без скобок).",
+          ],
+          tip: "return отдаёт результат из метода.",
         },
-        {
-          ask: "История команд в PowerShell",
-          answer: "get-history",
-          shell: "ps",
-          alts: ["h", "history"],
-        },
-        {
-          ask: "Выполнить команду CMD из PowerShell явно",
-          answer: "cmd /c",
-          shell: "ps",
-          alts: ["cmd.exe /c"],
-        },
+      ],
+      drills: [
+        { ask: "Точка входа программы — имя метода", answer: "main", tip: "public static void main(...)" },
+        { ask: "Целочисленный тип (маленькое целое)", answer: "int", tip: "int n = 5;" },
+        { ask: "Тип для текста", answer: "string", alts: ["String"], tip: "String s = \"hi\";" },
+        { ask: "Логический тип true/false", answer: "boolean", tip: "boolean ok = true;" },
+        { ask: "Ключевое слово условия", answer: "if", tip: "if (cond) { }" },
+        { ask: "Цикл со счётчиком — ключевое слово", answer: "for", tip: "for (int i=0; i<n; i++)" },
+        { ask: "Цикл «пока» — ключевое слово", answer: "while", tip: "while (cond) { }" },
+        { ask: "Вернуть значение из метода", answer: "return", tip: "return a + b;" },
+        { ask: "Создать объект/массив — ключевое слово", answer: "new", tip: "new int[3]" },
+        { ask: "Длина массива arr", answer: "arr.length", alts: ["a.length", "length"], tip: "без ()" },
+        { ask: "Модификатор «видно везде»", answer: "public", tip: "public class …" },
+        { ask: "Модификатор «без объекта, у класса»", answer: "static", tip: "public static void main" },
       ],
     },
   ];
@@ -191,15 +261,19 @@
     { id: "warm", name: "warm.cache", desc: "5 прогонов", check: (s) => (s.runs || 0) >= 5 },
     { id: "perfect", name: "clean.exit", desc: "Идеальный 10/10", check: (s) => (s.perfects || 0) >= 1 },
     { id: "perfect3", name: "triple.clean", desc: "3 идеальных прогона", check: (s) => (s.perfects || 0) >= 3 },
-    { id: "cats", name: "full.map", desc: "Пройти все категории (≥1 раз)", check: (s) => CATEGORIES.every((c) => (s.catRuns || {})[c.id] >= 1) },
-    { id: "speed", name: "fast.path", desc: "10/10 быстрее 75 сек", check: (s) => !!(s.bestMs && s.bestMs < 75000 && (s.perfects || 0) >= 1) },
+    { id: "cats", name: "full.map", desc: "Все категории ≥1 раз", check: (s) => CATEGORIES.every((c) => (s.catRuns || {})[c.id] >= 1) },
+    { id: "sql1", name: "sql.select", desc: "Прогон SQL", check: (s) => (s.catRuns || {}).sql >= 1 },
+    { id: "java1", name: "java.main", desc: "Прогон Java", check: (s) => (s.catRuns || {}).java >= 1 },
     { id: "xp200", name: "xp.200", desc: "Набрать 200 XP", check: (s) => (s.xp || 0) >= 200 },
-    { id: "senior", name: "senior.ops", desc: "Ранг senior.ops", check: (s) => rankFor(s.xp || 0).name === "senior.ops" || rankFor(s.xp || 0).min >= 280 },
+    { id: "senior", name: "senior.ops", desc: "Ранг senior.ops+", check: (s) => (s.xp || 0) >= 280 },
   ];
 
   let state = loadState();
   let run = null;
   let unlocked = false;
+  let timerId = 0;
+  let lessonIndex = 0;
+  let pendingCat = null;
 
   try {
     unlocked = localStorage.getItem(`${OPS_KEY}-on`) === "1";
@@ -218,25 +292,24 @@
         catRuns: raw.catRuns && typeof raw.catRuns === "object" ? raw.catRuns : {},
         achievements: Array.isArray(raw.achievements) ? raw.achievements : [],
         lastCat: raw.lastCat || "files",
+        lessonsSeen: raw.lessonsSeen && typeof raw.lessonsSeen === "object" ? raw.lessonsSeen : {},
       };
     } catch {
-      return { xp: 0, runs: 0, perfects: 0, bestMs: null, catRuns: {}, achievements: [], lastCat: "files" };
+      return {
+        xp: 0, runs: 0, perfects: 0, bestMs: null, catRuns: {}, achievements: [], lastCat: "files", lessonsSeen: {},
+      };
     }
   }
 
   function saveState() {
     try {
       localStorage.setItem(OPS_KEY, JSON.stringify(state));
-    } catch {
-      /* ignore */
-    }
+    } catch { /* ignore */ }
   }
 
   function rankFor(xp) {
     let cur = RANKS[0];
-    RANKS.forEach((r) => {
-      if (xp >= r.min) cur = r;
-    });
+    RANKS.forEach((r) => { if (xp >= r.min) cur = r; });
     return cur;
   }
 
@@ -244,6 +317,7 @@
     return String(s || "")
       .trim()
       .toLowerCase()
+      .replace(/;/g, "")
       .replace(/\s+/g, " ")
       .replace(/['"]/g, "");
   }
@@ -284,26 +358,54 @@
       gateErr: document.getElementById("opsGateErr"),
       hub: document.getElementById("opsHub"),
       drill: document.getElementById("opsDrill"),
+      lesson: document.getElementById("opsLesson"),
       cats: document.getElementById("opsCats"),
       rank: document.getElementById("opsRank"),
       xp: document.getElementById("opsXp"),
       ach: document.getElementById("opsAch"),
       ask: document.getElementById("opsAsk"),
       tip: document.getElementById("opsTip"),
+      hintBox: document.getElementById("opsHintBox"),
       input: document.getElementById("opsInput"),
       meta: document.getElementById("opsMeta"),
+      timer: document.getElementById("opsTimer"),
       log: document.getElementById("opsLog"),
       progress: document.getElementById("opsProgress"),
+      lessonTitle: document.getElementById("opsLessonTitle"),
+      lessonBody: document.getElementById("opsLessonBody"),
+      lessonTip: document.getElementById("opsLessonTip"),
+      lessonStep: document.getElementById("opsLessonStep"),
     };
   }
 
   function setUnlocked(v) {
     unlocked = !!v;
-    try {
-      localStorage.setItem(`${OPS_KEY}-on`, unlocked ? "1" : "0");
-    } catch {
-      /* ignore */
+    try { localStorage.setItem(`${OPS_KEY}-on`, unlocked ? "1" : "0"); } catch { /* ignore */ }
+  }
+
+  function formatMs(ms) {
+    const s = Math.max(0, Math.floor(ms / 1000));
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return `${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}`;
+  }
+
+  function stopTimer() {
+    if (timerId) {
+      clearInterval(timerId);
+      timerId = 0;
     }
+  }
+
+  function startTimer() {
+    stopTimer();
+    const e = els();
+    const tick = () => {
+      if (!run || run.done) return;
+      if (e.timer) e.timer.textContent = formatMs(Date.now() - run.startedAt);
+    };
+    tick();
+    timerId = setInterval(tick, 250);
   }
 
   function showGate(show) {
@@ -315,6 +417,13 @@
       if (e.gateErr) e.gateErr.textContent = "";
       setTimeout(() => e.gateInput.focus(), 50);
     }
+  }
+
+  function hidePanels() {
+    const e = els();
+    if (e.hub) e.hub.classList.add("hidden");
+    if (e.drill) e.drill.classList.add("hidden");
+    if (e.lesson) e.lesson.classList.add("hidden");
   }
 
   function openShell() {
@@ -329,21 +438,30 @@
 
   function closeShell() {
     const e = els();
+    stopTimer();
+    run = null;
+    pendingCat = null;
     document.body.classList.remove("ops-on");
     if (e.shell) e.shell.classList.add("hidden");
-    run = null;
   }
 
   function showHub() {
+    stopTimer();
+    hidePanels();
     const e = els();
     if (e.hub) e.hub.classList.remove("hidden");
-    if (e.drill) e.drill.classList.add("hidden");
   }
 
   function showDrill() {
+    hidePanels();
     const e = els();
-    if (e.hub) e.hub.classList.add("hidden");
     if (e.drill) e.drill.classList.remove("hidden");
+  }
+
+  function showLesson() {
+    hidePanels();
+    const e = els();
+    if (e.lesson) e.lesson.classList.remove("hidden");
   }
 
   function renderHub() {
@@ -354,10 +472,11 @@
     if (e.cats) {
       e.cats.innerHTML = CATEGORIES.map((c) => {
         const n = (state.catRuns || {})[c.id] || 0;
+        const tag = c.learn ? "learn+drill" : "drill";
         return `<button type="button" class="ops-cat" data-ops-cat="${c.id}">
           <span class="ops-cat-id">${c.name}</span>
           <span class="ops-cat-blurb">${c.blurb}</span>
-          <span class="ops-cat-stat">runs:${n}</span>
+          <span class="ops-cat-stat">${tag} · runs:${n}</span>
         </button>`;
       }).join("");
     }
@@ -381,33 +500,111 @@
     return fresh;
   }
 
-  function startCategory(catId) {
-    const pack = pickDrills(catId);
+  function renderLesson() {
+    const e = els();
+    const cat = pendingCat;
+    if (!cat || !cat.lessons) return;
+    const lesson = cat.lessons[lessonIndex];
+    if (e.lessonStep) e.lessonStep.textContent = `${lessonIndex + 1}/${cat.lessons.length}`;
+    if (e.lessonTitle) e.lessonTitle.textContent = lesson.title;
+    if (e.lessonBody) {
+      e.lessonBody.innerHTML = lesson.points.map((p) => `<li>${escapeHtml(p)}</li>`).join("");
+    }
+    if (e.lessonTip) e.lessonTip.textContent = lesson.tip || "";
+    const nextBtn = document.getElementById("opsLessonNext");
+    if (nextBtn) {
+      nextBtn.textContent = lessonIndex >= cat.lessons.length - 1 ? "к закреплению →" : "далее →";
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function openCategory(catId) {
+    const cat = CATEGORIES.find((c) => c.id === catId) || CATEGORIES[0];
     state.lastCat = catId;
     saveState();
+    pendingCat = cat;
+    if (cat.learn && Array.isArray(cat.lessons) && cat.lessons.length) {
+      lessonIndex = 0;
+      showLesson();
+      renderLesson();
+      return;
+    }
+    beginDrill(catId);
+  }
+
+  function beginDrill(catId) {
+    const pack = pickDrills(catId);
     run = {
       cat: pack.cat,
       items: pack.items,
       index: 0,
       correct: 0,
+      hintsUsed: 0,
       startedAt: Date.now(),
+      hintLevel: 0,
       log: [],
+      done: false,
     };
+    if (els().log) els().log.innerHTML = "";
     showDrill();
+    startTimer();
     renderQuestion();
   }
 
   function renderQuestion() {
     const e = els();
-    if (!run) return;
+    if (!run || run.done) return;
     const item = run.items[run.index];
+    run.hintLevel = 0;
     if (e.ask) e.ask.textContent = item.ask;
-    if (e.tip) e.tip.textContent = item.tip || `shell: ${item.shell || "cmd|ps"}`;
+    if (e.tip) e.tip.textContent = `shell/lang: ${item.shell || item.cat || "—"}`;
+    if (e.hintBox) {
+      e.hintBox.textContent = "";
+      e.hintBox.classList.add("hidden");
+    }
     if (e.meta) e.meta.textContent = `${run.cat.name} · ${run.index + 1}/${TOTAL} · ok ${run.correct}`;
-    if (e.progress) e.progress.style.width = `${((run.index) / TOTAL) * 100}%`;
+    if (e.progress) e.progress.style.width = `${(run.index / TOTAL) * 100}%`;
     if (e.input) {
       e.input.value = "";
       e.input.focus();
+    }
+    const hintBtn = document.getElementById("opsHintBtn");
+    if (hintBtn) hintBtn.textContent = "hint";
+  }
+
+  function revealHint() {
+    if (!run || run.done) return;
+    const item = run.items[run.index];
+    const e = els();
+    run.hintLevel = Math.min(3, (run.hintLevel || 0) + 1);
+    if (run.hintLevel === 1) run.hintsUsed += 1;
+    let text = "";
+    if (run.hintLevel === 1) {
+      text = item.tip || "Подумай про ключевое слово / командлет.";
+    } else if (run.hintLevel === 2) {
+      const ans = String(item.answer);
+      const soft = ans.length <= 3
+        ? `${ans[0] || "?"}…`
+        : `${ans.slice(0, Math.min(3, ans.length))}… (${ans.length} символов)`;
+      text = `мягко: ${soft}`;
+    } else {
+      text = `ответ: ${item.answer}`;
+      if (item.alts && item.alts.length) text += ` · также: ${item.alts.slice(0, 2).join(" | ")}`;
+    }
+    if (e.hintBox) {
+      e.hintBox.textContent = text;
+      e.hintBox.classList.remove("hidden");
+    }
+    const hintBtn = document.getElementById("opsHintBtn");
+    if (hintBtn) {
+      hintBtn.textContent = run.hintLevel >= 3 ? "hint×3" : `hint×${run.hintLevel}`;
     }
   }
 
@@ -422,13 +619,18 @@
 
   function submitAnswer() {
     if (!run) return;
+    if (run.done) {
+      showHub();
+      renderHub();
+      return;
+    }
     const e = els();
     const item = run.items[run.index];
     const typed = (e.input && e.input.value) || "";
     const ok = matchAnswer(typed, item);
     if (ok) run.correct += 1;
     run.log.push({ ask: item.ask, given: typed, answer: item.answer, ok });
-    appendLog(`${ok ? "OK" : "NO"} › ${typed || "∅"} ${ok ? "" : `← ${item.answer}`}`, ok);
+    appendLog(`${ok ? "OK" : "NO"} › ${typed || "∅"}${ok ? "" : ` ← ${item.answer}`}`, ok);
     if (run.index + 1 >= TOTAL) {
       finishRun();
       return;
@@ -438,9 +640,11 @@
   }
 
   function finishRun() {
+    stopTimer();
     const ms = Date.now() - run.startedAt;
     const perfect = run.correct === TOTAL;
-    const gained = run.correct * 2 + (perfect ? 8 : 0) + Math.max(0, 6 - Math.floor(ms / 15000));
+    const hintPenalty = Math.min(6, run.hintsUsed || 0);
+    const gained = Math.max(1, run.correct * 2 + (perfect ? 8 : 0) - hintPenalty);
     state.xp += gained;
     state.runs += 1;
     if (perfect) {
@@ -449,24 +653,26 @@
     }
     if (!state.catRuns) state.catRuns = {};
     state.catRuns[run.cat.id] = (state.catRuns[run.cat.id] || 0) + 1;
+    if (run.cat.learn) {
+      if (!state.lessonsSeen) state.lessonsSeen = {};
+      state.lessonsSeen[run.cat.id] = true;
+    }
     const fresh = unlockAchievements();
     saveState();
+    run.done = true;
     const e = els();
-    if (e.meta) {
-      e.meta.textContent = `DONE · ${run.correct}/${TOTAL} · ${Math.round(ms / 1000)}s · +${gained} XP`;
-    }
+    if (e.timer) e.timer.textContent = formatMs(ms);
+    if (e.meta) e.meta.textContent = `DONE · ${run.correct}/${TOTAL} · ${formatMs(ms)} · +${gained} XP`;
     if (e.progress) e.progress.style.width = "100%";
     if (e.ask) {
-      e.ask.textContent = perfect
-        ? `clean.exit — ${run.cat.name}`
-        : `session.end — ${run.correct}/${TOTAL}`;
+      e.ask.textContent = perfect ? `clean.exit — ${run.cat.name}` : `session.end — ${run.correct}/${TOTAL}`;
     }
     if (e.tip) {
       e.tip.textContent = fresh.length
         ? `ACH: ${fresh.map((a) => a.name).join(", ")}`
-        : "Enter / ESC → hub";
+        : "Enter → hub · время шло без лимита";
     }
-    run = { ...run, done: true };
+    if (e.hintBox) e.hintBox.classList.add("hidden");
     renderHub();
   }
 
@@ -485,6 +691,30 @@
       return;
     }
     showGate(true);
+  }
+
+  function bindMobileEntry() {
+    const btn = document.getElementById("opsMobileEntry");
+    if (btn) {
+      btn.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        promptUnlock();
+      });
+    }
+    const title = document.getElementById("homeTitle");
+    if (title) {
+      let taps = 0;
+      let resetTimer = 0;
+      title.addEventListener("click", () => {
+        taps += 1;
+        clearTimeout(resetTimer);
+        resetTimer = setTimeout(() => { taps = 0; }, 900);
+        if (taps >= 5) {
+          taps = 0;
+          promptUnlock();
+        }
+      });
+    }
   }
 
   function bind() {
@@ -509,9 +739,9 @@
       if (ev.key === "Escape") showGate(false);
     });
     document.getElementById("opsGateClose")?.addEventListener("click", () => showGate(false));
-
     document.getElementById("opsExit")?.addEventListener("click", closeShell);
     document.getElementById("opsBackHub")?.addEventListener("click", () => {
+      stopTimer();
       run = null;
       showHub();
       renderHub();
@@ -520,33 +750,44 @@
     e.cats?.addEventListener("click", (ev) => {
       const btn = ev.target.closest("[data-ops-cat]");
       if (!btn) return;
-      startCategory(btn.dataset.opsCat);
+      openCategory(btn.dataset.opsCat);
     });
 
-    document.getElementById("opsSubmit")?.addEventListener("click", () => {
-      if (run && run.done) {
-        showHub();
-        renderHub();
-        return;
-      }
-      submitAnswer();
-    });
+    document.getElementById("opsSubmit")?.addEventListener("click", submitAnswer);
+    document.getElementById("opsHintBtn")?.addEventListener("click", revealHint);
     e.input?.addEventListener("keydown", (ev) => {
       if (ev.key === "Enter") {
         ev.preventDefault();
-        if (run && run.done) {
-          showHub();
-          renderHub();
-          return;
-        }
         submitAnswer();
       }
       if (ev.key === "Escape") {
+        stopTimer();
         run = null;
         showHub();
         renderHub();
       }
     });
+
+    document.getElementById("opsLessonNext")?.addEventListener("click", () => {
+      if (!pendingCat) return;
+      if (lessonIndex < pendingCat.lessons.length - 1) {
+        lessonIndex += 1;
+        renderLesson();
+      } else {
+        beginDrill(pendingCat.id);
+      }
+    });
+    document.getElementById("opsLessonSkip")?.addEventListener("click", () => {
+      if (!pendingCat) return;
+      beginDrill(pendingCat.id);
+    });
+    document.getElementById("opsLessonBack")?.addEventListener("click", () => {
+      pendingCat = null;
+      showHub();
+      renderHub();
+    });
+
+    bindMobileEntry();
   }
 
   window.OpsTerminal = {

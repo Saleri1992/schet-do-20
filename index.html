@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=41" />
+  <link rel="stylesheet" href="style.css?v=42" />
 </head>
 <body data-theme="easy">
   <div class="sky">
@@ -109,6 +109,7 @@
         <p class="pet-status" id="petStatus"></p>
       </div>
       <h1 id="homeTitle">Счёт до 20</h1>
+      <button type="button" class="ops-mobile-entry" id="opsMobileEntry" title="OPS" aria-label="OPS drill">⌘</button>
       <p class="subtitle" id="homeSubtitle">10 весёлых примеров. Можно ошибаться — в конце узнаем результат!</p>
       <div class="filters theme-tabs" id="themeTabs" aria-label="Обучалки"></div>
       <div class="profession-row" id="professionRow" aria-label="Профессии"></div>
@@ -589,26 +590,39 @@
         <button type="button" class="ops-btn" id="opsGateGo">unlock</button>
         <button type="button" class="ops-btn ghost" id="opsGateClose">cancel</button>
       </div>
-      <p class="ops-gate-hint">или Ctrl+Shift+O</p>
+      <p class="ops-gate-hint">ПК: Ctrl+Shift+O · телефон: кнопка ⌘ рядом с названием · или 5 тапов по заголовку</p>
     </div>
   </div>
 
   <div class="ops-shell hidden" id="opsShell" aria-label="OPS drill terminal">
     <div class="ops-bezel">
       <header class="ops-top">
-        <div class="ops-brand">OPS DRILL <span>cmd · powershell</span></div>
+        <div class="ops-brand">OPS DRILL <span>cmd · ps · sql · java</span></div>
         <div class="ops-stats">
           <span>rank:<strong id="opsRank">console.rookie</strong></span>
           <span>xp:<strong id="opsXp">0</strong></span>
+          <span>t:<strong id="opsTimer">00:00</strong></span>
         </div>
         <button type="button" class="ops-btn ghost" id="opsExit">exit</button>
       </header>
 
       <section class="ops-hub" id="opsHub">
-        <p class="ops-lead">Категории стандартных действий администратора. Печатай команду (алиасы ок). Скорость + точность.</p>
+        <p class="ops-lead">Sysadmin drills + обучалки SQL/Java. Время идёт без лимита. Подсказка — кнопка hint.</p>
         <div class="ops-cats" id="opsCats"></div>
         <h3 class="ops-h">achievements</h3>
         <div class="ops-ach-list" id="opsAch"></div>
+      </section>
+
+      <section class="ops-lesson hidden" id="opsLesson">
+        <div class="ops-meta" id="opsLessonStep">1/1</div>
+        <h2 class="ops-lesson-title" id="opsLessonTitle">—</h2>
+        <ul class="ops-lesson-body" id="opsLessonBody"></ul>
+        <p class="ops-tip" id="opsLessonTip">—</p>
+        <div class="ops-gate-actions">
+          <button type="button" class="ops-btn" id="opsLessonNext">далее →</button>
+          <button type="button" class="ops-btn ghost" id="opsLessonSkip">сразу drill</button>
+          <button type="button" class="ops-btn ghost" id="opsLessonBack">← hub</button>
+        </div>
       </section>
 
       <section class="ops-drill hidden" id="opsDrill">
@@ -616,9 +630,11 @@
         <div class="ops-meta" id="opsMeta">—</div>
         <div class="ops-ask" id="opsAsk">—</div>
         <div class="ops-tip" id="opsTip">—</div>
+        <div class="ops-hint-box hidden" id="opsHintBox"></div>
         <div class="ops-prompt-row">
           <span class="ops-prompt">&gt;</span>
           <input id="opsInput" class="ops-input" type="text" autocomplete="off" spellcheck="false" autocapitalize="off" />
+          <button type="button" class="ops-btn" id="opsHintBtn">hint</button>
           <button type="button" class="ops-btn" id="opsSubmit">enter</button>
         </div>
         <div class="ops-log" id="opsLog" aria-live="polite"></div>
@@ -627,7 +643,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=41"></script>
-  <script src="ops.js?v=1"></script>
+  <script src="app.js?v=42"></script>
+  <script src="ops.js?v=2"></script>
 </body>
 </html>
