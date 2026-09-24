@@ -1,5 +1,6 @@
 -- Вставьте в Supabase → SQL Editor → Run
 -- (можно запускать повторно)
+-- Обновляет политику топа под новые режимы и уровни.
 
 create table if not exists scores (
   id bigserial primary key,
@@ -25,14 +26,27 @@ create policy "read scores"
   on scores for select
   using (true);
 
+-- Топ: только идеальные 10/10 без таймаута.
+-- Уровни 1–6 (включая секрет), режимы всех академий.
 create policy "insert scores"
   on scores for insert
   with check (
     char_length(trim(nick)) between 2 and 16
     and correct = 10
     and timed_out is not true
-    and level between 1 and 5
-    and (mode is null or mode in ('basic','chain'))
+    and level between 1 and 6
+    and (
+      mode is null
+      or mode in (
+        'basic',
+        'chain',
+        'units',
+        'mul',
+        'div',
+        'eng',
+        'code'
+      )
+    )
   );
 
 -- Убрать старые неидеальные результаты из топа (по желанию)

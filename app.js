@@ -84,6 +84,8 @@ async function fetchScores(levelFilter, modeFilter = "all", { limit = BOARD_FETC
     if (withMode && modeFilter === MODE_UNITS) params.set("mode", `eq.${MODE_UNITS}`);
     if (withMode && modeFilter === MODE_MUL) params.set("mode", `eq.${MODE_MUL}`);
     if (withMode && modeFilter === MODE_DIV) params.set("mode", `eq.${MODE_DIV}`);
+    if (withMode && modeFilter === MODE_ENG) params.set("mode", `eq.${MODE_ENG}`);
+    if (withMode && modeFilter === MODE_CODE) params.set("mode", `eq.${MODE_CODE}`);
     return params;
   };
 
@@ -128,6 +130,8 @@ async function fetchScores(levelFilter, modeFilter = "all", { limit = BOARD_FETC
   if (modeFilter === MODE_UNITS) return list.filter((r) => r.mode === MODE_UNITS);
   if (modeFilter === MODE_MUL) return list.filter((r) => r.mode === MODE_MUL);
   if (modeFilter === MODE_DIV) return list.filter((r) => r.mode === MODE_DIV);
+  if (modeFilter === MODE_ENG) return list.filter((r) => r.mode === MODE_ENG);
+  if (modeFilter === MODE_CODE) return list.filter((r) => r.mode === MODE_CODE);
   if (modeFilter === MODE_BASIC) return list.filter((r) => !r.mode || r.mode === MODE_BASIC);
   return list;
 }
@@ -2918,9 +2922,24 @@ function loadState() {
   }
 }
 
+const RUNS_KEEP = 60;
+
 function saveState() {
   state.version = DATA_VERSION;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  try {
+    if (Array.isArray(state.runs) && state.runs.length > RUNS_KEEP) {
+      state.runs = state.runs.slice(0, RUNS_KEEP);
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (err) {
+    // Квота localStorage — режем историю и пробуем ещё раз
+    try {
+      if (Array.isArray(state.runs)) state.runs = state.runs.slice(0, 20);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (err2) {
+      console.warn("saveState failed", err2);
+    }
+  }
 }
 
 function rankFor(stars) {
@@ -4721,10 +4740,22 @@ function paintMascots() {
 }
 
 function achProgress(a) {
-  const p = a.progress(state);
-  const unlocked = state.achievements.includes(a.id) || a.check(state);
+  let p = { current: 0, target: 1 };
+  try {
+    p = a.progress(state) || p;
+  } catch (err) {
+    console.warn("ach progress failed", a && a.id, err);
+  }
+  let unlocked = state.achievements.includes(a.id);
+  if (!unlocked) {
+    try {
+      unlocked = !!a.check(state);
+    } catch (err) {
+      /* ignore */
+    }
+  }
   const shown = unlocked ? Math.max(p.current, p.target) : Math.max(0, p.current);
-  const pct = unlocked ? 100 : Math.min(100, Math.round((shown / p.target) * 100));
+  const pct = unlocked ? 100 : Math.min(100, Math.round((shown / Math.max(1, p.target)) * 100));
   return {
     current: Math.min(shown, p.target),
     raw: p.current,
@@ -4765,9 +4796,13 @@ function answersReviewHtml(answers) {
 
 function historyItemHtml(r, detailed) {
   const mode = r.mode || MODE_BASIC;
-  const lvl = levelCfg(r.level || 1, mode);
+  const lvl = levelCfg(r.level || 1, mode) || { name: "Уровень" };
   const modeInfo = MODE_META[mode] || MODE_META[MODE_BASIC];
-  const lvlName = modeInfo.levelNames[(r.level || 1) - 1] || lvl.name;
+  const battleName = isBattleLevel(r.level) ? (battleCfg(r.level).name || "Бой") : null;
+  const lvlName = battleName
+    || modeInfo.levelNames[(r.level || 1) - 1]
+    || lvl.name
+    || "Уровень";
   const extra = r.timedOut ? " · время вышло" : "";
   const gradeBit = r.grade != null
     ? ` · <span class="hist-grade g${r.grade}${r.failed ? " fail" : ""}">${r.failed ? "2 провал" : r.grade}${r.forgive ? ` · читер×${r.forgive}` : ""}</span>`
@@ -5750,7 +5785,14 @@ function coinsFor(level, correct, timedOut, grade) {
 
 function unlockAchievements() {
   const before = new Set(state.achievements);
-  const now = ACHIEVEMENTS.filter((a) => a.check(state)).map((a) => a.id);
+  const now = [];
+  ACHIEVEMENTS.forEach((a) => {
+    try {
+      if (a.check(state)) now.push(a.id);
+    } catch (err) {
+      console.warn("ach check failed", a.id, err);
+    }
+  });
   const fresh = now.filter((id) => !before.has(id));
   state.achievements = [...new Set([...state.achievements, ...now])];
   return ACHIEVEMENTS.filter((a) => fresh.includes(a.id));
@@ -5828,8 +5870,18 @@ function finishRun({ timedOut = false } = {}) {
   if (run.level === SECRET_LEVEL && correct === 10) {
     grantSecretReward();
   }
-  applyCareAfterStudy(correct, run.answers.length || TOTAL, timedOut);
-  const fresh = unlockAchievements();
+  let fresh = [];
+  try {
+    applyCareAfterStudy(correct, run.answers.length || TOTAL, timedOut);
+  } catch (err) {
+    console.warn("care after study failed", err);
+  }
+  try {
+    fresh = unlockAchievements();
+  } catch (err) {
+    console.warn("unlockAchievements failed", err);
+    fresh = [];
+  }
   saveState();
 
   document.body.classList.remove("in-battle");
@@ -5844,26 +5896,30 @@ function finishRun({ timedOut = false } = {}) {
       ? { title: `${battleCfg(run.battleId || run.level).name || "Бой"} пройден!`, text: "Задание побеждено — ты герой!" }
       : { title: "Поражение…", text: "HP кончились. Подлечись в магазине и попробуй снова!" })
     : encouragement(correct, timedOut, grade);
-  els.resultTitle.textContent = msg.title;
-  els.rewardLine.textContent = `${msg.text}  +${gainedStars} опыта  +${gainedCoins} монет`;
-  renderBattleHud();
-  els.correctCount.textContent = String(correct);
-  els.resultTime.textContent = timedOut ? `${formatTime(ms)} (время)` : formatTime(ms);
-  els.coinsGain.textContent = String(gainedCoins);
-  els.starsGain.textContent = String(gainedStars);
-  els.startTimePill.textContent = `Старт: ${formatStamp(run.startedIso)}`;
+  if (els.resultTitle) els.resultTitle.textContent = msg.title;
+  if (els.rewardLine) els.rewardLine.textContent = `${msg.text}  +${gainedStars} опыта  +${gainedCoins} монет`;
+  try { renderBattleHud(); } catch (err) { /* ignore */ }
+  if (els.correctCount) els.correctCount.textContent = String(correct);
+  if (els.resultTime) els.resultTime.textContent = timedOut ? `${formatTime(ms)} (время)` : formatTime(ms);
+  if (els.coinsGain) els.coinsGain.textContent = String(gainedCoins);
+  if (els.starsGain) els.starsGain.textContent = String(gainedStars);
+  if (els.startTimePill) els.startTimePill.textContent = `Старт: ${formatStamp(run.startedIso)}`;
   if (els.gradeRow && els.gradeMark) {
     if (grade) {
       els.gradeRow.classList.remove("hidden");
       els.gradeMark.textContent = grade.failed ? "2 · провал" : String(grade.mark);
-      els.gradePill.className = `score-pill grade g${grade.mark}${grade.failed ? " fail" : ""}`;
+      if (els.gradePill) {
+        els.gradePill.className = `score-pill grade g${grade.mark}${grade.failed ? " fail" : ""}`;
+      }
     } else {
       els.gradeRow.classList.add("hidden");
     }
   }
-  els.starBurst.innerHTML = gainedStars
-    ? Array.from({ length: Math.min(gainedStars, 10) }, (_, i) => `<span class="star-chip sm" style="animation-delay:${i * 0.08}s"></span>`).join("")
-    : `<span>🌱</span>`;
+  if (els.starBurst) {
+    els.starBurst.innerHTML = gainedStars
+      ? Array.from({ length: Math.min(gainedStars, 10) }, (_, i) => `<span class="star-chip sm" style="animation-delay:${i * 0.08}s"></span>`).join("")
+      : `<span>🌱</span>`;
+  }
   const extraBanners = [];
   if (openAfter > openBefore) {
     const opened = levelCfg(openAfter);
@@ -5885,10 +5941,12 @@ function finishRun({ timedOut = false } = {}) {
       extraBanners.push(`<div class="ach-banner"><span class="ico">💡</span><div>Скилл открыт!<small>«Мудрец» в магазине (нужен Архимаг)</small></div></div>`);
     }
   }
-  els.newAchs.innerHTML = extraBanners.join("") + fresh
-    .map((a) => `<div class="ach-banner"><span class="ico">${a.icon === "🪙" ? '<span class="coin md"></span>' : (a.icon === "67" ? '<span class="ico-67">6 7</span>' : a.icon)}</span><div>${a.name}<small>${a.desc}</small></div></div>`)
-    .join("");
-  els.reviewList.innerHTML = answersReviewHtml(run.answers);
+  if (els.newAchs) {
+    els.newAchs.innerHTML = extraBanners.join("") + fresh
+      .map((a) => `<div class="ach-banner"><span class="ico">${a.icon === "🪙" ? '<span class="coin md"></span>' : (a.icon === "67" ? '<span class="ico-67">6 7</span>' : a.icon)}</span><div>${a.name}<small>${a.desc}</small></div></div>`)
+      .join("");
+  }
+  if (els.reviewList) els.reviewList.innerHTML = answersReviewHtml(run.answers);
 
   const celebrate = run.battle
     ? !!run.battleWin
@@ -5896,11 +5954,15 @@ function finishRun({ timedOut = false } = {}) {
   const perfectWin = run.battle
     ? !!run.battleWin
     : (grade ? grade.mark === 5 && !timedOut : correct === 10);
-  spawnConfetti(celebrate);
-  spawnLoot(gainedStars, gainedCoins);
-  spawnVictoryFx(celebrate, perfectWin);
+  try {
+    spawnConfetti(celebrate);
+    spawnLoot(gainedStars, gainedCoins);
+    spawnVictoryFx(celebrate, perfectWin);
+  } catch (err) {
+    console.warn("fx failed", err);
+  }
   document.body.classList.remove("slow-mo");
-  paintMascots();
+  try { paintMascots(); } catch (err) { console.warn("paintMascots", err); }
   const toasts = [...fresh];
   if (openAfter > openBefore) {
     toasts.unshift({ icon: "🔓", name: `Открыт «${levelCfg(openAfter).name}»`, desc: "Можно играть новый уровень!" });
@@ -5920,18 +5982,30 @@ function finishRun({ timedOut = false } = {}) {
   if (fresh.some((a) => a.id === "six_seven")) {
     setTimeout(() => showSixSevenEgg(), 700);
   }
+  // Сначала экран результата и отправка в топ — дом обновляем после,
+  // чтобы сбой ухода/ачивок не съел новый результат.
   showScreen("result");
-  renderHome();
   if (!run.battle) {
-    submitOnlineScore({
-      level: run.level,
-      correct,
-      ms,
-      grade: grade ? grade.mark : null,
-      timedOut,
-      mode: selectedMode,
-      localId: run.startedIso,
-    });
+    try {
+      submitOnlineScore({
+        level: run.level,
+        correct,
+        ms,
+        grade: grade ? grade.mark : null,
+        timedOut,
+        mode: selectedMode,
+        localId: run.startedIso,
+      });
+    } catch (err) {
+      console.warn("submitOnlineScore failed", err);
+    }
+  }
+  try {
+    renderHome();
+  } catch (err) {
+    console.warn("renderHome after result failed", err);
+    if (els.totalCoins) els.totalCoins.textContent = String(state.coins);
+    if (els.totalStars) els.totalStars.textContent = String(state.stars);
   }
 }
 
