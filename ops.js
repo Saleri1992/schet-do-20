@@ -1,5 +1,5 @@
 /**
- * OPS DRILL — личный тренажёр (CMD/PS + SQL + Java).
+ * OPS DRILL — личный тренажёр (CMD/PS + SQL + Java + Parse + HTTP).
  * Вход: Ctrl+Shift+O или кнопка ⌘ на главной → код `sys.ops`
  */
 (function () {
@@ -254,6 +254,140 @@
         { ask: "Модификатор «без объекта, у класса»", answer: "static", tip: "public static void main" },
       ],
     },
+    {
+      id: "parse",
+      name: "Parse",
+      blurb: "Текст → структура",
+      learn: true,
+      lessons: [
+        {
+          title: "Что такое парсинг",
+          points: [
+            "Парсинг — разобрать сырой текст/байты в понятную структуру.",
+            "Пример: строка JSON → объект с полями name, age.",
+            "Частые форматы: JSON, CSV, XML, HTML, лог-строки.",
+          ],
+          tip: "Сначала узнай формат, потом разбирай.",
+        },
+        {
+          title: "JSON — база",
+          points: [
+            "Объект: { \"name\": \"Ann\", \"age\": 10 }",
+            "Массив: [1, 2, 3] или [ {…}, {…} ]",
+            "Ключи в кавычках. Типы: строка, число, true/false, null, объект, массив.",
+          ],
+          tip: "JSON — самый частый ответ API.",
+        },
+        {
+          title: "PowerShell: JSON",
+          points: [
+            "Текст → объект: $j | ConvertFrom-Json",
+            "Объект → текст: $obj | ConvertTo-Json",
+            "Потом обращайся к полям: $j.name",
+          ],
+          tip: "ConvertFrom-Json — «сделай объект из JSON».",
+        },
+        {
+          title: "CSV и поиск в тексте",
+          points: [
+            "CSV — таблица в тексте: столбцы через запятую, строки через Enter.",
+            "Import-Csv file.csv — строки как объекты.",
+            "Select-String -Pattern \"error\" — найти строки по шаблону (regex).",
+          ],
+          tip: "CSV удобен для отчётов и экспорта.",
+        },
+        {
+          title: "Regex — минимум",
+          points: [
+            "Regex = шаблон поиска: цифры \\d, слово \\w, любое . , повтор + *",
+            "Пример: \\d{3} — ровно 3 цифры.",
+            "Не гонись за сложностью: сначала простой паттерн, потом уточняй.",
+          ],
+          tip: "Regex ищет/вырезает куски из текста.",
+        },
+      ],
+      drills: [
+        { ask: "Разбор текста в структуру — термин", answer: "parse", alts: ["parsing", "парсинг"], tip: "parse = разобрать" },
+        { ask: "Формат API: объект в фигурных скобках", answer: "json", tip: "{ \"key\": \"value\" }" },
+        { ask: "PS: JSON-текст → объект", answer: "convertfrom-json", alts: ["convertfrom-json"], tip: "$s | ConvertFrom-Json" },
+        { ask: "PS: объект → JSON-текст", answer: "convertto-json", tip: "$obj | ConvertTo-Json" },
+        { ask: "Таблица в тексте через запятые — формат", answer: "csv", tip: "name,age" },
+        { ask: "PS: прочитать CSV в объекты", answer: "import-csv", tip: "Import-Csv file.csv" },
+        { ask: "PS: поиск по шаблону в тексте", answer: "select-string", alts: ["sls"], tip: "Select-String -Pattern …" },
+        { ask: "Шаблон поиска в тексте — термин", answer: "regex", alts: ["regexp", "regular expression"], tip: "\\d = цифра" },
+        { ask: "В JSON: список значений в квадратных скобках", answer: "array", alts: ["массив"], tip: "[1, 2, 3]" },
+        { ask: "В JSON: null означает…", answer: "null", alts: ["пусто", "ничего", "none"], tip: "явное «нет значения»" },
+        { ask: "Ключи в JSON обычно в…", answer: "quotes", alts: ["кавычки", "двойные кавычки", "\"\""], tip: "\"name\": …" },
+        { ask: "XML/HTML: кусок между тегами называют…", answer: "element", alts: ["элемент", "tag", "тег"], tip: "<name>Ann</name>" },
+      ],
+    },
+    {
+      id: "http",
+      name: "HTTP",
+      blurb: "Веб-запросы",
+      learn: true,
+      lessons: [
+        {
+          title: "Что такое HTTP-запрос",
+          points: [
+            "Клиент (браузер/скрипт) шлёт запрос → сервер отвечает.",
+            "URL: схема + хост + путь, напр. https://api.example.com/users",
+            "Ответ: статус (200/404…) + заголовки + тело (часто JSON).",
+          ],
+          tip: "Запрос = «что хочу», ответ = «что вернули».",
+        },
+        {
+          title: "Методы: GET и POST",
+          points: [
+            "GET — прочитать/получить данные (без тела или с query ?id=1).",
+            "POST — отправить данные на сервер (тело запроса).",
+            "Ещё: PUT/PATCH — обновить, DELETE — удалить (как у REST API).",
+          ],
+          tip: "GET = взять, POST = отправить.",
+        },
+        {
+          title: "Коды ответа",
+          points: [
+            "2xx — ок. 200 OK — успех.",
+            "4xx — ошибка клиента: 404 не найдено, 401 нужна авторизация, 403 запрещено.",
+            "5xx — ошибка сервера: 500 internal error.",
+          ],
+          tip: "Сначала смотри Status Code.",
+        },
+        {
+          title: "PowerShell: веб-запросы",
+          points: [
+            "Invoke-WebRequest — полный ответ (статус, заголовки, Content).",
+            "Invoke-RestMethod — сразу разберёт JSON в объект (удобно для API).",
+            "Пример: Invoke-RestMethod -Uri https://api.example.com/users",
+          ],
+          tip: "iwr / irm — короткие алиасы.",
+        },
+        {
+          title: "curl и заголовки",
+          points: [
+            "curl URL — простой GET из терминала (есть в Win10+).",
+            "Заголовок Authorization часто несёт токен доступа.",
+            "Content-Type: application/json — тело в формате JSON.",
+          ],
+          tip: "Заголовки = метаданные запроса/ответа.",
+        },
+      ],
+      drills: [
+        { ask: "Протокол веб-запросов браузера/API", answer: "http", alts: ["https"], tip: "HyperText Transfer Protocol" },
+        { ask: "Метод: получить данные", answer: "get", tip: "GET /users" },
+        { ask: "Метод: отправить данные на сервер", answer: "post", tip: "POST + body" },
+        { ask: "Метод REST: удалить ресурс", answer: "delete", tip: "DELETE /users/1" },
+        { ask: "Успешный код ответа", answer: "200", alts: ["200 ok"], tip: "2xx = ok" },
+        { ask: "Код: страница/ресурс не найден", answer: "404", tip: "Not Found" },
+        { ask: "Код: нужна авторизация", answer: "401", alts: ["401 unauthorized"], tip: "Unauthorized" },
+        { ask: "PS: запрос к API с разбором JSON", answer: "invoke-restmethod", alts: ["irm"], tip: "Invoke-RestMethod -Uri …" },
+        { ask: "PS: полный HTTP-ответ (статус, headers, content)", answer: "invoke-webrequest", alts: ["iwr"], tip: "Invoke-WebRequest -Uri …" },
+        { ask: "Утилита CLI для HTTP-запроса", answer: "curl", tip: "curl https://…" },
+        { ask: "Заголовок с токеном доступа часто называется", answer: "authorization", alts: ["authorization:", "auth"], tip: "Authorization: Bearer …" },
+        { ask: "Тип тела JSON в заголовке Content-Type", answer: "application/json", alts: ["application/json; charset=utf-8"], tip: "Content-Type: application/json" },
+      ],
+    },
   ];
 
   const ACHIEVEMENTS = [
@@ -264,6 +398,8 @@
     { id: "cats", name: "full.map", desc: "Все категории ≥1 раз", check: (s) => CATEGORIES.every((c) => (s.catRuns || {})[c.id] >= 1) },
     { id: "sql1", name: "sql.select", desc: "Прогон SQL", check: (s) => (s.catRuns || {}).sql >= 1 },
     { id: "java1", name: "java.main", desc: "Прогон Java", check: (s) => (s.catRuns || {}).java >= 1 },
+    { id: "parse1", name: "parse.json", desc: "Прогон Parse", check: (s) => (s.catRuns || {}).parse >= 1 },
+    { id: "http1", name: "http.get", desc: "Прогон HTTP", check: (s) => (s.catRuns || {}).http >= 1 },
     { id: "xp200", name: "xp.200", desc: "Набрать 200 XP", check: (s) => (s.xp || 0) >= 200 },
     { id: "senior", name: "senior.ops", desc: "Ранг senior.ops+", check: (s) => (s.xp || 0) >= 280 },
   ];
