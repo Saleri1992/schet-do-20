@@ -425,21 +425,48 @@ const LEVELS = {
 const UNIT_LEVELS = {
   1: {
     id: 1,
-    name: "Конвертация",
+    name: "Составные",
     theme: "units",
     coin: 3,
     limit: null,
     units: "convert",
+    convert: "compound10",
+    introKind: "compound10",
     balloons: ["📏", "📐", "📏"],
-    subtitle: "Переведи длину: см↔мм, дм↔см, м↔дм и составные (4 дм 1 см = ? см). Без дробей.",
+    subtitle: "Составные: 4 дм 1 см = ? см. Только ×10 (см↔мм, дм↔см, м↔дм). Без дробей.",
   },
   2: {
     id: 2,
+    name: "Метры",
+    theme: "units",
+    coin: 3,
+    limit: null,
+    units: "convert",
+    convert: "compound100",
+    introKind: "compound100",
+    balloons: ["📏", "🏠", "📏"],
+    subtitle: "Составные с метрами. Единственная «сотня»: 1 м = 100 см. Без дробей.",
+  },
+  3: {
+    id: 3,
+    name: "Через единицы",
+    theme: "units",
+    coin: 4,
+    limit: null,
+    units: "convert",
+    convert: "simple",
+    introKind: "simple",
+    balloons: ["🧠", "📏", "🧠"],
+    subtitle: "Простые переводы: мм↔см, см↔дм, м↔дм и м↔см. С напоминалкой перед стартом.",
+  },
+  4: {
+    id: 4,
     name: "Сравнение",
     theme: "unitsCmp",
     coin: 4,
     limit: null,
     units: "compare",
+    introKind: "compare",
     balloons: ["⚖️", "📏", "⚖️"],
     subtitle: "Что больше по длине? Ответ: 1, 2 или 0 если равно. Сначала таблица 10 сек.",
   },
@@ -595,13 +622,15 @@ const MODE_META = {
     id: MODE_UNITS,
     name: "Меры",
     unlockText: "Единицы измерения",
-    maxLevel: 2,
-    levelNames: ["Конвертация", "Сравнение"],
+    maxLevel: 4,
+    levelNames: ["Составные", "Метры", "Через единицы", "Сравнение"],
     levelDescs: [
-      "см↔мм, дм↔см, м↔дм, м↔см + составные: 4 дм 1 см = ? см (без дробей)",
+      "Составные, только ×10: 4 дм 1 см = ? см",
+      "Составные с метрами: 1 м = 100 см",
+      "Простые переводы с напоминалкой: мм=см, см=дм, м=см",
       "Сравни длины: 1 / 2 / 0=равно",
     ],
-    themes: ["units", "unitsCmp"],
+    themes: ["units", "units", "units", "unitsCmp"],
   },
   [MODE_MUL]: {
     id: MODE_MUL,
@@ -1768,8 +1797,10 @@ const ACHIEVEMENTS = [
   { id: "boost_extra_5", icon: "⏳", name: "Запас времени", desc: "Используй +15 сек 5 раз", check: (s) => (s.shop?.boostUsed?.extra || 0) >= 5, progress: (s) => ({ current: s.shop?.boostUsed?.extra || 0, target: 5 }) },
   { id: "boost_cheat_5", icon: "🕵️", name: "Хитрый план", desc: "Используй читер 5 раз", check: (s) => (s.shop?.boostUsed?.cheat || 0) >= 5, progress: (s) => ({ current: s.shop?.boostUsed?.cheat || 0, target: 5 }) },
   { id: "boost_any_10", icon: "⚡", name: "Буст-мастер", desc: "Используй любые бусты суммарно 10 раз", check: (s) => ((s.shop?.boostUsed?.slow || 0) + (s.shop?.boostUsed?.extra || 0) + (s.shop?.boostUsed?.cheat || 0)) >= 10, progress: (s) => ({ current: (s.shop?.boostUsed?.slow || 0) + (s.shop?.boostUsed?.extra || 0) + (s.shop?.boostUsed?.cheat || 0), target: 10 }) },
-  { id: "units_convert", icon: "📏", name: "Переводчик", desc: "10/10 на конвертации мер", check: (s) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_UNITS && (r.level || 1) === 1 && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_UNITS && (r.level || 1) === 1).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
-  { id: "units_compare", icon: "⚖️", name: "Весы", desc: "10/10 на сравнении мер", check: (s) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_UNITS && r.level === 2 && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_UNITS && r.level === 2).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
+  { id: "units_convert", icon: "📏", name: "Переводчик", desc: "10/10 на «Составные»", check: (s) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_UNITS && (r.level || 1) === 1 && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_UNITS && (r.level || 1) === 1).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
+  { id: "units_meters", icon: "🏠", name: "Метры", desc: "10/10 на этапе «Метры»", check: (s) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_UNITS && r.level === 2 && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_UNITS && r.level === 2).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
+  { id: "units_simple", icon: "🧠", name: "Через единицы", desc: "10/10 на простых переводах", check: (s) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_UNITS && r.level === 3 && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_UNITS && r.level === 3).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
+  { id: "units_compare", icon: "⚖️", name: "Весы", desc: "10/10 на сравнении мер", check: (s) => s.runs.some((r) => (r.mode || MODE_BASIC) === MODE_UNITS && r.level === 4 && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_UNITS && r.level === 4).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
   { id: "mul_easy", icon: "💡", name: "Понял суть", desc: "10/10 на этапе «Суть» умножения", check: (s) => s.runs.some((r) => r.mode === MODE_MUL && (r.level || 1) === 1 && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => r.mode === MODE_MUL && (r.level || 1) === 1).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
   { id: "mul_table", icon: "2️⃣", name: "Двойки и тройки", desc: "10/10 на этапе «×2 и ×3»", check: (s) => s.runs.some((r) => r.mode === MODE_MUL && r.level === 2 && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => r.mode === MODE_MUL && r.level === 2).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
   { id: "mul_hard", icon: "🎲", name: "Смешанный мастер", desc: "10/10 на этапе «Смешанно»", check: (s) => s.runs.some((r) => r.mode === MODE_MUL && r.level === 5 && r.correct === 10), progress: (s) => ({ current: s.runs.filter((r) => r.mode === MODE_MUL && r.level === 5).reduce((m, r) => Math.max(m, r.correct || 0), 0), target: 10 }) },
@@ -3175,8 +3206,7 @@ function secretGateNeeds() {
   }
   for (let l = 1; l <= 5; l += 1) need.push({ mode: MODE_MUL, level: l });
   for (let l = 1; l <= 5; l += 1) need.push({ mode: MODE_DIV, level: l });
-  need.push({ mode: MODE_UNITS, level: 1 });
-  need.push({ mode: MODE_UNITS, level: 2 });
+  for (let l = 1; l <= 4; l += 1) need.push({ mode: MODE_UNITS, level: l });
   return need;
 }
 
@@ -3292,7 +3322,7 @@ function equippedBattleRelic() {
 
 function battleRoundsForMode(mode = selectedMode, battleId = selectedLevel) {
   let all;
-  if (mode === MODE_UNITS) all = [1, 2];
+  if (mode === MODE_UNITS) all = [1, 2, 3, 4];
   else if (mode === MODE_MUL || mode === MODE_DIV || mode === MODE_ENG || mode === MODE_CODE) all = [1, 2, 3, 4, 5];
   else all = [1, 2, 3, 4, 5];
   const frac = (battleCfg(battleId).roundFrac != null) ? battleCfg(battleId).roundFrac : 1;
@@ -3310,7 +3340,7 @@ function isBossOpen(id = BATTLE_LEVEL) {
   const bid = Number(id);
   if (!isBattleLevel(bid)) return false;
   const allReady = (selectedMode === MODE_UNITS
-    ? [1, 2]
+    ? [1, 2, 3, 4]
     : [1, 2, 3, 4, 5]
   ).every((lvl) => hasPerfect(lvl));
   if (bid === 7) return allReady;
@@ -3357,7 +3387,7 @@ function isLevelOpen(id) {
   if (id < 1 || id > max) return false;
   if (selectedMode === MODE_UNITS) {
     if (id === 1) return modeProgress(MODE_BASIC, 3) || modeProgress(MODE_CHAIN, 3);
-    return hasPerfect(1);
+    return hasPerfect(id - 1);
   }
   if (selectedMode === MODE_MUL || selectedMode === MODE_DIV || selectedMode === MODE_ENG || selectedMode === MODE_CODE) {
     if (id <= 1) return true;
@@ -3435,9 +3465,11 @@ function mapLayoutForMode(mode = selectedMode) {
     return [
       { id: 1, kind: "level", col: 2, row: 1 },
       { id: 2, kind: "level", col: 4, row: 1 },
-      { id: 7, kind: "boss", col: 1, row: 2 },
-      { id: 8, kind: "boss", col: 3, row: 3 },
-      { id: 9, kind: "boss", col: 5, row: 2 },
+      { id: 3, kind: "level", col: 3, row: 2 },
+      { id: 4, kind: "level", col: 1, row: 3 },
+      { id: 7, kind: "boss", col: 2, row: 4 },
+      { id: 8, kind: "boss", col: 4, row: 5 },
+      { id: 9, kind: "boss", col: 3, row: 6 },
     ];
   }
   if (mode === MODE_ENG || mode === MODE_CODE) {
@@ -3699,8 +3731,59 @@ function generateSecretChain() {
   return { a: 20, b: 5, c: 3, op1: "+", op2: "−", text: "20 + 5 − 3 = ?", answer: 22 };
 }
 
-function generateLengthConvert() {
-  // Простые соседние переводы + составные (всегда целое число, без дробей).
+function generateLengthConvert(kind = "compound10") {
+  // Всегда целое число, без дробей.
+  // compound10 — только ×10 (соседние единицы), упор на составные.
+  // compound100 — составные с единственной «сотней» м↔см.
+  // simple — простые переводы через единицы (сложный этап).
+  const compound10 = [
+    () => {
+      const dm = rand(1, 9);
+      const cm = rand(1, 9);
+      return { text: `${dm} дм ${cm} см = ? см`, answer: dm * 10 + cm };
+    },
+    () => {
+      const cm = rand(1, 9);
+      const mm = rand(1, 9);
+      return { text: `${cm} см ${mm} мм = ? мм`, answer: cm * 10 + mm };
+    },
+    () => {
+      const m = rand(1, 5);
+      const dm = rand(1, 9);
+      return { text: `${m} м ${dm} дм = ? дм`, answer: m * 10 + dm };
+    },
+  ];
+  const compound100 = [
+    () => {
+      const m = rand(1, 3);
+      const cm = rand(1, 99);
+      return { text: `${m} м ${cm} см = ? см`, answer: m * 100 + cm };
+    },
+    () => {
+      const m = rand(1, 3);
+      const dm = rand(0, 9);
+      return { text: `${m} м ${dm} дм = ? см`, answer: m * 100 + dm * 10 };
+    },
+    () => {
+      const m = rand(1, 2);
+      const dm = rand(0, 9);
+      const cm = rand(1, 9);
+      return { text: `${m} м ${dm} дм ${cm} см = ? см`, answer: m * 100 + dm * 10 + cm };
+    },
+    () => { const n = rand(1, 5); return { text: `${n} м = ? см`, answer: n * 100 }; },
+    () => { const n = rand(1, 5); return { text: `${n * 100} см = ? м`, answer: n }; },
+    // немного составных ×10 для разнообразия
+    () => {
+      const dm = rand(1, 9);
+      const cm = rand(1, 9);
+      return { text: `${dm} дм ${cm} см = ? см`, answer: dm * 10 + cm };
+    },
+    () => {
+      const m = rand(1, 5);
+      const dm = rand(1, 9);
+      return { text: `${m} м ${dm} дм = ? дм`, answer: m * 10 + dm };
+    },
+  ];
   const simple = [
     () => { const n = rand(1, 9); return { text: `${n} см = ? мм`, answer: n * 10 }; },
     () => { const n = rand(1, 9); return { text: `${n * 10} мм = ? см`, answer: n }; },
@@ -3708,63 +3791,13 @@ function generateLengthConvert() {
     () => { const n = rand(1, 9); return { text: `${n * 10} см = ? дм`, answer: n }; },
     () => { const n = rand(1, 9); return { text: `${n} м = ? дм`, answer: n * 10 }; },
     () => { const n = rand(1, 9); return { text: `${n * 10} дм = ? м`, answer: n }; },
+    // единственная сотня
     () => { const n = rand(1, 5); return { text: `${n} м = ? см`, answer: n * 100 }; },
     () => { const n = rand(1, 5); return { text: `${n * 100} см = ? м`, answer: n }; },
-    () => { const n = rand(1, 9); return { text: `${n} дм = ? мм`, answer: n * 100 }; },
-    () => { const n = rand(1, 9); return { text: `${n * 100} мм = ? дм`, answer: n }; },
   ];
-  const compound = [
-    // дм + см → см
-    () => {
-      const dm = rand(1, 9);
-      const cm = rand(1, 9);
-      return { text: `${dm} дм ${cm} см = ? см`, answer: dm * 10 + cm };
-    },
-    // дм + см → мм
-    () => {
-      const dm = rand(1, 5);
-      const cm = rand(0, 9);
-      return { text: `${dm} дм ${cm} см = ? мм`, answer: dm * 100 + cm * 10 };
-    },
-    // см + мм → мм
-    () => {
-      const cm = rand(1, 9);
-      const mm = rand(1, 9);
-      return { text: `${cm} см ${mm} мм = ? мм`, answer: cm * 10 + mm };
-    },
-    // м + дм → дм
-    () => {
-      const m = rand(1, 5);
-      const dm = rand(1, 9);
-      return { text: `${m} м ${dm} дм = ? дм`, answer: m * 10 + dm };
-    },
-    // м + дм → см
-    () => {
-      const m = rand(1, 3);
-      const dm = rand(0, 9);
-      return { text: `${m} м ${dm} дм = ? см`, answer: m * 100 + dm * 10 };
-    },
-    // м + см → см
-    () => {
-      const m = rand(1, 3);
-      const cm = rand(1, 99);
-      return { text: `${m} м ${cm} см = ? см`, answer: m * 100 + cm };
-    },
-    // м + дм + см → см (чуть сложнее)
-    () => {
-      const m = rand(1, 2);
-      const dm = rand(0, 9);
-      const cm = rand(1, 9);
-      return { text: `${m} м ${dm} дм ${cm} см = ? см`, answer: m * 100 + dm * 10 + cm };
-    },
-    // дм + мм → мм
-    () => {
-      const dm = rand(1, 4);
-      const mm = rand(1, 9);
-      return { text: `${dm} дм ${mm} мм = ? мм`, answer: dm * 100 + mm };
-    },
-  ];
-  const pool = Math.random() < 0.45 ? simple : compound;
+  const pool = kind === "simple" ? simple
+    : kind === "compound100" ? compound100
+      : compound10;
   return pool[rand(0, pool.length - 1)]();
 }
 
@@ -3827,8 +3860,8 @@ function generateLengthCompare() {
   };
 }
 
-function generateUnitsConvert() {
-  return generateLengthConvert();
+function generateUnitsConvert(kind = "compound10") {
+  return generateLengthConvert(kind);
 }
 
 function generateUnitsCompare() {
@@ -4122,7 +4155,7 @@ function generateProblem(level) {
   if (selectedMode === MODE_UNITS) {
     const cfg = levelCfg(level);
     if (cfg.units === "compare") return generateUnitsCompare();
-    return generateUnitsConvert();
+    return generateUnitsConvert(cfg.convert || "compound10");
   }
   if (selectedMode === MODE_MUL) return generateMulProblem(level);
   if (selectedMode === MODE_DIV) return generateDivProblem(level);
@@ -4179,7 +4212,9 @@ function generateRun(level) {
     const seen = new Set();
     let guard = 0;
     while (items.length < TOTAL && guard < 160) {
-      const p = cfg.units === "compare" ? generateUnitsCompare() : generateUnitsConvert();
+      const p = cfg.units === "compare"
+        ? generateUnitsCompare()
+        : generateUnitsConvert(cfg.convert || "compound10");
       if (!seen.has(p.text)) {
         seen.add(p.text);
         items.push(p);
@@ -4187,7 +4222,9 @@ function generateRun(level) {
       guard += 1;
     }
     while (items.length < TOTAL) {
-      items.push(cfg.units === "compare" ? generateUnitsCompare() : generateUnitsConvert());
+      items.push(cfg.units === "compare"
+        ? generateUnitsCompare()
+        : generateUnitsConvert(cfg.convert || "compound10"));
     }
     return items;
   }
@@ -4957,10 +4994,14 @@ function renderHome() {
   } else if (selectedMode === MODE_UNITS) {
     if (!isLevelOpen(1)) {
       els.unlockHint.textContent = "Меры откроются после 10/10 на «Сложный» (База или 2 действия).";
-    } else if (!isLevelOpen(2)) {
-      els.unlockHint.textContent = "10/10 на «Конвертация» откроет «Сравнение».";
+    } else if (!isLevelOpen(4)) {
+      const next = [2, 3, 4].find((id) => !isLevelOpen(id));
+      const prev = next - 1;
+      els.unlockHint.textContent = `10/10 на «${modeInfo.levelNames[prev - 1]}» откроет «${modeInfo.levelNames[next - 1]}»`;
+    } else if (!isBossOpen(7)) {
+      els.unlockHint.textContent = "Все уровни мер открыты. Пройди их на 10/10 — откроется Бой 1.";
     } else {
-      els.unlockHint.textContent = "Оба уровня мер открыты. Перед стартом — таблица на 10 сек.";
+      els.unlockHint.textContent = "Меры и бои открыты. Перед стартом — таблица на 10 сек.";
     }
   } else if (selectedMode === MODE_MUL) {
     if (!isLevelOpen(2)) {
@@ -5097,13 +5138,56 @@ function renderSessions() {
   els.sessionList.innerHTML = filtered.map((r) => historyItemHtml(r, true)).join("");
 }
 
-function showUnitsIntro() {
+function showUnitsIntro(level = selectedLevel) {
   return new Promise((resolve) => {
     const overlay = document.getElementById("unitsIntro");
     const countEl = document.getElementById("unitsCountdown");
+    const bodyEl = document.getElementById("unitsIntroBody");
     if (!overlay || !countEl) {
       resolve();
       return;
+    }
+    const cfg = levelCfg(level);
+    const kind = cfg.introKind || (cfg.units === "compare" ? "compare" : cfg.convert) || "compound10";
+    if (bodyEl) {
+      if (kind === "simple") {
+        bodyEl.innerHTML = `
+          <h3>Напоминалка</h3>
+          <ul>
+            <li>10 мм = 1 см</li>
+            <li>10 см = 1 дм</li>
+            <li>10 дм = 1 м</li>
+            <li>100 см = 1 м <em>(единственная сотня)</em></li>
+          </ul>
+          <p class="units-note">Только простые переводы. Ответ — целое число.</p>`;
+      } else if (kind === "compound100") {
+        bodyEl.innerHTML = `
+          <h3>Метры</h3>
+          <ul>
+            <li>1 м = 10 дм</li>
+            <li>1 м = 100 см <em>(сотня)</em></li>
+            <li>1 дм = 10 см</li>
+          </ul>
+          <p class="units-note">Пример: 1 м 5 см = 105 см. Без дробей.</p>`;
+      } else if (kind === "compare") {
+        bodyEl.innerHTML = `
+          <h3>Длина</h3>
+          <ul>
+            <li>1 м = 10 дм = 100 см = 1000 мм</li>
+            <li>1 дм = 10 см = 100 мм</li>
+            <li>1 см = 10 мм</li>
+          </ul>
+          <p class="units-note">Ответ: 1, 2 или 0 если равно.</p>`;
+      } else {
+        bodyEl.innerHTML = `
+          <h3>Только ×10</h3>
+          <ul>
+            <li>1 см = 10 мм</li>
+            <li>1 дм = 10 см</li>
+            <li>1 м = 10 дм</li>
+          </ul>
+          <p class="units-note">Пример: 4 дм 1 см = 41 см. Без сотен и без дробей.</p>`;
+      }
     }
     let left = Math.round(UNITS_INTRO_MS / 1000);
     countEl.textContent = String(left);
@@ -5234,7 +5318,7 @@ async function startGame() {
     const cfg = levelCfg(startLevel);
     if (selectedMode === MODE_UNITS && !isBattle) {
       showScreen("home");
-      await showUnitsIntro();
+      await showUnitsIntro(startLevel);
     }
     if (selectedMode === MODE_MUL && !isBattle && (cfg.intro || cfg.mul === "intro")) {
       showScreen("home");

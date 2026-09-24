@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=35" />
+  <link rel="stylesheet" href="style.css?v=36" />
 </head>
 <body data-theme="easy">
   <div class="sky">
@@ -431,14 +431,14 @@
       <h2>Таблица длины</h2>
       <p class="units-intro-lead">Посмотри 10 секунд — это время в зачёт не идёт.</p>
       <div class="units-table">
-        <div>
-          <h3>Длина</h3>
+        <div id="unitsIntroBody">
+          <h3>Только ×10</h3>
           <ul>
-            <li>1 м = 10 дм = 100 см = 1000 мм</li>
-            <li>1 дм = 10 см = 100 мм</li>
             <li>1 см = 10 мм</li>
+            <li>1 дм = 10 см</li>
+            <li>1 м = 10 дм</li>
           </ul>
-          <p class="units-note">Пример: 4 дм 1 см = 41 см. Ответ — целое число, без дробей.</p>
+          <p class="units-note">Пример: 4 дм 1 см = 41 см. Без дробей.</p>
         </div>
       </div>
       <p class="units-countdown">Старт через <strong id="unitsCountdown">10</strong>…</p>
@@ -574,6 +574,6 @@
       <button type="button" class="btn ghost-btn" data-kd-gate-close>Отмена</button>
     </div>
   </div>
-  <script src="app.js?v=35"></script>
+  <script src="app.js?v=36"></script>
 </body>
 </html>
