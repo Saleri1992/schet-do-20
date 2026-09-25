@@ -82,6 +82,58 @@
   // совместимость со старым shop-API в гараже
   const SHOP = PARTS;
 
+  const LOAD_LABELS = [
+    "sync", "probe", "hash", "link", "mount", "resolve", "apply", "commit", "scan", "handshake",
+  ];
+  const FLAVOR_OK = [
+    "ok.", "done.", "acked.", "stable.", "clean exit.", "cache warm.", "no warnings.",
+    "latency low.", "checksum ok.", "session holds.", "write complete.", "link green.",
+  ];
+  const FLAVOR_BUSY = [
+    "working", "hold on", "one moment", "processing", "please wait",
+  ];
+
+  /** chapterId → секрет (не документировать в UI) */
+  const EGGS = {
+    intro: { re: /^coffee$/, msg: "steam rises · +chip", pay: 7 },
+    linux: { re: /^neofetch$/, msg: "ascii fox flickers", pay: 8 },
+    quiz1: { re: /^42$/, msg: "hitchhiker nod", pay: 6 },
+    gigs1: { re: /^todo$/, msg: "sticky note peels", pay: 7 },
+    gigs2: { re: /^systemctl\s+cat\s+ssh$/, msg: "unit file whispers", pay: 8 },
+    quiz2: { re: /^grep\s+-r\s+needle$/, msg: "haystack laughs", pay: 6 },
+    netlab: { re: /^traceroute\s+moon$/, msg: "packets dream of lagrange", pay: 9 },
+    night: { re: /^insomniac$/, msg: "03:17 blinks twice", pay: 7 },
+    incident: { re: /^blackout$/, msg: "crt fades to snow", pay: 8 },
+    router: { re: /^arp\s+-a$/, msg: "ghost mac de:ad:be:ef", pay: 9 },
+    osint: { re: /^whoami$/, msg: "you are the operator", pay: 7 },
+    ssh: { re: /^ssh-keygen\s+-l$/, msg: "fingerprint hums", pay: 8 },
+    explore: { re: /^tree$/, msg: "branches of .secret sway", pay: 9 },
+    parse: { re: /^jq\s+\.$/, msg: "json purrs", pay: 8 },
+    restore: { re: /^fsck$/, msg: "filesystem smiles", pay: 7 },
+    quiz3: { re: /^fail2ban-client\s+ping$/, msg: "pong from jail", pay: 6 },
+    defense: { re: /^iptables\s+-L$/, msg: "legacy chain rattles", pay: 8 },
+    report: { re: /^fortune$/, msg: "report writes itself", pay: 7 },
+    offer: { re: /^neonops$/, msg: "contract seals in wax", pay: 10 },
+    corpquiz: { re: /^onboard$/, msg: "badge prints warm", pay: 6 },
+    vpn: { re: /^wg$/, msg: "tunnel breathes", pay: 8 },
+    web: { re: /^curl\s+-I\s+localhost$/, msg: "headers wink 200", pay: 7 },
+    smtp: { re: /^mailq$/, msg: "queue empty · good", pay: 8 },
+    monitor: { re: /^top$/, msg: "load average dreams", pay: 7 },
+    skill_brief: { re: /^chip$/, msg: "skill chip clicks", pay: 9 },
+    proxy: { re: /^nginx\s+-V$/, msg: "modules parade", pay: 8 },
+    ssl: { re: /^openssl\s+version$/, msg: "cipher garden", pay: 8 },
+    cronbak: { re: /^crontab\s+-l$/, msg: "night shift listed", pay: 7 },
+    docker: { re: /^docker\s+images$/, msg: "layers stack quiet", pay: 8 },
+    dns: { re: /^host\s+neon\.test$/, msg: "name resolves soft", pay: 8 },
+    db: { re: /^\\dt$/, msg: "tables bow", pay: 7 },
+    insider: { re: /^whisper$/, msg: "bastion eavesdrops", pay: 9 },
+    bastion: { re: /^w$/, msg: "who is logged · shadows", pay: 8 },
+    quiz4: { re: /^senior$/, msg: "board nods once", pay: 10 },
+    finale_mail: { re: /^signed$/, msg: "wax crest cools", pay: 11 },
+    garage: { re: /^vroom$/, msg: "fans spool up", pay: 8 },
+    epilogue: { re: /^grid-7$/, msg: "city keeps your echo", pay: 12 },
+  };
+
   const FS = {
     router: {
       "/": { type: "dir", kids: ["var", "tmp", "etc"] },
@@ -954,6 +1006,7 @@
       opsXp: 0,
       skillPts: 0,
       skills: { linux: 0, net: 0, forensics: 0, defense: 0, devops: 0 },
+      eggs: {},
     };
   }
 
@@ -972,6 +1025,7 @@
         skills: { linux: 0, net: 0, forensics: 0, defense: 0, devops: 0, ...(raw.skills || {}) },
         opsXp: Number(raw.opsXp) || 0,
         skillPts: Number(raw.skillPts) || 0,
+        eggs: raw.eggs && typeof raw.eggs === "object" ? raw.eggs : {},
       };
     } catch {
       return defaultState();
@@ -992,6 +1046,15 @@
   let termHost = "local";
   let mineTimer = 0;
   let open = false;
+  let animBusy = false;
+
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  function pick(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
 
   function chapter() {
     return CHAPTERS[Math.min(state.chapter, CHAPTERS.length - 1)];
@@ -1135,15 +1198,97 @@
 
   function appendOut(text, cls) {
     const e = els();
-    if (!e.out) return;
+    if (!e.out) return null;
     const lines = String(text).split("\n");
+    let last = null;
     lines.forEach((line) => {
       const div = document.createElement("div");
       div.className = `ops-story-line${cls ? ` ${cls}` : ""}`;
       div.textContent = line || " ";
       e.out.appendChild(div);
+      last = div;
     });
     e.out.scrollTop = e.out.scrollHeight;
+    return last;
+  }
+
+  async function animateLoader(label) {
+    const e = els();
+    if (!e.out) return;
+    const div = document.createElement("div");
+    div.className = "ops-story-line dim ops-story-load";
+    e.out.appendChild(div);
+    const base = label || pick(LOAD_LABELS);
+    for (let i = 0; i < 7; i += 1) {
+      div.textContent = `${base}${".".repeat((i % 3) + 1)}`;
+      e.out.scrollTop = e.out.scrollHeight;
+      await sleep(85 + (i % 3) * 28);
+    }
+    div.textContent = `${base}… ok`;
+    await sleep(70);
+    div.remove();
+  }
+
+  async function withLoader(label, fn) {
+    const input = els().input;
+    const submit = document.getElementById("opsStorySubmit");
+    if (animBusy) {
+      if (fn) fn();
+      return;
+    }
+    animBusy = true;
+    if (input) input.disabled = true;
+    if (submit) submit.disabled = true;
+    await animateLoader(label || pick(LOAD_LABELS));
+    if (fn) fn();
+    if (input) input.disabled = false;
+    if (submit) submit.disabled = false;
+    animBusy = false;
+    if (input) input.focus();
+  }
+
+  async function playActionFx(outText, opts) {
+    const o = opts || {};
+    const input = els().input;
+    const submit = document.getElementById("opsStorySubmit");
+    if (animBusy) {
+      appendOut(outText, o.cls || "ok");
+      if (o.after) o.after();
+      return;
+    }
+    animBusy = true;
+    if (input) input.disabled = true;
+    if (submit) submit.disabled = true;
+    await animateLoader(o.label || pick(LOAD_LABELS));
+    if (o.busy) appendOut(`${pick(FLAVOR_BUSY)}${".".repeat(1 + (Date.now() % 3))}`, "dim");
+    appendOut(outText, o.cls || "ok");
+    if (o.flavor !== false) appendOut(pick(FLAVOR_OK), "dim");
+    if (o.after) o.after();
+    if (input) input.disabled = false;
+    if (submit) submit.disabled = false;
+    animBusy = false;
+    if (input) input.focus();
+  }
+
+  function tryEgg(line) {
+    const ch = chapter();
+    const egg = EGGS[ch.id];
+    if (!egg || !egg.re.test(line)) return false;
+    if (!state.eggs) state.eggs = {};
+    if (state.eggs[ch.id]) {
+      appendOut("…", "dim");
+      return true;
+    }
+    state.eggs[ch.id] = true;
+    playActionFx(egg.msg || "…", {
+      label: "glitch",
+      flavor: false,
+      after: () => {
+        if (egg.pay) pay(egg.pay, "???");
+        save();
+      },
+    });
+    return true;
   }
 
   function clearOut() {
@@ -1217,6 +1362,9 @@
     if (e.narrative) e.narrative.textContent = ch.narrative;
 
     if (ch.mode === "continue") {
+      if (e.term) e.term.classList.remove("hidden");
+      updatePrompt();
+      appendOut(`link · ${ch.id}`, "dim");
       if (e.continueBtn) {
         e.continueBtn.classList.remove("hidden");
         e.continueBtn.textContent = state.chapter >= CHAPTERS.length - 1 ? "в hub / Rig" : "далее →";
@@ -1224,7 +1372,10 @@
     } else if (ch.mode === "quiz") {
       state.quizIndex = 0;
       state.quizOk = 0;
+      if (e.term) e.term.classList.remove("hidden");
       if (e.quiz) e.quiz.classList.remove("hidden");
+      updatePrompt();
+      appendOut(`quiz channel · ${ch.id}`, "dim");
       renderQuiz();
     } else if (ch.mode === "term") {
       if (e.term) e.term.classList.remove("hidden");
@@ -1275,16 +1426,28 @@
     const ch = chapter();
     const item = ch.questions[state.quizIndex];
     if (!item) return;
+    const next = () => {
+      state.quizIndex += 1;
+      save();
+      renderQuiz();
+    };
     if (i === item.ok) {
       state.quizOk += 1;
-      appendOut("OK", "ok");
-      pay(8, "quiz hit");
+      playActionFx("OK", {
+        label: "check",
+        after: () => {
+          pay(8, "quiz hit");
+          next();
+        },
+      });
     } else {
-      appendOut(`NO · верно: ${item.options[item.ok]}`, "bad");
+      playActionFx(`NO · верно: ${item.options[item.ok]}`, {
+        label: "check",
+        cls: "bad",
+        flavor: false,
+        after: next,
+      });
     }
-    state.quizIndex += 1;
-    save();
-    renderQuiz();
   }
 
   function addNote(text) {
@@ -1334,8 +1497,10 @@
     if (g.pay) pay(g.pay, g.id);
     save();
     if (goalsDone(ch)) {
-      appendOut("CHAPTER CLEAR", "ok");
-      setTimeout(() => advanceChapter(), 450);
+      playActionFx("CHAPTER CLEAR", {
+        label: "commit",
+        after: () => setTimeout(() => advanceChapter(), 280),
+      });
     }
   }
 
@@ -1553,7 +1718,7 @@
     state.money -= item.price;
     state.parts[item.slot] = item.id;
     state.assembled = false;
-    appendOut(`INSTALLED ${item.name}`, "ok");
+    playActionFx(`INSTALLED ${item.name}`, { label: "mount" });
     rigLog(`bought ${item.name}`);
     save();
     renderShop();
@@ -1612,7 +1777,7 @@
     }
     state.assembled = true;
     pay(25, "assemble bonus");
-    appendOut(`PC ASSEMBLED · ${sp.cores}c/${sp.ramGb}G gpu${sp.gpu} · rate ${mineRate()}`, "ok");
+    playActionFx(`PC ASSEMBLED · ${sp.cores}c/${sp.ramGb}G gpu${sp.gpu} · rate ${mineRate()}`, { label: "boot" });
     addNote("Workstation assembled");
     save();
     renderRig();
@@ -1641,7 +1806,7 @@
     state.mining = true;
     save();
     const rate = mineRate();
-    appendOut(`MINER ONLINE · +$${rate} / 4s`, "ok");
+    playActionFx(`MINER ONLINE · +$${rate} / 4s`, { label: "hash" });
     rigLog(`mining +$${rate}/4s`);
     if (mineTimer) clearInterval(mineTimer);
     mineTimer = setInterval(() => {
@@ -1794,13 +1959,17 @@
       if (line === "admin") {
         state.flags.awaitPass = false;
         state.flags.sshIn = true;
-        appendOut(`Welcome to shadow-vps-lab (${HOST_IP})`, "ok");
-        const g = ch.goals.find((x) => x.id === "sshcmd");
-        if (g && !state.doneGoals[`${ch.id}:${g.id}`]) markGoal(ch, { ...g, pay: 20, set: undefined });
-        else {
-          pay(20, "login");
-          setTimeout(() => advanceChapter(), 400);
-        }
+        playActionFx(`Welcome to shadow-vps-lab (${HOST_IP})`, {
+          label: "handshake",
+          after: () => {
+            const g = ch.goals.find((x) => x.id === "sshcmd");
+            if (g && !state.doneGoals[`${ch.id}:${g.id}`]) markGoal(ch, { ...g, pay: 20, set: undefined });
+            else {
+              pay(20, "login");
+              setTimeout(() => advanceChapter(), 400);
+            }
+          },
+        });
         return true;
       }
       appendOut("Access denied (try admin)", "bad");
@@ -1811,10 +1980,14 @@
       if (line === "admin") {
         state.flags.awaitVpnPass = false;
         state.flags.vpnIn = true;
-        appendOut(`VPN-host ${VPN_IP} · shell ready`, "ok");
-        const g = ch.goals.find((x) => x.id === "vpnssh");
-        if (g && !state.doneGoals[`${ch.id}:${g.id}`]) markGoal(ch, { ...g, pay: 15, set: undefined });
-        else pay(15, "vpn login");
+        playActionFx(`VPN-host ${VPN_IP} · shell ready`, {
+          label: "handshake",
+          after: () => {
+            const g = ch.goals.find((x) => x.id === "vpnssh");
+            if (g && !state.doneGoals[`${ch.id}:${g.id}`]) markGoal(ch, { ...g, pay: 15, set: undefined });
+            else pay(15, "vpn login");
+          },
+        });
         return true;
       }
       appendOut("Access denied", "bad");
@@ -1825,10 +1998,14 @@
       if (line === "admin") {
         state.flags.awaitWebPass = false;
         state.flags.webIn = true;
-        appendOut(`WEB-host ${WEB_IP} · shell ready`, "ok");
-        const g = ch.goals.find((x) => x.id === "wssh");
-        if (g && !state.doneGoals[`${ch.id}:${g.id}`]) markGoal(ch, { ...g, pay: 15, set: undefined });
-        else pay(15, "web login");
+        playActionFx(`WEB-host ${WEB_IP} · shell ready`, {
+          label: "handshake",
+          after: () => {
+            const g = ch.goals.find((x) => x.id === "wssh");
+            if (g && !state.doneGoals[`${ch.id}:${g.id}`]) markGoal(ch, { ...g, pay: 15, set: undefined });
+            else pay(15, "web login");
+          },
+        });
         return true;
       }
       appendOut("Access denied", "bad");
@@ -1839,10 +2016,14 @@
       if (line === "admin") {
         state.flags.awaitSmtpPass = false;
         state.flags.smtpIn = true;
-        appendOut(`SMTP-host ${SMTP_IP} · shell ready`, "ok");
-        const g = ch.goals.find((x) => x.id === "sssh");
-        if (g && !state.doneGoals[`${ch.id}:${g.id}`]) markGoal(ch, { ...g, pay: 15, set: undefined });
-        else pay(15, "smtp login");
+        playActionFx(`SMTP-host ${SMTP_IP} · shell ready`, {
+          label: "handshake",
+          after: () => {
+            const g = ch.goals.find((x) => x.id === "sssh");
+            if (g && !state.doneGoals[`${ch.id}:${g.id}`]) markGoal(ch, { ...g, pay: 15, set: undefined });
+            else pay(15, "smtp login");
+          },
+        });
         return true;
       }
       appendOut("Access denied", "bad");
@@ -1854,14 +2035,18 @@
       if (state.doneGoals[`${ch.id}:${g.id}`]) continue;
       if (g.needFlag && !state.flags[g.needFlag]) continue;
       if (g.match.test(line)) {
-        appendOut(g.out || "ok", "ok");
-        if (g.set) Object.assign(state.flags, g.set);
-        if (g.set && (g.set.awaitPass || g.set.awaitVpnPass || g.set.awaitWebPass || g.set.awaitSmtpPass)) {
-          if (g.pay) pay(g.pay, g.id);
-          save();
-          return true;
-        }
-        markGoal(ch, g);
+        playActionFx(g.out || "ok", {
+          label: pick(LOAD_LABELS),
+          after: () => {
+            if (g.set) Object.assign(state.flags, g.set);
+            if (g.set && (g.set.awaitPass || g.set.awaitVpnPass || g.set.awaitWebPass || g.set.awaitSmtpPass)) {
+              if (g.pay) pay(g.pay, g.id);
+              save();
+              return;
+            }
+            markGoal(ch, g);
+          },
+        });
         return true;
       }
     }
@@ -1871,6 +2056,7 @@
   function onCommand(raw) {
     const line = String(raw || "").trim();
     if (!line) return;
+    if (animBusy) return;
     appendOut(`${els().prompt ? els().prompt.textContent : ">"} ${line}`, "cmd");
 
     const low = line.toLowerCase();
@@ -1929,24 +2115,26 @@
       return;
     }
 
+    if (tryEgg(line)) return;
+
     if (handleGoalLine(line)) return;
 
     // filesystem commands when on router/remote
     if (termHost === "router" || termHost === "remote") {
       const cmd = line.split(/\s+/)[0].toLowerCase();
       if (["pwd", "ls", "cd", "cat", "less", "more", "grep", "find"].includes(cmd)) {
-        runFsCommand(line);
+        withLoader(cmd, () => runFsCommand(line));
         return;
       }
     }
 
     // local soft echoes for flavor
     if (/^sudo\s+apt\s+update/.test(line) || /^sudo\s+apt\s+install/.test(line)) {
-      appendOut("ok (lab echo) — проверь точную цель главы", "dim");
+      playActionFx("ok (lab echo) — проверь точную цель главы", { label: "apt", cls: "dim", flavor: false });
       return;
     }
 
-    appendOut("unknown / not the next story step · help | hint", "bad");
+    playActionFx("unknown / not the next story step · help | hint", { label: "miss", cls: "bad", flavor: false });
   }
 
   function show(on) {
@@ -2011,7 +2199,10 @@
         document.getElementById("opsHub")?.classList.remove("hidden");
         return;
       }
-      advanceChapter();
+      withLoader("next", () => {
+        appendOut(pick(FLAVOR_OK), "dim");
+        advanceChapter();
+      });
     });
     e.quiz?.addEventListener("click", (ev) => {
       const btn = ev.target.closest("[data-quiz]");
@@ -2058,6 +2249,7 @@
         skills: { linux: 0, net: 0, forensics: 0, defense: 0, devops: 0, ...(incoming.skills || {}) },
         opsXp: Number(incoming.opsXp) || 0,
         skillPts: Number(incoming.skillPts) || 0,
+        eggs: incoming.eggs && typeof incoming.eggs === "object" ? incoming.eggs : {},
       };
       try {
         localStorage.setItem(KEY, JSON.stringify(state));

@@ -5157,6 +5157,7 @@ body.ops-on .toast-stack {
 .ops-story-line.bad { color: #ff7a7a; }
 .ops-story-line.dim { color: #4a9a62; }
 .ops-story-line.cmd { color: #d6ffe0; }
+.ops-story-line.ops-story-load { color: #3d8f55; letter-spacing: 0.04em; }
 .ops-story-quiz {
   display: flex;
   flex-direction: column;
