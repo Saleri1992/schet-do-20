@@ -4971,3 +4971,83 @@ body.ops-on .toast-stack {
   font-size: 8px;
   color: #3ecf6e;
 }
+.ops-explain {
+  margin: 8px 0 10px;
+  padding: 10px 12px;
+  border: 1px solid #ff3b5c;
+  background: #1a080c;
+  color: #ffb3c0;
+  font-size: 9px;
+  line-height: 1.65;
+}
+.ops-explain strong { color: #ff7a7a; }
+.ops-explain.hidden { display: none !important; }
+.ops-fx {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 12, 4, 0.55);
+}
+.ops-fx.hidden { display: none !important; }
+.ops-fx-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 28%;
+  background: linear-gradient(180deg, transparent, rgba(124, 255, 154, 0.18), transparent);
+  animation: opsScan 0.9s linear;
+}
+.ops-fx-glow {
+  position: absolute;
+  inset: 18%;
+  border: 1px solid rgba(62, 207, 110, 0.45);
+  box-shadow: 0 0 40px rgba(62, 207, 110, 0.25), inset 0 0 30px rgba(0, 255, 120, 0.08);
+}
+.ops-fx-banner {
+  position: relative;
+  font-size: clamp(14px, 4vw, 22px);
+  color: #d6ffe0;
+  text-shadow: 0 0 12px #3ecf6e, 2px 0 #ff3b5c, -2px 0 #3ecf6e;
+  letter-spacing: 0.08em;
+  animation: opsGlitch 0.9s steps(2) infinite;
+  text-align: center;
+  padding: 0 12px;
+}
+.ops-fx-sub {
+  position: relative;
+  margin-top: 10px;
+  font-size: 8px;
+  color: #4a9a62;
+  letter-spacing: 0.06em;
+}
+.ops-fx-on .ops-fx-banner { animation: opsGlitch 0.35s steps(2) infinite, opsPop 0.9s ease-out; }
+.ops-fx-boom .ops-fx-banner {
+  font-size: clamp(16px, 5vw, 28px);
+  color: #fff6a8;
+  text-shadow: 0 0 18px #ffd000, 2px 0 #ff3b5c, -2px 0 #3ecf6e;
+}
+.ops-fx-boom .ops-fx-glow {
+  border-color: rgba(255, 208, 0, 0.55);
+  box-shadow: 0 0 60px rgba(255, 208, 0, 0.25), inset 0 0 40px rgba(255, 208, 0, 0.08);
+}
+@keyframes opsScan {
+  from { top: -30%; }
+  to { top: 100%; }
+}
+@keyframes opsGlitch {
+  0% { transform: translate(0, 0); }
+  20% { transform: translate(-2px, 1px); }
+  40% { transform: translate(2px, -1px); }
+  60% { transform: translate(-1px, 2px); }
+  100% { transform: translate(0, 0); }
+}
+@keyframes opsPop {
+  0% { transform: scale(0.7); opacity: 0; }
+  35% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}

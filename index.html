@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=43" />
+  <link rel="stylesheet" href="style.css?v=44" />
 </head>
 <body data-theme="easy">
   <div class="sky">
@@ -595,9 +595,15 @@
   </div>
 
   <div class="ops-shell hidden" id="opsShell" aria-label="OPS drill terminal">
+    <div class="ops-fx hidden" id="opsFx" aria-hidden="true">
+      <div class="ops-fx-scan"></div>
+      <div class="ops-fx-glow"></div>
+      <div class="ops-fx-banner" id="opsFxBanner">ACCESS GRANTED</div>
+      <div class="ops-fx-sub" id="opsFxSub">visual only · demo</div>
+    </div>
     <div class="ops-bezel">
       <header class="ops-top">
-        <div class="ops-brand">OPS DRILL <span>cmd · ps · sql · http</span></div>
+        <div class="ops-brand">OPS DRILL <span>cmd · ps · linux · macros</span></div>
         <div class="ops-stats">
           <span>rank:<strong id="opsRank">console.rookie</strong></span>
           <span>xp:<strong id="opsXp">0</strong></span>
@@ -607,7 +613,7 @@
       </header>
 
       <section class="ops-hub" id="opsHub">
-        <p class="ops-lead">Drills + обучалки. Время без лимита · hint · отдельная справка для чтения.</p>
+        <p class="ops-lead">Drills + обучалки. Ошибка → пояснение (как в детской безопасности). Docs · hint · visual FX (только стиль).</p>
         <div class="ops-hub-actions">
           <button type="button" class="ops-btn" id="opsDocsOpen">docs · справка</button>
         </div>
@@ -644,6 +650,7 @@
         <div class="ops-ask" id="opsAsk">—</div>
         <div class="ops-tip" id="opsTip">—</div>
         <div class="ops-hint-box hidden" id="opsHintBox"></div>
+        <div class="ops-explain hidden" id="opsExplain"></div>
         <div class="ops-prompt-row">
           <span class="ops-prompt">&gt;</span>
           <input id="opsInput" class="ops-input" type="text" autocomplete="off" spellcheck="false" autocapitalize="off" />
@@ -657,6 +664,6 @@
   </div>
 
   <script src="app.js?v=42"></script>
-  <script src="ops.js?v=4"></script>
+  <script src="ops.js?v=5"></script>
 </body>
 </html>

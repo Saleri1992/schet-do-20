@@ -396,9 +396,408 @@
         { ask: "PS: полный HTTP-ответ (статус, headers, content)", answer: "invoke-webrequest", alts: ["iwr"], tip: "Invoke-WebRequest -Uri …" },
         { ask: "Утилита CLI для HTTP-запроса", answer: "curl", tip: "curl https://…" },
         { ask: "Заголовок с токеном доступа часто называется", answer: "authorization", alts: ["authorization:", "auth"], tip: "Authorization: Bearer …" },
-        { ask: "Тип тела JSON в заголовке Content-Type", answer: "application/json", alts: ["application/json; charset=utf-8"], tip: "Content-Type: application/json" },
+        { ask: "Тип тела JSON в заголовке Content-Type", answer: "application/json", alts: ["application/json; charset=utf-8"], tip: "Content-Type: application/json", why: "Это учебный момент — не страшно. Правильно: application/json. Так сервер понимает, что тело — JSON." },
       ],
     },
+    {
+      id: "inst_cmd",
+      name: "Install·CMD",
+      blurb: "Установка софта · CMD",
+      learn: true,
+      intro: "Установка программ из командной строки Windows (CMD): winget, msiexec, chocolatey. Только официальные источники.",
+      lessons: [
+        {
+          title: "Зачем ставить из CMD",
+          points: [
+            "Удобно повторять установку, скрипты, серверы без «кликов».",
+            "Главное правило: брать пакеты из официальных репозиториев (winget/Microsoft Store, проверенный Chocolatey).",
+            "Не запускай случайные .exe/.bat из чатов — это не «ускорение», а риск.",
+          ],
+          tip: "Сначала поиск пакета, потом install.",
+        },
+        {
+          title: "winget — современный способ",
+          points: [
+            "winget search имя — найти пакет.",
+            "winget install Id.Пакета — установить.",
+            "winget upgrade --all — обновить всё, что умеет winget.",
+            "winget uninstall Id — удалить.",
+          ],
+          tip: "winget есть в новых Windows 10/11.",
+        },
+        {
+          title: "msiexec и классика",
+          points: [
+            "msiexec /i setup.msi — установка MSI.",
+            "msiexec /x setup.msi — удаление MSI.",
+            "where программа — где лежит exe в PATH.",
+          ],
+          tip: "MSI — формат установщика Windows.",
+        },
+      ],
+      drills: [
+        { ask: "Поиск пакета через winget (CMD)", answer: "winget search", shell: "cmd", tip: "winget search chrome", why: "Учебный момент. Правильно: winget search. Сначала ищем пакет, потом ставим." },
+        { ask: "Установка через winget (CMD)", answer: "winget install", shell: "cmd", tip: "winget install Package.Id" },
+        { ask: "Обновить все пакеты winget", answer: "winget upgrade --all", shell: "cmd", alts: ["winget upgrade -all", "winget upgrade --all"] },
+        { ask: "Удалить пакет winget", answer: "winget uninstall", shell: "cmd", alts: ["winget remove"] },
+        { ask: "Список установленных (winget)", answer: "winget list", shell: "cmd" },
+        { ask: "Установка MSI-файла", answer: "msiexec /i", shell: "cmd", alts: ["msiexec /i"], tip: "msiexec /i setup.msi" },
+        { ask: "Удаление MSI", answer: "msiexec /x", shell: "cmd" },
+        { ask: "Где лежит программа в PATH (CMD)", answer: "where", shell: "cmd", tip: "where notepad" },
+        { ask: "Установка через Chocolatey (если установлен)", answer: "choco install", shell: "cmd", tip: "choco install git -y" },
+        { ask: "Тихая установка choco (флаг yes)", answer: "choco install -y", shell: "cmd", alts: ["choco install --yes"] },
+        { ask: "Показать справку winget", answer: "winget --help", shell: "cmd", alts: ["winget -?", "winget help"] },
+        { ask: "Обновить источники winget", answer: "winget source update", shell: "cmd", alts: ["winget source update"] },
+      ],
+    },
+    {
+      id: "inst_ps",
+      name: "Install·PS",
+      blurb: "Установка · PowerShell",
+      learn: true,
+      intro: "Установка из PowerShell: winget/iwr, модули Install-Module, пакеты. Те же правила безопасности — только доверенные источники.",
+      lessons: [
+        {
+          title: "PS и установщики",
+          points: [
+            "Из PowerShell можно вызывать winget так же, как из CMD.",
+            "Для модулей PS: Install-Module Имя (часто из PSGallery).",
+            "Invoke-WebRequest / iwr — скачать файл (осторожно с URL!).",
+          ],
+          tip: "Модуль ≠ программа: модуль расширяет сам PowerShell.",
+        },
+        {
+          title: "Модули и выполнение",
+          points: [
+            "Find-Module имя — найти в галерее.",
+            "Install-Module имя — поставить модуль.",
+            "Import-Module имя — загрузить в сессию.",
+            "Get-InstalledModule — что уже стоит.",
+          ],
+          tip: "ExecutionPolicy может мешать скриптам — не отключай её «навсегда» без понимания.",
+        },
+        {
+          title: "Пакеты и процессы",
+          points: [
+            "Start-Process путь\\setup.exe — запустить установщик.",
+            "Install-Package (с провайдером) — другой слой пакетного менеджера.",
+            "Get-PackageProvider — какие провайдеры доступны.",
+          ],
+          tip: "Для большинства софта на Win11 достаточно winget.",
+        },
+      ],
+      drills: [
+        { ask: "Установить модуль PowerShell", answer: "install-module", shell: "ps", tip: "Install-Module PSReadLine" },
+        { ask: "Найти модуль в галерее", answer: "find-module", shell: "ps" },
+        { ask: "Импортировать модуль в сессию", answer: "import-module", shell: "ps", alts: ["ipmo"] },
+        { ask: "Список установленных модулей", answer: "get-installedmodule", shell: "ps" },
+        { ask: "Скачать файл по URL (PS)", answer: "invoke-webrequest", shell: "ps", alts: ["iwr"], tip: "только доверенные URL" },
+        { ask: "Запустить установщик .exe (PS)", answer: "start-process", shell: "ps", alts: ["saps"] },
+        { ask: "Провайдеры пакетов (PS)", answer: "get-packageprovider", shell: "ps" },
+        { ask: "Установка пакета (PS PackageManagement)", answer: "install-package", shell: "ps" },
+        { ask: "Политика выполнения скриптов — посмотреть", answer: "get-executionpolicy", shell: "ps" },
+        { ask: "winget из PowerShell: установка", answer: "winget install", shell: "ps" },
+        { ask: "Обновить справку/справку модулей часто через", answer: "update-help", shell: "ps", tip: "Update-Help" },
+        { ask: "Удалить модуль", answer: "uninstall-module", shell: "ps" },
+      ],
+    },
+    {
+      id: "inst_linux",
+      name: "Install·Linux",
+      blurb: "Установка · Linux",
+      learn: true,
+      intro: "Пакетные менеджеры Linux: apt (Debian/Ubuntu), dnf (Fedora), pacman (Arch), плюс snap/flatpak. sudo — права администратора.",
+      lessons: [
+        {
+          title: "Идея пакетного менеджера",
+          points: [
+            "Репозиторий = каталог проверенных пакетов дистрибутива.",
+            "Сначала обновить список пакетов, потом ставить.",
+            "sudo — «сделай от имени администратора» (нужен пароль).",
+          ],
+          tip: "Команда зависит от дистрибутива.",
+        },
+        {
+          title: "apt (Ubuntu/Debian)",
+          points: [
+            "sudo apt update — обновить индекс.",
+            "sudo apt install имя — поставить.",
+            "sudo apt remove имя — убрать.",
+            "sudo apt upgrade — обновить установленное.",
+          ],
+          tip: "update ≠ upgrade: update — списки, upgrade — сами пакеты.",
+        },
+        {
+          title: "dnf / pacman / snap",
+          points: [
+            "Fedora: sudo dnf install имя",
+            "Arch: sudo pacman -S имя",
+            "snap install имя · flatpak install … — универсальные магазины поверх дистра.",
+          ],
+          tip: "Не мешай три способа без нужды — выбери один основной.",
+        },
+      ],
+      drills: [
+        { ask: "Ubuntu: обновить списки пакетов", answer: "sudo apt update", shell: "linux", alts: ["apt update"] },
+        { ask: "Ubuntu: установить пакет", answer: "sudo apt install", shell: "linux", alts: ["apt install"] },
+        { ask: "Ubuntu: удалить пакет", answer: "sudo apt remove", shell: "linux", alts: ["apt remove"] },
+        { ask: "Ubuntu: обновить установленные пакеты", answer: "sudo apt upgrade", shell: "linux", alts: ["apt upgrade"] },
+        { ask: "Ubuntu: поиск пакета", answer: "apt search", shell: "linux", alts: ["apt-cache search"] },
+        { ask: "Fedora: установить пакет", answer: "sudo dnf install", shell: "linux", alts: ["dnf install"] },
+        { ask: "Arch: установить пакет", answer: "sudo pacman -s", shell: "linux", alts: ["pacman -s", "sudo pacman -S"] },
+        { ask: "Права админа в Linux — команда-префикс", answer: "sudo", shell: "linux", tip: "superuser do" },
+        { ask: "Snap: установить", answer: "snap install", shell: "linux", alts: ["sudo snap install"] },
+        { ask: "Flatpak: установить", answer: "flatpak install", shell: "linux" },
+        { ask: "Показать путь к команде (Linux)", answer: "which", shell: "linux", alts: ["command -v"] },
+        { ask: "Инфо о пакете apt", answer: "apt show", shell: "linux", alts: ["apt-cache show"] },
+      ],
+    },
+    {
+      id: "device",
+      name: "Device",
+      blurb: "Устройство, не файлы",
+      learn: true,
+      intro: "Управление самим устройством: питание, диски как железо, PnP-устройства, сводка ПК. Не путать с копированием файлов.",
+      lessons: [
+        {
+          title: "Устройство ≠ папка",
+          points: [
+            "Файловая система — файлы и каталоги.",
+            "Устройство — железо и службы ОС: диск, батарея, адаптеры, перезагрузка.",
+            "Опасные действия (формат диска, отключение устройств) — только осознанно и с бэкапом.",
+          ],
+          tip: "Сначала смотри (Get-*), потом меняй.",
+        },
+        {
+          title: "Питание и перезагрузка",
+          points: [
+            "CMD: shutdown /r /t 0 — перезагрузка сейчас.",
+            "CMD: shutdown /s /t 0 — выключение.",
+            "PS: Restart-Computer · Stop-Computer.",
+          ],
+          tip: "Сохрани работу перед reboot.",
+        },
+        {
+          title: "Диски и PnP",
+          points: [
+            "Get-Disk / Get-PhysicalDisk — диски как устройства.",
+            "Get-PnpDevice — Plug and Play (USB, сетевые и т.д.).",
+            "devmgmt.msc — классический «Диспетчер устройств».",
+            "msinfo32 / systeminfo — сводка о машине.",
+          ],
+          tip: "Get-Volume — тома (буквы); Get-Disk — физика/логика дисков.",
+        },
+      ],
+      drills: [
+        { ask: "Перезагрузка сейчас (CMD)", answer: "shutdown /r /t 0", shell: "cmd", alts: ["shutdown /r /t 0"] },
+        { ask: "Выключение сейчас (CMD)", answer: "shutdown /s /t 0", shell: "cmd" },
+        { ask: "Перезагрузка (PowerShell)", answer: "restart-computer", shell: "ps" },
+        { ask: "Выключение (PowerShell)", answer: "stop-computer", shell: "ps" },
+        { ask: "Список PnP-устройств (PS)", answer: "get-pnpdevice", shell: "ps" },
+        { ask: "Список дисков (PS)", answer: "get-disk", shell: "ps" },
+        { ask: "Физические диски (PS)", answer: "get-physicaldisk", shell: "ps" },
+        { ask: "Диспетчер устройств (оснастка)", answer: "devmgmt.msc", shell: "cmd", alts: ["devmgmt.msc"] },
+        { ask: "Сводка системы (GUI info)", answer: "msinfo32", shell: "cmd" },
+        { ask: "Сводка системы (CMD текст)", answer: "systeminfo", shell: "cmd" },
+        { ask: "Имя компьютера", answer: "hostname", shell: "both" },
+        { ask: "Инфо о ПК (современный PS)", answer: "get-computerinfo", shell: "ps" },
+        { ask: "Отчёт батареи (CMD powercfg)", answer: "powercfg /batteryreport", shell: "cmd", alts: ["powercfg /batteryreport"] },
+      ],
+    },
+    {
+      id: "backup",
+      name: "Backup",
+      blurb: "Резервные копии",
+      learn: true,
+      intro: "Бэкап — копия данных «на потом». Правило 3-2-1: 3 копии, 2 носителя, 1 вне дома. Сначала план, потом команды.",
+      lessons: [
+        {
+          title: "Зачем бэкап",
+          points: [
+            "Случайное удаление, поломка диска, шифровальщик — без копии больно.",
+            "Бэкап ≠ просто «ещё одна папка на том же диске» (диск умер — обе копии умерли).",
+            "Проверяй восстановление: копия бесполезна, если не открывается.",
+          ],
+          tip: "Это учебный раздел — на реальной машине бэкапь важное с взрослыми/по политике.",
+        },
+        {
+          title: "Windows: копирование и архив",
+          points: [
+            "robocopy источник назначение /E — надёжное копирование деревьев.",
+            "Compress-Archive / Expand-Archive — zip в PowerShell.",
+            "Copy-Item -Recurse — простое копирование в PS.",
+            "wbadmin — встроенный Windows Server Backup (часто на серверах).",
+          ],
+          tip: "robocopy лучше xcopy для больших зеркал.",
+        },
+        {
+          title: "Linux: tar и rsync",
+          points: [
+            "tar -czf backup.tar.gz папка — архив gzip.",
+            "rsync -a источник/ назначение/ — умная синхронизация.",
+            "Timeshift (GUI/CLI) — снимки системы в некоторых дистрах.",
+          ],
+          tip: "Храни бэкап на другом диске или в облаке.",
+        },
+      ],
+      drills: [
+        { ask: "Надёжное копирование дерева (CMD)", answer: "robocopy", shell: "cmd", tip: "robocopy src dst /E" },
+        { ask: "Сжать в zip (PowerShell)", answer: "compress-archive", shell: "ps" },
+        { ask: "Распаковать zip (PowerShell)", answer: "expand-archive", shell: "ps" },
+        { ask: "Копировать папку рекурсивно (PS)", answer: "copy-item -recurse", shell: "ps", alts: ["copy-item -rec", "cpi -recurse"] },
+        { ask: "Встроенный бэкап Windows (утилита)", answer: "wbadmin", shell: "cmd", tip: "wbadmin start backup …" },
+        { ask: "Linux: создать tar.gz архив", answer: "tar -czf", shell: "linux", alts: ["tar -czf"] },
+        { ask: "Linux: умная синхронизация копий", answer: "rsync", shell: "linux", tip: "rsync -a src/ dst/" },
+        { ask: "Правило бэкапа: сколько копий минимум в схеме 3-2-1", answer: "3", shell: "concept", tip: "3 копии · 2 носителя · 1 offsite" },
+        { ask: "История файлов Windows (понятие)", answer: "file history", alts: ["история файлов"], shell: "concept" },
+        { ask: "Снимки системы Linux (часто пакет)", answer: "timeshift", shell: "linux", alts: ["timeshift"] },
+        { ask: "Проверка, что бэкап живой — это…", answer: "restore test", alts: ["restore", "тест восстановления", "проверка восстановления"], shell: "concept", tip: "Без проверки копия может быть битой" },
+        { ask: "Зеркало папки robocopy (осторожный ключ)", answer: "robocopy /mir", shell: "cmd", alts: ["/mir"], tip: "/MIR удаляет лишнее в назначении — опасно без понимания" },
+      ],
+    },
+    {
+      id: "macro_win",
+      name: "Macro·Win",
+      blurb: "Горячие клавиши Windows",
+      learn: true,
+      intro: "«Макросы» здесь — сочетания клавиш (hotkeys). Ускоряют работу без мыши. Ответ пиши как Win+E или Ctrl+C.",
+      lessons: [
+        {
+          title: "Что такое макрос/hotkey",
+          points: [
+            "Hotkey — готовое сочетание клавиш ОС или программы.",
+            "Макрос в редакторах — записанная последовательность; в этом тренажёре учим системные сочетания.",
+            "Win — клавиша с флагом Windows между Ctrl и Alt.",
+          ],
+          tip: "Пиши: Win+L · Ctrl+Shift+Esc",
+        },
+        {
+          title: "Окна и система",
+          points: [
+            "Win+L — блокировка.",
+            "Win+D — показать рабочий стол.",
+            "Win+E — Проводник.",
+            "Win+R — Выполнить.",
+            "Win+I — Параметры.",
+            "Alt+Tab — переключение окон.",
+            "Alt+F4 — закрыть окно.",
+            "Win+Tab — представление задач.",
+          ],
+          tip: "Блокировка Win+L — привычка №1 уходя от ПК.",
+        },
+        {
+          title: "Правка и инструменты",
+          points: [
+            "Ctrl+C/V/X/Z/A — копировать/вставить/вырезать/отмена/выделить всё.",
+            "Ctrl+Shift+Esc — Диспетчер задач напрямую.",
+            "Ctrl+Alt+Del — экран безопасности (смена пароля, диспетчер…).",
+            "Win+Shift+S — ножницы/фрагмент экрана.",
+            "Win+V — журнал буфера обмена.",
+            "Win+X — меню опытного пользователя.",
+            "Win+Ctrl+D — новый виртуальный рабочий стол.",
+          ],
+          tip: "Диспетчер задач: Ctrl+Shift+Esc быстрее, чем Ctrl+Alt+Del.",
+        },
+      ],
+      drills: [
+        { ask: "Блокировка ПК", answer: "win+l", alts: ["win + l", "windows+l"], tip: "Lock" },
+        { ask: "Проводник", answer: "win+e", alts: ["win + e"] },
+        { ask: "Окно «Выполнить»", answer: "win+r", alts: ["win + r"] },
+        { ask: "Параметры Windows", answer: "win+i", alts: ["win + i"] },
+        { ask: "Показать рабочий стол", answer: "win+d", alts: ["win + d"] },
+        { ask: "Переключение окон", answer: "alt+tab", alts: ["alt + tab"] },
+        { ask: "Закрыть активное окно", answer: "alt+f4", alts: ["alt + f4"] },
+        { ask: "Диспетчер задач напрямую", answer: "ctrl+shift+esc", alts: ["ctrl + shift + esc"] },
+        { ask: "Снимок области экрана", answer: "win+shift+s", alts: ["win + shift + s"] },
+        { ask: "Журнал буфера обмена", answer: "win+v", alts: ["win + v"] },
+        { ask: "Копировать", answer: "ctrl+c", alts: ["ctrl + c"] },
+        { ask: "Вставить", answer: "ctrl+v", alts: ["ctrl + v"] },
+        { ask: "Вырезать", answer: "ctrl+x", alts: ["ctrl + x"] },
+        { ask: "Отменить", answer: "ctrl+z", alts: ["ctrl + z"] },
+        { ask: "Выделить всё", answer: "ctrl+a", alts: ["ctrl + a"] },
+        { ask: "Меню Win+X (power user)", answer: "win+x", alts: ["win + x"] },
+        { ask: "Представление задач", answer: "win+tab", alts: ["win + tab"] },
+        { ask: "Новый виртуальный стол", answer: "win+ctrl+d", alts: ["win + ctrl + d"] },
+        { ask: "Закрыть виртуальный стол", answer: "win+ctrl+f4", alts: ["win + ctrl + f4"] },
+        { ask: "Поиск / Пуск быстро", answer: "win", alts: ["win key", "клавиша win"], tip: "одно нажатие Win" },
+        { ask: "Закрепить окно слева", answer: "win+left", alts: ["win + left", "win+стрелка влево"] },
+        { ask: "Экран безопасности (смена пароля и др.)", answer: "ctrl+alt+del", alts: ["ctrl + alt + del", "ctrl+alt+delete"] },
+      ],
+    },
+    {
+      id: "macro_linux",
+      name: "Macro·Linux",
+      blurb: "Горячие клавиши Linux",
+      learn: true,
+      intro: "Hotkeys в GNOME/KDE/типичных дистрах. Super = клавиша Win. Ответ: Ctrl+Alt+T и т.п.",
+      lessons: [
+        {
+          title: "Super и терминал",
+          points: [
+            "Super — аналог Win-клавиши.",
+            "Ctrl+Alt+T — терминал (очень часто в Ubuntu/GNOME).",
+            "Alt+F2 — командная строка «выполнить» (GNOME).",
+            "Super+L или Ctrl+Alt+L — блокировка (зависит от DE).",
+          ],
+          tip: "DE (GNOME/KDE/XFCE) могут чуть отличаться — учим самые частые.",
+        },
+        {
+          title: "Окна и рабочие столы",
+          points: [
+            "Alt+Tab — окна.",
+            "Super+A / Super — обзор приложений (GNOME).",
+            "Ctrl+Alt+←/→ — смена рабочего стола (часто).",
+            "Alt+F4 — закрыть окно (как в Windows).",
+            "Print / Shift+Print — скриншот.",
+          ],
+          tip: "Виртуальные столы в Linux — обычная привычка.",
+        },
+        {
+          title: "Терминал: сигналы",
+          points: [
+            "Ctrl+C — прервать текущую команду (SIGINT).",
+            "Ctrl+D — конец ввода / выход из shell (EOF).",
+            "Ctrl+L — очистить экран терминала (как clear).",
+            "Ctrl+Shift+C/V — копировать/вставить в терминале (не Ctrl+C!).",
+            "Ctrl+Z — пауза процесса (SIGTSTP) — потом fg/bg.",
+          ],
+          tip: "В терминале Ctrl+C ≠ копировать.",
+        },
+      ],
+      drills: [
+        { ask: "Открыть терминал (Ubuntu/GNOME часто)", answer: "ctrl+alt+t", alts: ["ctrl + alt + t"] },
+        { ask: "Переключение окон", answer: "alt+tab", alts: ["alt + tab"] },
+        { ask: "Закрыть окно", answer: "alt+f4", alts: ["alt + f4"] },
+        { ask: "Выполнить команду (GNOME)", answer: "alt+f2", alts: ["alt + f2"] },
+        { ask: "Блокировка (часто Super+L)", answer: "super+l", alts: ["win+l", "ctrl+alt+l", "super + l"] },
+        { ask: "Прервать команду в терминале", answer: "ctrl+c", alts: ["ctrl + c"], tip: "SIGINT — не копирование" },
+        { ask: "EOF / выход из shell", answer: "ctrl+d", alts: ["ctrl + d"] },
+        { ask: "Очистить экран терминала", answer: "ctrl+l", alts: ["ctrl + l", "clear"] },
+        { ask: "Копировать в терминале (GNOME)", answer: "ctrl+shift+c", alts: ["ctrl + shift + c"] },
+        { ask: "Вставить в терминале (GNOME)", answer: "ctrl+shift+v", alts: ["ctrl + shift + v"] },
+        { ask: "Пауза процесса в терминале", answer: "ctrl+z", alts: ["ctrl + z"] },
+        { ask: "Обзор приложений GNOME (часто)", answer: "super+a", alts: ["super + a", "win+a"] },
+        { ask: "Скриншот всего экрана (клавиша)", answer: "print", alts: ["prtSc", "prtsc", "printscreen", "print screen"] },
+        { ask: "Скриншот области (часто)", answer: "shift+print", alts: ["shift+prtsc", "shift + print"] },
+        { ask: "Рабочий стол влево (часто)", answer: "ctrl+alt+left", alts: ["ctrl + alt + left", "ctrl+alt+←"] },
+        { ask: "Показать рабочие столы (GNOME часто Super)", answer: "super", alts: ["win", "super key"] },
+        { ask: "Тильде: следующий терминал в некоторых DE", answer: "ctrl+alt+t", tip: "главное — запомнить терминал" },
+        { ask: "Убить X/сессию жёстко (осторожно, учебный факт)", answer: "ctrl+alt+backspace", alts: ["ctrl + alt + backspace"], tip: "не везде включено; не злоупотреблять" },
+      ],
+    },
+  ];
+
+  const FX_LINES = [
+    { t: "ACCESS GRANTED", sub: "visual only · demo" },
+    { t: "PASSWORD FOUND", sub: "cosmetic · not real" },
+    { t: "CRACKED ★", sub: "pixel style · fake" },
+    { t: "HASH MATCH 100%", sub: "animation · demo" },
+    { t: "DECRYPT OK", sub: "game label · fake" },
+    { t: "ROOT SHELL", sub: "cosmetic overlay" },
+    { t: "KEYCHECK PASS", sub: "8-bit flair · fake" },
+    { t: "TRACE COMPLETE", sub: "visual only" },
+    { t: "FIREWALL · DEMO", sub: "not a real scan" },
+    { t: "PAYLOAD · STYLE", sub: "labels only · safe" },
   ];
 
   const ACHIEVEMENTS = [
@@ -411,6 +810,10 @@
     { id: "java1", name: "java.main", desc: "Прогон Java", check: (s) => (s.catRuns || {}).java >= 1 },
     { id: "parse1", name: "parse.json", desc: "Прогон Parse", check: (s) => (s.catRuns || {}).parse >= 1 },
     { id: "http1", name: "http.get", desc: "Прогон HTTP", check: (s) => (s.catRuns || {}).http >= 1 },
+    { id: "inst1", name: "pkg.install", desc: "Прогон любой Install·*", check: (s) => ["inst_cmd", "inst_ps", "inst_linux"].some((id) => (s.catRuns || {})[id] >= 1) },
+    { id: "dev1", name: "device.ops", desc: "Прогон Device", check: (s) => (s.catRuns || {}).device >= 1 },
+    { id: "bak1", name: "backup.ok", desc: "Прогон Backup", check: (s) => (s.catRuns || {}).backup >= 1 },
+    { id: "mac1", name: "macro.keys", desc: "Прогон Macro·Win или Linux", check: (s) => ["macro_win", "macro_linux"].some((id) => (s.catRuns || {})[id] >= 1) },
     { id: "xp200", name: "xp.200", desc: "Набрать 200 XP", check: (s) => (s.xp || 0) >= 200 },
     { id: "senior", name: "senior.ops", desc: "Ранг senior.ops+", check: (s) => (s.xp || 0) >= 280 },
   ];
@@ -465,6 +868,7 @@
       .trim()
       .toLowerCase()
       .replace(/;/g, "")
+      .replace(/\s*\+\s*/g, "+")
       .replace(/\s+/g, " ")
       .replace(/['"]/g, "");
   }
@@ -525,6 +929,10 @@
       lessonBody: document.getElementById("opsLessonBody"),
       lessonTip: document.getElementById("opsLessonTip"),
       lessonStep: document.getElementById("opsLessonStep"),
+      explain: document.getElementById("opsExplain"),
+      fx: document.getElementById("opsFx"),
+      fxBanner: document.getElementById("opsFxBanner"),
+      fxSub: document.getElementById("opsFxSub"),
     };
   }
 
@@ -626,6 +1034,7 @@
     if (shell === "cmd") return "CMD";
     if (shell === "ps") return "PS";
     if (shell === "both") return "CMD/PS";
+    if (shell === "linux") return "Linux";
     if (shell === "concept") return "concept";
     return shell || "";
   }
@@ -654,6 +1063,7 @@
                 <div class="ops-doc-q">${escapeHtml(d.ask)}${d.shell ? ` · ${escapeHtml(shellLabel(d.shell))}` : ""}</div>
                 <div class="ops-doc-a">${escapeHtml(d.answer)}${(d.alts && d.alts.length) ? ` · alt: ${escapeHtml(d.alts.join(" | "))}` : ""}</div>
                 ${d.tip ? `<div class="ops-doc-note">${escapeHtml(d.tip)}</div>` : ""}
+                ${d.why ? `<div class="ops-doc-note">${escapeHtml(d.why)}</div>` : ""}
               </div>
             `).join("")}
           </div>`;
@@ -771,13 +1181,69 @@
     renderQuestion();
   }
 
+  function explainWrong(item) {
+    if (item.why) return item.why;
+    const tip = item.tip ? ` ${item.tip}` : "";
+    return `Это учебный момент — не страшно и ничего не сломалось. Правильно: ${item.answer}.${tip}`;
+  }
+
+  function showExplain(text) {
+    const e = els();
+    if (!e.explain) return;
+    e.explain.innerHTML = `<strong>Важно:</strong> ${escapeHtml(text)}`;
+    e.explain.classList.remove("hidden");
+  }
+
+  function hideExplain() {
+    const e = els();
+    if (!e.explain) return;
+    e.explain.textContent = "";
+    e.explain.classList.add("hidden");
+  }
+
+  function flashFx(intense) {
+    const e = els();
+    if (!e.fx || !e.fxBanner) return;
+    const line = FX_LINES[Math.floor(Math.random() * FX_LINES.length)];
+    e.fxBanner.textContent = line.t;
+    if (e.fxSub) e.fxSub.textContent = intense ? `PERFECT · ${line.sub}` : line.sub;
+    e.fx.classList.remove("hidden", "ops-fx-boom");
+    void e.fx.offsetWidth;
+    e.fx.classList.add("ops-fx-on");
+    if (intense) e.fx.classList.add("ops-fx-boom");
+    clearTimeout(flashFx._t);
+    flashFx._t = setTimeout(() => {
+      e.fx.classList.remove("ops-fx-on", "ops-fx-boom");
+      e.fx.classList.add("hidden");
+    }, intense ? 1600 : 900);
+  }
+
+  function advanceQuestion() {
+    if (!run || run.done) return;
+    if (run.index + 1 >= TOTAL) {
+      finishRun();
+      return;
+    }
+    run.index += 1;
+    run.awaitContinue = false;
+    renderQuestion();
+  }
+
   function renderQuestion() {
     const e = els();
     if (!run || run.done) return;
     const item = run.items[run.index];
     run.hintLevel = 0;
+    run.awaitContinue = false;
+    hideExplain();
     if (e.ask) e.ask.textContent = item.ask;
-    if (e.tip) e.tip.textContent = `shell/lang: ${item.shell || item.cat || "—"}`;
+    if (e.tip) {
+      const sh = shellLabel(item.shell || "");
+      const bits = [];
+      if (item.tip) bits.push(item.tip);
+      if (sh) bits.push(sh);
+      e.tip.textContent = bits.length ? bits.join(" · ") : "введи ответ и Enter";
+    }
     if (e.hintBox) {
       e.hintBox.textContent = "";
       e.hintBox.classList.add("hidden");
@@ -786,14 +1252,17 @@
     if (e.progress) e.progress.style.width = `${(run.index / TOTAL) * 100}%`;
     if (e.input) {
       e.input.value = "";
+      e.input.disabled = false;
       e.input.focus();
     }
     const hintBtn = document.getElementById("opsHintBtn");
     if (hintBtn) hintBtn.textContent = "hint";
+    const submitBtn = document.getElementById("opsSubmit");
+    if (submitBtn) submitBtn.textContent = "enter";
   }
 
   function revealHint() {
-    if (!run || run.done) return;
+    if (!run || run.done || run.awaitContinue) return;
     const item = run.items[run.index];
     const e = els();
     run.hintLevel = Math.min(3, (run.hintLevel || 0) + 1);
@@ -837,6 +1306,10 @@
       renderHub();
       return;
     }
+    if (run.awaitContinue) {
+      advanceQuestion();
+      return;
+    }
     const e = els();
     const item = run.items[run.index];
     const typed = (e.input && e.input.value) || "";
@@ -844,12 +1317,25 @@
     if (ok) run.correct += 1;
     run.log.push({ ask: item.ask, given: typed, answer: item.answer, ok });
     appendLog(`${ok ? "OK" : "NO"} › ${typed || "∅"}${ok ? "" : ` ← ${item.answer}`}`, ok);
-    if (run.index + 1 >= TOTAL) {
-      finishRun();
+    if (ok) {
+      flashFx(false);
+      if (run.index + 1 >= TOTAL) {
+        finishRun();
+        return;
+      }
+      run.index += 1;
+      renderQuestion();
       return;
     }
-    run.index += 1;
-    renderQuestion();
+    run.awaitContinue = true;
+    showExplain(explainWrong(item));
+    if (e.input) {
+      e.input.value = "";
+      e.input.disabled = true;
+    }
+    const submitBtn = document.getElementById("opsSubmit");
+    if (submitBtn) submitBtn.textContent = "понял →";
+    if (e.tip) e.tip.textContent = "Enter / «понял» — дальше. Это только тренировка.";
   }
 
   function finishRun() {
@@ -863,6 +1349,7 @@
     if (perfect) {
       state.perfects += 1;
       if (state.bestMs == null || ms < state.bestMs) state.bestMs = ms;
+      flashFx(true);
     }
     if (!state.catRuns) state.catRuns = {};
     state.catRuns[run.cat.id] = (state.catRuns[run.cat.id] || 0) + 1;
@@ -873,7 +1360,9 @@
     const fresh = unlockAchievements();
     saveState();
     run.done = true;
+    run.awaitContinue = false;
     const e = els();
+    hideExplain();
     if (e.timer) e.timer.textContent = formatMs(ms);
     if (e.meta) e.meta.textContent = `DONE · ${run.correct}/${TOTAL} · ${formatMs(ms)} · +${gained} XP`;
     if (e.progress) e.progress.style.width = "100%";
@@ -886,6 +1375,9 @@
         : "Enter → hub · время шло без лимита";
     }
     if (e.hintBox) e.hintBox.classList.add("hidden");
+    if (e.input) e.input.disabled = false;
+    const submitBtn = document.getElementById("opsSubmit");
+    if (submitBtn) submitBtn.textContent = "hub";
     renderHub();
   }
 
