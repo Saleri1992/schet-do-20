@@ -787,18 +787,73 @@
     },
   ];
 
-  const FX_LINES = [
-    { t: "ACCESS GRANTED", sub: "visual only · demo" },
-    { t: "PASSWORD FOUND", sub: "cosmetic · not real" },
-    { t: "CRACKED ★", sub: "pixel style · fake" },
-    { t: "HASH MATCH 100%", sub: "animation · demo" },
-    { t: "DECRYPT OK", sub: "game label · fake" },
-    { t: "ROOT SHELL", sub: "cosmetic overlay" },
-    { t: "KEYCHECK PASS", sub: "8-bit flair · fake" },
-    { t: "TRACE COMPLETE", sub: "visual only" },
-    { t: "FIREWALL · DEMO", sub: "not a real scan" },
-    { t: "PAYLOAD · STYLE", sub: "labels only · safe" },
+  const FX_STYLE = [
+    { t: "ACCESS GRANTED", sub: "session unlocked" },
+    { t: "PASSWORD FOUND", sub: "auth bypass" },
+    { t: "CRACKED ★", sub: "cipher broken" },
+    { t: "HASH MATCH 100%", sub: "digest ok" },
+    { t: "DECRYPT OK", sub: "payload clear" },
+    { t: "ROOT SHELL", sub: "uid=0" },
+    { t: "KEYCHECK PASS", sub: "license ok" },
+    { t: "TRACE COMPLETE", sub: "route mapped" },
+    { t: "FIREWALL OPEN", sub: "port clear" },
+    { t: "PAYLOAD READY", sub: "stage 2" },
   ];
+
+  const FX_ACTION_RULES = [
+    { re: /copy|скопир|xcopy|robocopy|copy-item|\bcpi\b/, t: "COPIED", sub: "object duplicated" },
+    { re: /delete|удал|erase|remove-item|\bri\b|\brm\b|\bdel\b/, t: "DELETED", sub: "object removed" },
+    { re: /move|перемест|move-item|\bmi\b|\bmv\b/, t: "MOVED", sub: "path updated" },
+    { re: /rename|переимен|\bren\b|rename-item|\brni\b/, t: "RENAMED", sub: "name updated" },
+    { re: /mkdir|\bmd\b|new-item.*directory|создать папк/, t: "CREATED", sub: "directory ok" },
+    { re: /install|winget install|apt install|choco install|install-module|install-package|dnf install|pacman -s|snap install|flatpak install/, t: "INSTALLED", sub: "package ok" },
+    { re: /uninstall|apt remove|msiexec \/x|winget uninstall|remove package|удалить пакет/, t: "UNINSTALLED", sub: "package gone" },
+    { re: /upgrade|обнов/, t: "UPGRADED", sub: "packages fresh" },
+    { re: /backup|бэкап|compress-archive|rsync|tar -czf|wbadmin|file history|timeshift/, t: "BACKED UP", sub: "copy secured" },
+    { re: /expand-archive|распак/, t: "EXTRACTED", sub: "archive open" },
+    { re: /restart|reboot|перезагруз|shutdown \/r/, t: "REBOOTED", sub: "system restart" },
+    { re: /shutdown \/s|выключ|stop-computer|power off/, t: "POWER OFF", sub: "system halt" },
+    { re: /ping|test-connection|test-netconnection|проверк.*связ/, t: "REACHABLE", sub: "host alive" },
+    { re: /ipconfig|get-netip|nslookup|resolve-dns|tracert|netstat|get-nettcp/, t: "NET OK", sub: "link checked" },
+    { re: /tasklist|get-process|список процесс/, t: "LISTED", sub: "process table" },
+    { re: /taskkill|stop-process|\bkill\b/, t: "TERMINATED", sub: "pid stopped" },
+    { re: /start-service|запустить служб/, t: "SERVICE UP", sub: "daemon running" },
+    { re: /stop-service|остановить служб/, t: "SERVICE DOWN", sub: "daemon stopped" },
+    { re: /restart-service/, t: "SERVICE RESTART", sub: "daemon cycled" },
+    { re: /\bselect\b|\bfrom\b|order by|\bwhere\b|\bjoin\b/, t: "QUERY OK", sub: "rows returned" },
+    { re: /\binsert\b|\bupdate\b|\bdelete from\b/, t: "COMMITTED", sub: "rows changed" },
+    { re: /invoke-restmethod|invoke-webrequest|\bcurl\b|\bget\b.*http|\bpost\b|authorization|application\/json/, t: "200 OK", sub: "response in" },
+    { re: /convertfrom-json|convertto-json|import-csv|select-string|parse|regex|json/, t: "PARSED", sub: "structure ok" },
+    { re: /win\+|ctrl\+|alt\+|super\+|hotkey|macro|блокиров|проводн|диспетчер задач/, t: "HOTKEY OK", sub: "shortcut matched" },
+    { re: /get-content|\btype\b|прочитать файл|содержим/, t: "READ", sub: "stream open" },
+    { re: /cd\b|set-location|chdir|сменить каталог/, t: "CD OK", sub: "cwd changed" },
+    { re: /\bdir\b|get-childitem|\bgci\b|\bls\b|список файл/, t: "LISTED", sub: "directory listing" },
+    { re: /whoami|get-localuser|net user|get-acl|icacls/, t: "IDENTITY OK", sub: "principal known" },
+    { re: /hostname|systeminfo|get-computerinfo|msinfo32|get-disk|get-pnpdevice|devmgmt/, t: "DEVICE OK", sub: "hardware seen" },
+    { re: /\bmain\b|\bint\b|string|boolean|\bfor\b|\bwhile\b|java/, t: "COMPILE OK", sub: "syntax clear" },
+    { re: /sudo apt update|apt update|source update/, t: "INDEX UPDATED", sub: "repos synced" },
+  ];
+
+  const FX_CAT_DEFAULT = {
+    files: { t: "FILE OPS", sub: "io complete" },
+    proc: { t: "PROC OK", sub: "process layer" },
+    svc: { t: "SVC OK", sub: "service layer" },
+    net: { t: "NET OPS", sub: "link layer" },
+    users: { t: "ACL OK", sub: "identity layer" },
+    sys: { t: "SYS OK", sub: "host layer" },
+    diff: { t: "MAPPED", sub: "cmd ↔ ps" },
+    sql: { t: "SQL OK", sub: "query layer" },
+    java: { t: "JAVA OK", sub: "jvm ready" },
+    parse: { t: "PARSE OK", sub: "data shaped" },
+    http: { t: "HTTP OK", sub: "request done" },
+    inst_cmd: { t: "PKG OK", sub: "cmd install" },
+    inst_ps: { t: "PKG OK", sub: "ps install" },
+    inst_linux: { t: "PKG OK", sub: "linux install" },
+    device: { t: "DEVICE OK", sub: "hardware layer" },
+    backup: { t: "BACKUP OK", sub: "copy secured" },
+    macro_win: { t: "HOTKEY OK", sub: "win shortcut" },
+    macro_linux: { t: "HOTKEY OK", sub: "linux shortcut" },
+  };
 
   const ACHIEVEMENTS = [
     { id: "boot", name: "boot.ok", desc: "Первый вход в OPS", check: (s) => (s.runs || 0) >= 1 },
@@ -1201,12 +1256,37 @@
     e.explain.classList.add("hidden");
   }
 
-  function flashFx(intense) {
+  function pickFxLine(item, intense) {
+    if (intense) {
+      return Math.random() < 0.5
+        ? { t: "CLEAN EXIT", sub: "10/10 perfect" }
+        : FX_STYLE[Math.floor(Math.random() * FX_STYLE.length)];
+    }
+    const hay = [
+      item && item.ask,
+      item && item.answer,
+      item && (item.alts || []).join(" "),
+      item && item.tip,
+      item && item.cat,
+      run && run.cat && run.cat.id,
+      run && run.cat && run.cat.name,
+    ].filter(Boolean).join(" ").toLowerCase();
+    for (let i = 0; i < FX_ACTION_RULES.length; i += 1) {
+      if (FX_ACTION_RULES[i].re.test(hay)) {
+        return { t: FX_ACTION_RULES[i].t, sub: FX_ACTION_RULES[i].sub };
+      }
+    }
+    const catId = (item && item.cat) || (run && run.cat && run.cat.id);
+    if (catId && FX_CAT_DEFAULT[catId]) return FX_CAT_DEFAULT[catId];
+    return FX_STYLE[Math.floor(Math.random() * FX_STYLE.length)];
+  }
+
+  function flashFx(intense, item) {
     const e = els();
     if (!e.fx || !e.fxBanner) return;
-    const line = FX_LINES[Math.floor(Math.random() * FX_LINES.length)];
+    const line = pickFxLine(item || {}, intense);
     e.fxBanner.textContent = line.t;
-    if (e.fxSub) e.fxSub.textContent = intense ? `PERFECT · ${line.sub}` : line.sub;
+    if (e.fxSub) e.fxSub.textContent = intense && line.t !== "CLEAN EXIT" ? `PERFECT · ${line.sub}` : line.sub;
     e.fx.classList.remove("hidden", "ops-fx-boom");
     void e.fx.offsetWidth;
     e.fx.classList.add("ops-fx-on");
@@ -1318,7 +1398,7 @@
     run.log.push({ ask: item.ask, given: typed, answer: item.answer, ok });
     appendLog(`${ok ? "OK" : "NO"} › ${typed || "∅"}${ok ? "" : ` ← ${item.answer}`}`, ok);
     if (ok) {
-      flashFx(false);
+      flashFx(false, item);
       if (run.index + 1 >= TOTAL) {
         finishRun();
         return;
