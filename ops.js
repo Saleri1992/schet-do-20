@@ -6,6 +6,8 @@
   const OPS_KEY = "schet-ops-drill-v1";
   const UNLOCK_CODE = "sys.ops";
   const TOTAL = 10;
+  const IDLE_LIMIT_MS = 60 * 1000;
+  const TRACE_LABELS = ["TRACED", "WATCHING", "IDLE LOCK", "LATENCY HIGH", "SIGNAL LOCK", "PROBE ON", "EYES ON", "TRACKED"];
 
   const RANKS = [
     { min: 0, name: "console.rookie" },
@@ -898,6 +900,164 @@
         { ask: "Перевод: Check the logs → RU", answer: "проверьте логи", alts: ["проверь логи", "смотрите логи", "посмотри логи"], tip: "проверьте логи" },
       ],
     },
+    {
+      id: "scen_ssh",
+      name: "Scen·SSH",
+      blurb: "Сценарий: SSH по ключу",
+      learn: true,
+      scenario: true,
+      intro: "Пошаговый сценарий: ключ → копирование на remote → вход. Учебный playbook для своего сервера/лабы.",
+      lessons: [
+        {
+          title: "Цель сценария",
+          points: [
+            "Сделать вход по SSH-ключу без пароля на каждый раз.",
+            "Порядок: сгенерировать пару → отдать публичный ключ на сервер → проверить ssh user@host.",
+            "Приватный ключ (~/.ssh/id_*) никому не отправляй. На remote кладётся только .pub.",
+          ],
+          tip: "Шаги идут по порядку — это не случайный drill.",
+        },
+        {
+          title: "Права и служба",
+          points: [
+            "~/.ssh → обычно 700, authorized_keys → 600.",
+            "На сервере должен работать sshd (OpenSSH Server).",
+            "Windows: OpenSSH Client/Server можно поставить через Optional Features / winget.",
+          ],
+          tip: "Permission denied на ключе — почти всегда права или owner.",
+        },
+      ],
+      drills: [
+        { ask: "Шаг 1. Сгенерировать ключ Ed25519", answer: "ssh-keygen -t ed25519", alts: ["ssh-keygen -t ed25519 -c", "ssh-keygen"], shell: "linux", tip: "ssh-keygen -t ed25519" },
+        { ask: "Шаг 2. Показать публичный ключ (Linux)", answer: "cat ~/.ssh/id_ed25519.pub", alts: ["cat ~/.ssh/id_rsa.pub", "cat .ssh/id_ed25519.pub"], shell: "linux" },
+        { ask: "Шаг 3. Скопировать ключ на remote (удобная утилита)", answer: "ssh-copy-id", alts: ["ssh-copy-id user@host", "ssh-copy-id -i ~/.ssh/id_ed25519.pub user@host"], shell: "linux", tip: "ssh-copy-id user@host" },
+        { ask: "Шаг 4. Войти на remote по SSH", answer: "ssh user@host", alts: ["ssh", "ssh user@server"], shell: "linux", tip: "ssh user@host" },
+        { ask: "Шаг 5. Права на каталог .ssh (числовой режим)", answer: "chmod 700 ~/.ssh", alts: ["chmod 700 .ssh", "chmod 700 ~/.ssh"], shell: "linux" },
+        { ask: "Шаг 6. Права на authorized_keys", answer: "chmod 600 ~/.ssh/authorized_keys", alts: ["chmod 600 .ssh/authorized_keys"], shell: "linux" },
+        { ask: "Шаг 7. Статус sshd (systemd)", answer: "systemctl status ssh", alts: ["systemctl status sshd", "sudo systemctl status ssh", "sudo systemctl status sshd"], shell: "linux" },
+        { ask: "Шаг 8. Запустить sshd (systemd)", answer: "sudo systemctl start ssh", alts: ["sudo systemctl start sshd", "systemctl start ssh", "systemctl start sshd"], shell: "linux" },
+        { ask: "Шаг 9. Подключение с подробным логом", answer: "ssh -v user@host", alts: ["ssh -v", "ssh -vv user@host"], shell: "linux", tip: "-v = verbose" },
+        { ask: "Шаг 10. Файл локальных алиасов хостов SSH", answer: "~/.ssh/config", alts: [".ssh/config", "ssh config"], shell: "linux", tip: "Host myserver → HostName/User/IdentityFile" },
+      ],
+    },
+    {
+      id: "scen_backup",
+      name: "Scen·Backup",
+      blurb: "Сценарий: бэкап папки",
+      learn: true,
+      scenario: true,
+      intro: "Простой playbook: куда копируем → архив/robocopy → проверка.",
+      lessons: [
+        {
+          title: "План бэкапа",
+          points: [
+            "Выбери источник и назначение на другом диске/хосте.",
+            "Сделай копию (robocopy / rsync / Compress-Archive).",
+            "Проверь, что файлы на месте (dir / ls / Expand test).",
+          ],
+          tip: "Копия на том же единственном диске — слабый бэкап.",
+        },
+      ],
+      drills: [
+        { ask: "Шаг 1. Надёжное копирование дерева (Windows)", answer: "robocopy", shell: "cmd", tip: "robocopy src dst /E" },
+        { ask: "Шаг 2. Ключ robocopy: включая подпапки", answer: "robocopy /e", alts: ["/e", "robocopy src dst /e"], shell: "cmd" },
+        { ask: "Шаг 3. Сжать папку в zip (PS)", answer: "compress-archive", shell: "ps" },
+        { ask: "Шаг 4. Linux: архив tar.gz", answer: "tar -czf", alts: ["tar -czf backup.tar.gz folder"], shell: "linux" },
+        { ask: "Шаг 5. Linux: синхронизация копии", answer: "rsync", alts: ["rsync -a src/ dst/"], shell: "linux" },
+        { ask: "Шаг 6. Распаковать zip (PS) для проверки", answer: "expand-archive", shell: "ps" },
+        { ask: "Шаг 7. Правило: сколько копий в схеме 3-2-1", answer: "3", shell: "concept" },
+        { ask: "Шаг 8. Обязательная проверка бэкапа — термин EN", answer: "restore test", alts: ["restore", "тест восстановления"], shell: "concept" },
+      ],
+    },
+    {
+      id: "scen_net",
+      name: "Scen·Net",
+      blurb: "Сценарий: сеть не работает",
+      learn: true,
+      scenario: true,
+      intro: "Триаж сети по порядку: IP → ping → DNS → порт.",
+      lessons: [
+        {
+          title: "Порядок диагностики",
+          points: [
+            "1) Есть ли IP (ipconfig / Get-NetIPAddress).",
+            "2) Пинг шлюза/интернета.",
+            "3) DNS (nslookup / Resolve-DnsName).",
+            "4) Порт/маршрут (Test-NetConnection / tracert).",
+          ],
+          tip: "Не прыгай сразу в «переустановить Windows».",
+        },
+      ],
+      drills: [
+        { ask: "Шаг 1. IP-конфиг (CMD)", answer: "ipconfig", alts: ["ipconfig /all"], shell: "cmd" },
+        { ask: "Шаг 2. Проверка связи (CMD)", answer: "ping", shell: "cmd" },
+        { ask: "Шаг 3. DNS-запрос (CMD)", answer: "nslookup", shell: "cmd" },
+        { ask: "Шаг 4. Трассировка (CMD)", answer: "tracert", shell: "cmd" },
+        { ask: "Шаг 5. Открытые соединения (CMD)", answer: "netstat", alts: ["netstat -ano"], shell: "cmd" },
+        { ask: "Шаг 6. Проверка хоста/порта (PS)", answer: "test-netconnection", alts: ["tnc"], shell: "ps" },
+        { ask: "Шаг 7. DNS в PowerShell", answer: "resolve-dnsname", shell: "ps" },
+        { ask: "Шаг 8. IP-адреса (PS)", answer: "get-netipaddress", shell: "ps" },
+      ],
+    },
+    {
+      id: "scen_svc",
+      name: "Scen·Svc",
+      blurb: "Сценарий: служба упала",
+      learn: true,
+      scenario: true,
+      intro: "Найти службу → статус → старт/рестарт → проверить процессы/логи.",
+      lessons: [
+        {
+          title: "Безопасный рестарт",
+          points: [
+            "Сначала Get-Service / sc query — понять имя и статус.",
+            "Restart-Service или Stop + Start.",
+            "Если снова падает — смотри логи, не крути рестарт в цикле.",
+          ],
+          tip: "Имя службы ≠ отображаемое DisplayName.",
+        },
+      ],
+      drills: [
+        { ask: "Шаг 1. Список служб (PS)", answer: "get-service", alts: ["gsv"], shell: "ps" },
+        { ask: "Шаг 2. Статус через sc (CMD)", answer: "sc query", shell: "cmd" },
+        { ask: "Шаг 3. Запустить службу (PS)", answer: "start-service", alts: ["sasv"], shell: "ps" },
+        { ask: "Шаг 4. Остановить службу (PS)", answer: "stop-service", alts: ["spsv"], shell: "ps" },
+        { ask: "Шаг 5. Перезапустить службу (PS)", answer: "restart-service", shell: "ps" },
+        { ask: "Шаг 6. Список процессов (PS)", answer: "get-process", alts: ["gps"], shell: "ps" },
+        { ask: "Шаг 7. Журнал событий (современный PS)", answer: "get-winevent", shell: "ps" },
+        { ask: "Шаг 8. Запущенные службы через net", answer: "net start", shell: "cmd" },
+      ],
+    },
+    {
+      id: "scen_web",
+      name: "Scen·Web",
+      blurb: "Сценарий: запрос + JSON",
+      learn: true,
+      scenario: true,
+      intro: "Склееный сценарий HTTP + Parse: запрос → статус → JSON → поле.",
+      lessons: [
+        {
+          title: "Мини-пайплайн",
+          points: [
+            "Invoke-RestMethod / curl → получить данные.",
+            "Смотри код 200 / 401 / 404.",
+            "ConvertFrom-Json если пришёл текст.",
+            "Достань поле объекта ($j.name).",
+          ],
+          tip: "Для API удобнее irm, для «сырого» ответа — iwr.",
+        },
+      ],
+      drills: [
+        { ask: "Шаг 1. Метод «получить данные»", answer: "get", shell: "concept" },
+        { ask: "Шаг 2. PS: API с разбором JSON", answer: "invoke-restmethod", alts: ["irm"], shell: "ps" },
+        { ask: "Шаг 3. Успешный HTTP-код", answer: "200", alts: ["200 ok"], shell: "concept" },
+        { ask: "Шаг 4. CLI-утилита HTTP", answer: "curl", shell: "both" },
+        { ask: "Шаг 5. Текст JSON → объект (PS)", answer: "convertfrom-json", shell: "ps" },
+        { ask: "Шаг 6. Объект → JSON-текст (PS)", answer: "convertto-json", shell: "ps" },
+        { ask: "Шаг 7. Content-Type для JSON", answer: "application/json", shell: "concept" },
+        { ask: "Шаг 8. Заголовок с токеном", answer: "authorization", alts: ["authorization:"], shell: "concept" },
+      ],
+    },
   ];
 
   const FX_STYLE = [
@@ -968,6 +1128,11 @@
     macro_win: { t: "HOTKEY OK", sub: "win shortcut" },
     macro_linux: { t: "HOTKEY OK", sub: "linux shortcut" },
     tech_en: { t: "TERM OK", sub: "tech english" },
+    scen_ssh: { t: "SSH OK", sub: "key path done" },
+    scen_backup: { t: "BACKUP OK", sub: "playbook done" },
+    scen_net: { t: "NET OK", sub: "triage done" },
+    scen_svc: { t: "SVC OK", sub: "service path" },
+    scen_web: { t: "HTTP OK", sub: "pipeline done" },
   };
 
   const ACHIEVEMENTS = [
@@ -985,6 +1150,8 @@
     { id: "bak1", name: "backup.ok", desc: "Прогон Backup", check: (s) => (s.catRuns || {}).backup >= 1 },
     { id: "mac1", name: "macro.keys", desc: "Прогон Macro·Win или Linux", check: (s) => ["macro_win", "macro_linux"].some((id) => (s.catRuns || {})[id] >= 1) },
     { id: "en1", name: "tech.en", desc: "Прогон Tech·EN", check: (s) => (s.catRuns || {}).tech_en >= 1 },
+    { id: "scen1", name: "playbook.ok", desc: "Любой сценарий Scen·*", check: (s) => ["scen_ssh", "scen_backup", "scen_net", "scen_svc", "scen_web"].some((id) => (s.catRuns || {})[id] >= 1) },
+    { id: "ssh1", name: "ssh.key", desc: "Сценарий SSH", check: (s) => (s.catRuns || {}).scen_ssh >= 1 },
     { id: "xp200", name: "xp.200", desc: "Набрать 200 XP", check: (s) => (s.xp || 0) >= 200 },
     { id: "senior", name: "senior.ops", desc: "Ранг senior.ops+", check: (s) => (s.xp || 0) >= 280 },
   ];
@@ -1062,6 +1229,12 @@
 
   function pickDrills(catId) {
     const cat = CATEGORIES.find((c) => c.id === catId) || CATEGORIES[0];
+    if (cat.scenario) {
+      return {
+        cat,
+        items: cat.drills.map((d) => ({ ...d, cat: cat.id })),
+      };
+    }
     const pool = shuffle(cat.drills);
     const items = [];
     let i = 0;
@@ -1070,6 +1243,10 @@
       i += 1;
     }
     return { cat, items: shuffle(items).slice(0, TOTAL) };
+  }
+
+  function runTotal() {
+    return (run && run.items && run.items.length) ? run.items.length : TOTAL;
   }
 
   function els() {
@@ -1104,6 +1281,9 @@
       fx: document.getElementById("opsFx"),
       fxBanner: document.getElementById("opsFxBanner"),
       fxSub: document.getElementById("opsFxSub"),
+      traceBar: document.getElementById("opsTraceBar"),
+      traceLabel: document.getElementById("opsTraceLabel"),
+      idleTimer: document.getElementById("opsIdleTimer"),
     };
   }
 
@@ -1124,6 +1304,38 @@
       clearInterval(timerId);
       timerId = 0;
     }
+    clearTraceMode();
+  }
+
+  function clearTraceMode() {
+    const e = els();
+    if (e.shell) e.shell.classList.remove("ops-slow");
+    if (e.traceBar) e.traceBar.classList.add("hidden");
+    if (run) run.traced = false;
+  }
+
+  function updateTraceMode() {
+    const e = els();
+    if (!run || run.done || run.awaitContinue) {
+      clearTraceMode();
+      return;
+    }
+    const idle = Date.now() - (run.qStartedAt || run.startedAt);
+    if (idle < IDLE_LIMIT_MS) {
+      clearTraceMode();
+      return;
+    }
+    if (!run.traced) {
+      run.traced = true;
+      run.traceLabelAt = Date.now();
+    }
+    if (e.shell) e.shell.classList.add("ops-slow");
+    if (e.traceBar) e.traceBar.classList.remove("hidden");
+    if (e.idleTimer) e.idleTimer.textContent = formatMs(idle);
+    if (e.traceLabel) {
+      const idx = Math.floor((Date.now() - (run.traceLabelAt || Date.now())) / 2500) % TRACE_LABELS.length;
+      e.traceLabel.textContent = TRACE_LABELS[idx];
+    }
   }
 
   function startTimer() {
@@ -1132,6 +1344,7 @@
     const tick = () => {
       if (!run || run.done) return;
       if (e.timer) e.timer.textContent = formatMs(Date.now() - run.startedAt);
+      updateTraceMode();
     };
     tick();
     timerId = setInterval(tick, 250);
@@ -1227,7 +1440,7 @@
             `).join("")
           : "";
         const sheetHtml = `
-          <h3>шпаргалка · drill</h3>
+          <h3>${c.scenario ? "шаги сценария" : "шпаргалка · drill"}</h3>
           <div class="ops-doc-sheet">
             ${c.drills.map((d) => `
               <div class="ops-doc-row">
@@ -1266,7 +1479,7 @@
     if (e.cats) {
       e.cats.innerHTML = CATEGORIES.map((c) => {
         const n = (state.catRuns || {})[c.id] || 0;
-        const tag = c.learn ? "learn+drill" : "drill";
+        const tag = c.scenario ? "scenario" : c.learn ? "learn+drill" : "drill";
         return `<button type="button" class="ops-cat" data-ops-cat="${c.id}">
           <span class="ops-cat-id">${c.name}</span>
           <span class="ops-cat-blurb">${c.blurb}</span>
@@ -1307,7 +1520,10 @@
     if (e.lessonTip) e.lessonTip.textContent = lesson.tip || "";
     const nextBtn = document.getElementById("opsLessonNext");
     if (nextBtn) {
-      nextBtn.textContent = lessonIndex >= cat.lessons.length - 1 ? "к закреплению →" : "далее →";
+      const last = lessonIndex >= cat.lessons.length - 1;
+      nextBtn.textContent = last
+        ? (cat.scenario ? "к сценарию →" : "к закреплению →")
+        : "далее →";
     }
   }
 
@@ -1348,8 +1564,8 @@
     };
     if (els().log) els().log.innerHTML = "";
     showDrill();
-    startTimer();
     renderQuestion();
+    startTimer();
   }
 
   function explainWrong(item) {
@@ -1416,7 +1632,7 @@
 
   function advanceQuestion() {
     if (!run || run.done) return;
-    if (run.index + 1 >= TOTAL) {
+    if (run.index + 1 >= runTotal()) {
       finishRun();
       return;
     }
@@ -1429,8 +1645,12 @@
     const e = els();
     if (!run || run.done) return;
     const item = run.items[run.index];
+    const n = runTotal();
     run.hintLevel = 0;
     run.awaitContinue = false;
+    run.qStartedAt = Date.now();
+    run.traced = false;
+    clearTraceMode();
     hideExplain();
     if (e.ask) e.ask.textContent = item.ask;
     if (e.tip) {
@@ -1438,14 +1658,18 @@
       const bits = [];
       if (item.tip) bits.push(item.tip);
       if (sh) bits.push(sh);
+      if (run.cat && run.cat.scenario) bits.push(`step ${run.index + 1}/${n}`);
       e.tip.textContent = bits.length ? bits.join(" · ") : "введи ответ и Enter";
     }
     if (e.hintBox) {
       e.hintBox.textContent = "";
       e.hintBox.classList.add("hidden");
     }
-    if (e.meta) e.meta.textContent = `${run.cat.name} · ${run.index + 1}/${TOTAL} · ok ${run.correct}`;
-    if (e.progress) e.progress.style.width = `${(run.index / TOTAL) * 100}%`;
+    if (e.meta) {
+      const kind = run.cat && run.cat.scenario ? "SCEN" : "DRILL";
+      e.meta.textContent = `${kind} · ${run.cat.name} · ${run.index + 1}/${n} · ok ${run.correct}`;
+    }
+    if (e.progress) e.progress.style.width = `${(run.index / n) * 100}%`;
     if (e.input) {
       e.input.value = "";
       e.input.disabled = false;
@@ -1515,7 +1739,7 @@
     appendLog(`${ok ? "OK" : "NO"} › ${typed || "∅"}${ok ? "" : ` ← ${item.answer}`}`, ok);
     if (ok) {
       flashFx(false, item);
-      if (run.index + 1 >= TOTAL) {
+      if (run.index + 1 >= runTotal()) {
         finishRun();
         return;
       }
@@ -1537,7 +1761,8 @@
   function finishRun() {
     stopTimer();
     const ms = Date.now() - run.startedAt;
-    const perfect = run.correct === TOTAL;
+    const n = runTotal();
+    const perfect = run.correct === n;
     const hintPenalty = Math.min(6, run.hintsUsed || 0);
     const gained = Math.max(1, run.correct * 2 + (perfect ? 8 : 0) - hintPenalty);
     state.xp += gained;
@@ -1560,10 +1785,10 @@
     const e = els();
     hideExplain();
     if (e.timer) e.timer.textContent = formatMs(ms);
-    if (e.meta) e.meta.textContent = `DONE · ${run.correct}/${TOTAL} · ${formatMs(ms)} · +${gained} XP`;
+    if (e.meta) e.meta.textContent = `DONE · ${run.correct}/${n} · ${formatMs(ms)} · +${gained} XP`;
     if (e.progress) e.progress.style.width = "100%";
     if (e.ask) {
-      e.ask.textContent = perfect ? `clean.exit — ${run.cat.name}` : `session.end — ${run.correct}/${TOTAL}`;
+      e.ask.textContent = perfect ? `clean.exit — ${run.cat.name}` : `session.end — ${run.correct}/${n}`;
     }
     if (e.tip) {
       e.tip.textContent = fresh.length

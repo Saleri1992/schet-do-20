@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=44" />
+  <link rel="stylesheet" href="style.css?v=45" />
 </head>
 <body data-theme="easy">
   <div class="sky">
@@ -603,7 +603,7 @@
     </div>
     <div class="ops-bezel">
       <header class="ops-top">
-        <div class="ops-brand">OPS DRILL <span>cmd · ps · linux · en</span></div>
+        <div class="ops-brand">OPS DRILL <span>cmd · ps · scen · en</span></div>
         <div class="ops-stats">
           <span>rank:<strong id="opsRank">console.rookie</strong></span>
           <span>xp:<strong id="opsXp">0</strong></span>
@@ -611,9 +611,13 @@
         </div>
         <button type="button" class="ops-btn ghost" id="opsExit">exit</button>
       </header>
+      <div class="ops-trace-bar hidden" id="opsTraceBar" aria-live="polite">
+        <span class="ops-trace-tag" id="opsTraceLabel">TRACED</span>
+        <span class="ops-trace-idle">idle <strong id="opsIdleTimer">01:00</strong></span>
+      </div>
 
       <section class="ops-hub" id="opsHub">
-        <p class="ops-lead">Drills + обучалки. Ошибка → пояснение. Docs · hint · FX-оверлеи.</p>
+        <p class="ops-lead">Drills · сценарии · docs. >1 мин на шаг → жёлтый режим TRACED.</p>
         <div class="ops-hub-actions">
           <button type="button" class="ops-btn" id="opsDocsOpen">docs · справка</button>
         </div>
@@ -664,6 +668,6 @@
   </div>
 
   <script src="app.js?v=42"></script>
-  <script src="ops.js?v=8"></script>
+  <script src="ops.js?v=9"></script>
 </body>
 </html>
