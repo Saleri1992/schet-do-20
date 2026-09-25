@@ -3,25 +3,63 @@
  * Fiction / lab sim. IP из TEST-NET (RFC 5737).
  */
 (function () {
-  const KEY = "schet-ops-story-v2";
+  const KEY = "schet-ops-story-v3";
   const HOST_IP = "203.0.113.77";
   const DECOY_IP = "203.0.113.12";
   const VPN_IP = "198.51.100.23";
   const WEB_IP = "198.51.100.40";
+  const SMTP_IP = "198.51.100.55";
   const BACKUP_PASS = "RESTORE-OK-991";
   const ALIAS_CODE = "NEON-7741";
 
-  const SHOP = [
-    { id: "mobo", name: "MOBO·basic", price: 40, slot: "mobo", need: true },
-    { id: "cpu", name: "CPU·4c", price: 55, slot: "cpu", need: true },
-    { id: "ram", name: "RAM·16G", price: 35, slot: "ram", need: true },
-    { id: "gpu", name: "GPU·entry", price: 80, slot: "gpu", need: true },
-    { id: "psu", name: "PSU·500W", price: 30, slot: "psu", need: true },
-    { id: "ssd", name: "SSD·1T", price: 45, slot: "ssd", boost: 1 },
-    { id: "cool", name: "COOL·tower", price: 25, slot: "cool", boost: 1 },
-    { id: "nic", name: "NIC·2.5G", price: 35, slot: "nic", boost: 1 },
-    { id: "gpu_pro", name: "GPU·pro", price: 140, slot: "gpu_pro", boost: 3 },
+  const PC_SLOTS = ["mobo", "cpu", "ram", "gpu", "psu", "hdd", "ssd", "nic", "cool"];
+
+  /** Каталог комплектующих: слоты + зависимости + вклад в specs. */
+  const PARTS = [
+    { id: "mobo_b", slot: "mobo", name: "MOBO·B450", price: 40, tier: 1, need: true, specs: { wattsNeed: 0 } },
+    { id: "mobo_x", slot: "mobo", name: "MOBO·X570", price: 90, tier: 2, need: true, specs: { wattsNeed: 0 } },
+    { id: "cpu_4", slot: "cpu", name: "CPU·4c", price: 55, tier: 1, need: true, specs: { cores: 4 }, reqSlots: ["mobo"] },
+    { id: "cpu_8", slot: "cpu", name: "CPU·8c", price: 110, tier: 2, need: true, specs: { cores: 8 }, reqSlots: ["mobo"] },
+    { id: "ram_8", slot: "ram", name: "RAM·8G", price: 25, tier: 1, need: true, specs: { ramGb: 8 }, reqSlots: ["mobo"] },
+    { id: "ram_16", slot: "ram", name: "RAM·16G", price: 45, tier: 2, need: true, specs: { ramGb: 16 }, reqSlots: ["mobo"] },
+    { id: "ram_32", slot: "ram", name: "RAM·32G", price: 85, tier: 3, need: true, specs: { ramGb: 32 }, reqSlots: ["mobo"] },
+    { id: "gpu_e", slot: "gpu", name: "GPU·entry", price: 70, tier: 1, need: true, specs: { gpu: 60, wattsNeed: 150 }, reqSlots: ["mobo", "psu"], minPsu: 400 },
+    { id: "gpu_m", slot: "gpu", name: "GPU·mid", price: 130, tier: 2, need: true, specs: { gpu: 120, wattsNeed: 220 }, reqSlots: ["mobo", "psu"], minPsu: 550, boost: 2 },
+    { id: "gpu_p", slot: "gpu", name: "GPU·pro", price: 200, tier: 3, need: true, specs: { gpu: 200, wattsNeed: 320 }, reqSlots: ["mobo", "psu"], minPsu: 650, boost: 4 },
+    { id: "psu_4", slot: "psu", name: "PSU·450W", price: 30, tier: 1, need: true, specs: { psuW: 450 } },
+    { id: "psu_6", slot: "psu", name: "PSU·650W", price: 55, tier: 2, need: true, specs: { psuW: 650 } },
+    { id: "psu_8", slot: "psu", name: "PSU·850W", price: 80, tier: 3, need: true, specs: { psuW: 850 } },
+    { id: "hdd_1", slot: "hdd", name: "HDD·1T", price: 30, tier: 1, specs: { storageGb: 1000 } },
+    { id: "hdd_2", slot: "hdd", name: "HDD·2T", price: 50, tier: 2, specs: { storageGb: 2000 } },
+    { id: "ssd_5", slot: "ssd", name: "SSD·512", price: 40, tier: 1, specs: { storageGb: 512, boost: 1 }, boost: 1 },
+    { id: "ssd_1", slot: "ssd", name: "SSD·1T", price: 70, tier: 2, specs: { storageGb: 1000, boost: 1 }, boost: 2 },
+    { id: "nic_1", slot: "nic", name: "NIC·1G", price: 20, tier: 1, specs: { nicMbps: 1000 } },
+    { id: "nic_25", slot: "nic", name: "NIC·2.5G", price: 40, tier: 2, specs: { nicMbps: 2500 }, boost: 1 },
+    { id: "nic_10", slot: "nic", name: "NIC·10G", price: 90, tier: 3, specs: { nicMbps: 10000 }, boost: 2 },
+    { id: "cool_a", slot: "cool", name: "COOL·air", price: 20, tier: 1, boost: 1 },
+    { id: "cool_l", slot: "cool", name: "COOL·aio", price: 55, tier: 2, boost: 2 },
   ];
+
+  const SERVERS = [
+    { id: "srv_proxy", role: "proxy", name: "Node·Proxy", price: 110, blurb: "прокси / reverse-proxy lab", specs: { ramGb: 4, nicMbps: 1000, storageGb: 40 } },
+    { id: "srv_vpn", role: "vpn", name: "Node·VPN", price: 140, blurb: "WireGuard / VPN lab", specs: { ramGb: 8, nicMbps: 1000, storageGb: 20 } },
+    { id: "srv_smtp", role: "smtp", name: "Node·SMTP", price: 160, blurb: "почта кампании (lab)", specs: { ramGb: 8, nicMbps: 1000, storageGb: 80 } },
+    { id: "srv_web", role: "web", name: "Node·Web", price: 120, blurb: "nginx витрина", specs: { ramGb: 4, nicMbps: 1000, storageGb: 40 } },
+    { id: "srv_rack", role: "multi", name: "Rack·AllInOne", price: 320, blurb: "proxy+vpn+smtp+web одним узлом", specs: { ramGb: 32, nicMbps: 10000, storageGb: 500 } },
+  ];
+
+  const CAPS = [
+    { id: "workstation", label: "Workstation собрана", hint: "mobo+cpu+ram+gpu+psu+(hdd|ssd)" },
+    { id: "mine", label: "Idle mining", hint: "GPU ≥ 60" },
+    { id: "mine_fast", label: "Fast mining", hint: "GPU ≥ 120 + cool" },
+    { id: "vpn", label: "VPN-миссии", hint: "сервер VPN/Rack или ПК: RAM≥8 + NIC≥1G" },
+    { id: "proxy", label: "Proxy-миссии", hint: "сервер Proxy/Rack" },
+    { id: "smtp", label: "SMTP-миссии", hint: "сервер SMTP/Rack + storage≥80 на узле" },
+    { id: "web", label: "Web-миссии", hint: "сервер Web/Rack или ПК: NIC + диск" },
+  ];
+
+  // совместимость со старым shop-API в гараже
+  const SHOP = PARTS;
 
   const FS = {
     router: {
@@ -556,6 +594,7 @@
       id: "vpn",
       title: "CH.20 · VPN deploy",
       narrative:
+        `Нужен CAP «VPN-миссии» (вкладка Rig: Node·VPN / Rack или ПК RAM≥8+NIC≥1G).\n` +
         `ssh admin@${VPN_IP} → пароль admin\n` +
         "sudo apt install wireguard\n" +
         "sudo systemctl enable wg-quick@wg0\n" +
@@ -564,6 +603,7 @@
       mode: "term",
       host: "local",
       cwd: "~",
+      requireCap: "vpn",
       goals: [
         {
           id: "vpnssh",
@@ -582,7 +622,7 @@
       id: "web",
       title: "CH.21 · shopfront nginx",
       narrative:
-        `Второй хост витрины ${WEB_IP} (те же admin/admin в письме):\n` +
+        `Нужен CAP «Web-миссии» (Node·Web / Rack или ПК с NIC+диском).\n` +
         `1) ssh admin@${WEB_IP}\n` +
         "2) sudo apt install nginx\n" +
         "3) sudo systemctl enable nginx\n" +
@@ -592,6 +632,7 @@
       mode: "term",
       host: "local",
       cwd: "~",
+      requireCap: "web",
       goals: [
         {
           id: "wssh",
@@ -608,8 +649,39 @@
       ],
     },
     {
+      id: "smtp",
+      title: "CH.22 · company mail",
+      narrative:
+        `Нужен CAP «SMTP-миссии» — купи Node·SMTP или Rack во вкладке Rig.\n` +
+        `Хост ${SMTP_IP} · admin/admin\n` +
+        "1) ssh admin@" + SMTP_IP + "\n" +
+        "2) sudo apt install postfix\n" +
+        "3) sudo systemctl enable postfix\n" +
+        "4) sudo systemctl start postfix\n" +
+        "5) echo test | mail -s lab ops@neon.test\n" +
+        "6) systemctl status postfix",
+      mode: "term",
+      host: "local",
+      cwd: "~",
+      requireCap: "smtp",
+      goals: [
+        {
+          id: "sssh",
+          match: new RegExp(`^ssh\\s+admin@${SMTP_IP.replace(/\./g, "\\.")}$`),
+          out: `admin@${SMTP_IP}'s password:`,
+          pay: 10,
+          set: { awaitSmtpPass: true },
+        },
+        { id: "si", match: /^sudo\s+apt\s+install\s+postfix$/, out: "postfix installed", pay: 18, needFlag: "smtpIn" },
+        { id: "se", match: /^sudo\s+systemctl\s+enable\s+postfix$/, out: "enabled", pay: 12, needFlag: "smtpIn" },
+        { id: "sst", match: /^sudo\s+systemctl\s+start\s+postfix$/, out: "started", pay: 14, needFlag: "smtpIn" },
+        { id: "sm", match: /^echo\s+test\s+\|\s+mail\s+-s\s+lab\s+ops@neon\.test$/, out: "mail queued (lab)", pay: 20, needFlag: "smtpIn" },
+        { id: "ss", match: /^systemctl\s+status\s+postfix$/, out: "active (running) · SMTP READY", pay: 24, needFlag: "smtpIn" },
+      ],
+    },
+    {
       id: "monitor",
-      title: "CH.22 · keep the lights on",
+      title: "CH.23 · keep the lights on",
       narrative:
         "Смена мониторинга:\n" +
         "1) systemctl status nginx\n" +
@@ -630,12 +702,11 @@
     },
     {
       id: "garage",
-      title: "CH.23 · garage · tune & mine",
+      title: "CH.24 · garage → Rig tab",
       narrative:
-        "Гараж Grid-7: магазин железа, сборка, idle-майнинг.\n" +
-        "Команды: shop · buy <id> · inv · assemble · mine-start · mine-stop · status · rate\n" +
-        "Обязательно: mobo cpu ram gpu psu. Буст: ssd cool nic gpu_pro.\n" +
-        "Гайды — в notes, если читал tools/ на shadow-хосте.",
+        "Гараж вырос в отдельную вкладку RIG: слоты GPU/CPU/RAM/MOBO/NIC/HDD/SSD, покупка серверов, CAP под миссии.\n" +
+        "Здесь терминал ещё понимает shop/buy/assemble/mine-*. Полный UI — кнопка «rig · железо» на хабе.\n" +
+        "Собери ПК, купи Node·VPN/SMTP по мере сюжета, тюнь постепенно.",
       mode: "garage",
       reward: 50,
     },
@@ -643,9 +714,8 @@
       id: "epilogue",
       title: "EPILOGUE · contract open",
       narrative:
-        "Клиент онлайн, VPN поднят, витрина отвечает, периметр закрыт.\n" +
-        "Биржа шлёт новые тикеты — можешь крутить гараж (майнинг) или reset сюжета.\n" +
-        "Это был учебный кибернуар без реальных взломов: только команды, логи и история.",
+        "Клиент онлайн, VPN/web/mail по возможностям Rig, периметр закрыт.\n" +
+        "Дальше крути железо во вкладке Rig и idle-майнинг. Reset — новый проход сюжета.",
       mode: "continue",
       reward: 60,
     },
@@ -654,17 +724,19 @@
   function defaultState() {
     return {
       chapter: 0,
-      money: 0,
+      money: 80,
       doneGoals: {},
       flags: {},
       notes: [],
       parts: {},
+      servers: {},
       assembled: false,
       mining: false,
       mined: 0,
       quizIndex: 0,
       quizOk: 0,
       finished: false,
+      rigTab: "pc",
     };
   }
 
@@ -672,7 +744,15 @@
     try {
       const raw = JSON.parse(localStorage.getItem(KEY) || "null");
       if (!raw || typeof raw !== "object") return defaultState();
-      return { ...defaultState(), ...raw, flags: raw.flags || {}, doneGoals: raw.doneGoals || {}, parts: raw.parts || {}, notes: raw.notes || [] };
+      return {
+        ...defaultState(),
+        ...raw,
+        flags: raw.flags || {},
+        doneGoals: raw.doneGoals || {},
+        parts: raw.parts || {},
+        servers: raw.servers || {},
+        notes: raw.notes || [],
+      };
     } catch {
       return defaultState();
     }
@@ -714,11 +794,65 @@
     };
   }
 
+  function partById(id) {
+    return PARTS.find((p) => p.id === id);
+  }
+
+  function installedPart(slot) {
+    const id = state.parts[slot];
+    return id ? partById(id) : null;
+  }
+
+  function computeSpecs() {
+    const s = { cores: 0, ramGb: 0, gpu: 0, psuW: 0, storageGb: 0, nicMbps: 0, wattsNeed: 0, boost: 0 };
+    PC_SLOTS.forEach((slot) => {
+      const p = installedPart(slot);
+      if (!p) return;
+      const sp = p.specs || {};
+      s.cores += sp.cores || 0;
+      s.ramGb += sp.ramGb || 0;
+      s.gpu += sp.gpu || 0;
+      s.psuW += sp.psuW || 0;
+      s.storageGb += sp.storageGb || 0;
+      s.nicMbps += sp.nicMbps || 0;
+      s.wattsNeed += sp.wattsNeed || 0;
+      s.boost += p.boost || sp.boost || 0;
+    });
+    return s;
+  }
+
+  function hasServerRole(role) {
+    if (state.servers.multi || state.servers.srv_rack) return true;
+    if (role === "proxy") return !!(state.servers.proxy || state.servers.srv_proxy);
+    if (role === "vpn") return !!(state.servers.vpn || state.servers.srv_vpn);
+    if (role === "smtp") return !!(state.servers.smtp || state.servers.srv_smtp);
+    if (role === "web") return !!(state.servers.web || state.servers.srv_web);
+    return !!state.servers[role];
+  }
+
+  function hasCap(id) {
+    const sp = computeSpecs();
+    if (id === "workstation") return !!state.assembled;
+    if (id === "mine") return state.assembled && sp.gpu >= 60;
+    if (id === "mine_fast") return state.assembled && sp.gpu >= 120 && !!state.parts.cool;
+    if (id === "vpn") return hasServerRole("vpn") || (state.assembled && sp.ramGb >= 8 && sp.nicMbps >= 1000);
+    if (id === "proxy") return hasServerRole("proxy");
+    if (id === "smtp") return hasServerRole("smtp");
+    if (id === "web") return hasServerRole("web") || (state.assembled && sp.nicMbps >= 1000 && sp.storageGb >= 40);
+    return false;
+  }
+
+  function capHint(id) {
+    const c = CAPS.find((x) => x.id === id);
+    return c ? `${c.label} (${c.hint})` : id;
+  }
+
   function pay(n, why) {
     state.money += n;
     save();
     appendOut(`+$ ${n}${why ? ` · ${why}` : ""}`, "ok");
     renderChrome();
+    renderRigMoney();
   }
 
   function appendOut(text, cls) {
@@ -769,6 +903,7 @@
     if (e.garage) e.garage.classList.add("hidden");
     if (e.continueBtn) e.continueBtn.classList.add("hidden");
     if (e.shop) e.shop.classList.add("hidden");
+    document.getElementById("opsStoryRigGate")?.classList.add("hidden");
   }
 
   function renderChapter() {
@@ -776,17 +911,37 @@
     const ch = chapter();
     hideStoryUiBits();
     clearOut();
-    if (e.narrative) e.narrative.textContent = ch.narrative;
     termHost = ch.host || "local";
     termCwd = ch.cwd || (termHost === "remote" ? "/home/admin" : termHost === "router" ? "/" : "~");
     state.flags.awaitPass = false;
     state.flags.awaitVpnPass = false;
     state.flags.awaitWebPass = false;
+    state.flags.awaitSmtpPass = false;
+
+    if (ch.requireCap && !hasCap(ch.requireCap)) {
+      if (e.narrative) {
+        e.narrative.textContent =
+          `${ch.narrative}\n\n⚠ CAP locked: ${capHint(ch.requireCap)}\n` +
+          "Открой вкладку «rig · железо», докупи ПК/сервер, затем вернись в сюжет.";
+      }
+      if (e.continueBtn) {
+        e.continueBtn.classList.remove("hidden");
+        e.continueBtn.textContent = "проверить CAP →";
+      }
+      const gate = document.getElementById("opsStoryRigGate");
+      if (gate) gate.classList.remove("hidden");
+      renderChrome();
+      save();
+      return;
+    }
+    document.getElementById("opsStoryRigGate")?.classList.add("hidden");
+
+    if (e.narrative) e.narrative.textContent = ch.narrative;
 
     if (ch.mode === "continue") {
       if (e.continueBtn) {
         e.continueBtn.classList.remove("hidden");
-        e.continueBtn.textContent = state.chapter >= CHAPTERS.length - 1 && state.finished ? "ещё раз garage" : "далее →";
+        e.continueBtn.textContent = state.chapter >= CHAPTERS.length - 1 ? "в hub / Rig" : "далее →";
       }
     } else if (ch.mode === "quiz") {
       state.quizIndex = 0;
@@ -807,11 +962,11 @@
       }
       renderShop();
       updatePrompt();
-      appendOut("garage online · shop | buy <id> | assemble | mine-start | rate", "dim");
+      appendOut("garage · или открой вкладку Rig на хабе", "dim");
       if (!state.doneGoals.garage_unlock) {
         state.doneGoals.garage_unlock = true;
         pay(ch.reward || 0, "garage unlock");
-        addNote("Garage unlocked · mine when PC assembled");
+        addNote("Rig tab: тюнинг ПК + серверы под CAP миссий");
         save();
       }
     }
@@ -869,7 +1024,9 @@
     if (ch.setNotes) {
       addNote(`VPN job host ${VPN_IP} · admin/admin`);
       addNote(`Web job host ${WEB_IP} · admin/admin`);
+      addNote(`SMTP job host ${SMTP_IP} · admin/admin`);
       addNote("WireGuard: apt install → enable → start wg-quick@wg0");
+      addNote("Rig: купи Node·VPN / Web / SMTP или Rack под CAP");
     }
     if (state.chapter < CHAPTERS.length - 1) {
       state.chapter += 1;
@@ -1053,60 +1210,143 @@
   function renderShop() {
     const e = els();
     if (!e.shop) return;
-    e.shop.innerHTML = SHOP.map((item) => {
-      const owned = !!state.parts[item.slot];
-      return `<button type="button" class="ops-btn ${owned ? "ghost" : ""}" data-buy="${item.id}" ${owned ? "disabled" : ""}>${item.name} · $${item.price}${owned ? " · OWNED" : ""}</button>`;
+    e.shop.innerHTML = PARTS.map((item) => {
+      const cur = state.parts[item.slot];
+      const owned = cur === item.id;
+      const better = cur && partById(cur) && partById(cur).tier > item.tier;
+      return `<button type="button" class="ops-btn ${owned ? "ghost" : ""}" data-buy="${item.id}" ${owned || better ? "disabled" : ""}>${item.name} · $${item.price}${owned ? " · ON" : ""}</button>`;
     }).join("");
   }
 
+  function canInstall(item) {
+    if (item.reqSlots) {
+      for (let i = 0; i < item.reqSlots.length; i += 1) {
+        if (!state.parts[item.reqSlots[i]]) return `нужен слот ${item.reqSlots[i]}`;
+      }
+    }
+    if (item.minPsu) {
+      const psu = installedPart("psu");
+      const w = (psu && psu.specs && psu.specs.psuW) || 0;
+      if (w < item.minPsu) return `PSU ≥ ${item.minPsu}W (сейчас ${w || 0})`;
+    }
+    const sp = computeSpecs();
+    const extraNeed = (item.specs && item.specs.wattsNeed) || 0;
+    if (item.slot === "gpu" && state.parts.psu) {
+      const psuW = (installedPart("psu").specs || {}).psuW || 0;
+      const otherNeed = PARTS.filter((p) => state.parts[p.slot] === p.id && p.slot !== "gpu")
+        .reduce((a, p) => a + ((p.specs && p.specs.wattsNeed) || 0), 0);
+      if (psuW < otherNeed + extraNeed) return `не хватает питания PSU (${psuW}W)`;
+    }
+    void sp;
+    return null;
+  }
+
   function buyPart(id) {
-    const item = SHOP.find((x) => x.id === id);
+    const item = partById(id);
     if (!item) {
-      appendOut("unknown item", "bad");
+      appendOut("unknown part", "bad");
       return;
     }
-    if (state.parts[item.slot]) {
-      appendOut("already owned", "dim");
+    const block = canInstall(item);
+    if (block) {
+      appendOut(`dep: ${block}`, "bad");
+      rigLog(`dep: ${block}`);
+      return;
+    }
+    const cur = installedPart(item.slot);
+    if (cur && cur.id === item.id) {
+      appendOut("already installed", "dim");
+      return;
+    }
+    if (cur && cur.tier > item.tier) {
+      appendOut("уже стоит тир выше", "dim");
       return;
     }
     if (state.money < item.price) {
       appendOut("not enough $", "bad");
+      rigLog("not enough $");
       return;
     }
     state.money -= item.price;
     state.parts[item.slot] = item.id;
     state.assembled = false;
-    appendOut(`BOUGHT ${item.name}`, "ok");
+    appendOut(`INSTALLED ${item.name}`, "ok");
+    rigLog(`bought ${item.name}`);
     save();
     renderShop();
+    renderChrome();
+    renderRig();
+  }
+
+  function buyServer(id) {
+    const srv = SERVERS.find((s) => s.id === id);
+    if (!srv) {
+      rigLog("unknown server");
+      return;
+    }
+    if (state.servers[srv.id] || state.servers[srv.role]) {
+      rigLog("already owned");
+      return;
+    }
+    if (state.money < srv.price) {
+      rigLog("not enough $");
+      return;
+    }
+    state.money -= srv.price;
+    state.servers[srv.id] = true;
+    state.servers[srv.role] = true;
+    if (srv.role === "multi") {
+      ["proxy", "vpn", "smtp", "web"].forEach((r) => { state.servers[r] = true; });
+    }
+    rigLog(`SERVER ONLINE · ${srv.name}`);
+    save();
+    renderRig();
     renderChrome();
   }
 
   function tryAssemble() {
-    const need = SHOP.filter((x) => x.need).map((x) => x.slot);
-    const ok = need.every((s) => state.parts[s]);
-    if (!ok) {
-      appendOut(`missing: ${need.filter((s) => !state.parts[s]).join(", ")}`, "bad");
+    const need = ["mobo", "cpu", "ram", "gpu", "psu"];
+    const miss = need.filter((s) => !state.parts[s]);
+    if (miss.length) {
+      appendOut(`missing: ${miss.join(", ")}`, "bad");
+      rigLog(`missing: ${miss.join(", ")}`);
+      return;
+    }
+    if (!state.parts.hdd && !state.parts.ssd) {
+      appendOut("нужен HDD или SSD", "bad");
+      rigLog("нужен HDD или SSD");
+      return;
+    }
+    if (!state.parts.nic) {
+      appendOut("нужен NIC (сеть)", "bad");
+      rigLog("нужен NIC");
+      return;
+    }
+    const sp = computeSpecs();
+    if (sp.psuW < sp.wattsNeed) {
+      appendOut(`PSU ${sp.psuW}W < need ${sp.wattsNeed}W`, "bad");
       return;
     }
     state.assembled = true;
     pay(25, "assemble bonus");
-    appendOut(`PC ASSEMBLED · rate ${mineRate()}/tick · mine-start`, "ok");
-    addNote("PC assembled");
+    appendOut(`PC ASSEMBLED · ${sp.cores}c/${sp.ramGb}G gpu${sp.gpu} · rate ${mineRate()}`, "ok");
+    addNote("Workstation assembled");
     save();
+    renderRig();
   }
 
   function mineRate() {
-    let r = 2;
-    SHOP.forEach((item) => {
-      if (item.boost && state.parts[item.slot] === item.id) r += item.boost;
-    });
-    return r;
+    const sp = computeSpecs();
+    let r = 2 + (sp.boost || 0);
+    if (sp.gpu >= 120) r += 2;
+    if (sp.gpu >= 200) r += 3;
+    if (hasCap("mine_fast")) r += 2;
+    return Math.max(1, r);
   }
 
   function startMine() {
-    if (!state.assembled) {
-      appendOut("assemble PC first", "bad");
+    if (!hasCap("mine")) {
+      appendOut("нужен CAP mine (собрать ПК с GPU)", "bad");
       return;
     }
     if (state.mining) {
@@ -1117,6 +1357,7 @@
     save();
     const rate = mineRate();
     appendOut(`MINER ONLINE · +$${rate} / 4s`, "ok");
+    rigLog(`mining +$${rate}/4s`);
     if (mineTimer) clearInterval(mineTimer);
     mineTimer = setInterval(() => {
       if (!state.mining) return;
@@ -1125,7 +1366,110 @@
       state.mined += gain;
       save();
       renderChrome();
+      renderRigMoney();
     }, 4000);
+  }
+
+  function renderRigMoney() {
+    const m = document.getElementById("opsRigMoney");
+    if (m) m.textContent = String(state.money);
+    const sm = document.getElementById("opsStoryMoney");
+    if (sm) sm.textContent = String(state.money);
+  }
+
+  function rigLog(msg) {
+    const el = document.getElementById("opsRigLog");
+    if (el) el.textContent = msg;
+  }
+
+  function renderRig() {
+    const body = document.getElementById("opsRigBody");
+    if (!body) return;
+    renderRigMoney();
+    const tab = state.rigTab || "pc";
+    document.querySelectorAll("[data-rig-tab]").forEach((btn) => {
+      btn.classList.toggle("on", btn.dataset.rigTab === tab);
+    });
+    const sp = computeSpecs();
+
+    if (tab === "pc") {
+      body.innerHTML = `
+        <div class="ops-rig-specs">cores:${sp.cores} · RAM:${sp.ramGb}G · GPU:${sp.gpu} · PSU:${sp.psuW}W · disk:${sp.storageGb}G · NIC:${sp.nicMbps}M · needW:${sp.wattsNeed}</div>
+        <div class="ops-rig-slots">
+          ${PC_SLOTS.map((slot) => {
+            const p = installedPart(slot);
+            return `<div class="ops-rig-slot"><span class="ops-rig-slot-id">${slot}</span><strong>${p ? escapeHtml(p.name) : "— empty —"}</strong></div>`;
+          }).join("")}
+        </div>
+        <div class="ops-gate-actions">
+          <button type="button" class="ops-btn" id="opsRigAssemble">assemble</button>
+          <button type="button" class="ops-btn" id="opsRigMine">${state.mining ? "mine-stop" : "mine-start"}</button>
+        </div>
+        <p class="ops-lead">Сборка: mobo+cpu+ram+gpu+psu+nic+(hdd|ssd). PSU должен тянуть GPU.</p>`;
+      document.getElementById("opsRigAssemble")?.addEventListener("click", tryAssemble);
+      document.getElementById("opsRigMine")?.addEventListener("click", () => {
+        if (state.mining) stopMine();
+        else startMine();
+        renderRig();
+      });
+    } else if (tab === "servers") {
+      body.innerHTML = `
+        <p class="ops-lead">Серверы для proxy / VPN / SMTP / web. Rack открывает все роли.</p>
+        <div class="ops-rig-shop">
+          ${SERVERS.map((s) => {
+            const own = !!(state.servers[s.id] || state.servers[s.role]);
+            return `<button type="button" class="ops-btn ${own ? "ghost" : ""}" data-buy-srv="${s.id}" ${own ? "disabled" : ""}">
+              <span class="ops-cat-id">${escapeHtml(s.name)}</span>
+              <span class="ops-cat-blurb">${escapeHtml(s.blurb)} · $${s.price}</span>
+              <span class="ops-cat-stat">${own ? "OWNED" : "buy"}</span>
+            </button>`;
+          }).join("")}
+        </div>`;
+      body.querySelectorAll("[data-buy-srv]").forEach((btn) => {
+        btn.addEventListener("click", () => buyServer(btn.dataset.buySrv));
+      });
+    } else if (tab === "shop") {
+      const bySlot = {};
+      PARTS.forEach((p) => {
+        if (!bySlot[p.slot]) bySlot[p.slot] = [];
+        bySlot[p.slot].push(p);
+      });
+      body.innerHTML = PC_SLOTS.map((slot) => `
+        <h3 class="ops-h">${slot}</h3>
+        <div class="ops-rig-shop">
+          ${(bySlot[slot] || []).map((item) => {
+            const cur = state.parts[item.slot];
+            const owned = cur === item.id;
+            return `<button type="button" class="ops-btn ${owned ? "ghost" : ""}" data-buy-part="${item.id}">${escapeHtml(item.name)} · $${item.price}${owned ? " · ON" : ""}</button>`;
+          }).join("")}
+        </div>`).join("");
+      body.querySelectorAll("[data-buy-part]").forEach((btn) => {
+        btn.addEventListener("click", () => buyPart(btn.dataset.buyPart));
+      });
+    } else if (tab === "caps") {
+      body.innerHTML = `
+        <div class="ops-rig-caps">
+          ${CAPS.map((c) => {
+            const on = hasCap(c.id);
+            return `<div class="ops-rig-cap ${on ? "on" : ""}"><strong>${on ? "ON" : "OFF"}</strong> ${escapeHtml(c.label)}<span>${escapeHtml(c.hint)}</span></div>`;
+          }).join("")}
+        </div>
+        <p class="ops-lead">Сюжетные главы VPN / Web / SMTP проверяют эти CAP перед стартом терминала.</p>`;
+    }
+  }
+
+  function showRig(on) {
+    const panel = document.getElementById("opsRig");
+    if (!panel) return;
+    panel.classList.toggle("hidden", !on);
+    if (on) {
+      document.getElementById("opsHub")?.classList.add("hidden");
+      document.getElementById("opsStory")?.classList.add("hidden");
+      document.getElementById("opsDocs")?.classList.add("hidden");
+      document.getElementById("opsLesson")?.classList.add("hidden");
+      document.getElementById("opsDrill")?.classList.add("hidden");
+      renderRig();
+    }
   }
 
   function stopMine() {
@@ -1136,6 +1480,7 @@
       mineTimer = 0;
     }
     appendOut("miner stopped", "dim");
+    rigLog("miner stopped");
   }
 
   function handleGoalLine(line) {
@@ -1187,6 +1532,20 @@
       return true;
     }
 
+    if (state.flags.awaitSmtpPass) {
+      if (line === "admin") {
+        state.flags.awaitSmtpPass = false;
+        state.flags.smtpIn = true;
+        appendOut(`SMTP-host ${SMTP_IP} · shell ready`, "ok");
+        const g = ch.goals.find((x) => x.id === "sssh");
+        if (g && !state.doneGoals[`${ch.id}:${g.id}`]) markGoal(ch, { ...g, pay: 15, set: undefined });
+        else pay(15, "smtp login");
+        return true;
+      }
+      appendOut("Access denied", "bad");
+      return true;
+    }
+
     for (let i = 0; i < ch.goals.length; i += 1) {
       const g = ch.goals[i];
       if (state.doneGoals[`${ch.id}:${g.id}`]) continue;
@@ -1194,7 +1553,7 @@
       if (g.match.test(line)) {
         appendOut(g.out || "ok", "ok");
         if (g.set) Object.assign(state.flags, g.set);
-        if (g.set && (g.set.awaitPass || g.set.awaitVpnPass || g.set.awaitWebPass)) {
+        if (g.set && (g.set.awaitPass || g.set.awaitVpnPass || g.set.awaitWebPass || g.set.awaitSmtpPass)) {
           if (g.pay) pay(g.pay, g.id);
           save();
           return true;
@@ -1247,7 +1606,7 @@
     if (low === "shop") {
       renderShop();
       if (els().shop) els().shop.classList.remove("hidden");
-      appendOut(SHOP.map((x) => `${x.id} $${x.price}`).join(" · "));
+      appendOut(PARTS.map((x) => `${x.id} $${x.price}`).join(" · "));
       return;
     }
     if (low.startsWith("buy ")) {
@@ -1297,10 +1656,9 @@
       document.getElementById("opsDocs")?.classList.add("hidden");
       document.getElementById("opsLesson")?.classList.add("hidden");
       document.getElementById("opsDrill")?.classList.add("hidden");
+      document.getElementById("opsRig")?.classList.add("hidden");
       renderChapter();
       setTimeout(() => e.input && e.input.focus(), 40);
-    } else if (state.mining) {
-      // keep mining in background while in OPS
     }
   }
 
@@ -1309,24 +1667,49 @@
     if (!e.panel) return;
 
     document.getElementById("opsStoryOpen")?.addEventListener("click", () => show(true));
+    document.getElementById("opsRigOpen")?.addEventListener("click", () => showRig(true));
     document.getElementById("opsStoryBack")?.addEventListener("click", () => {
       show(false);
       document.getElementById("opsHub")?.classList.remove("hidden");
-      if (window.OpsTerminal && typeof window.OpsTerminal.renderHub === "function") {
-        window.OpsTerminal.renderHub();
-      } else {
-        // fallback: click path via custom event
-        document.getElementById("opsHub")?.classList.remove("hidden");
-      }
+      if (window.OpsTerminal && typeof window.OpsTerminal.renderHub === "function") window.OpsTerminal.renderHub();
+    });
+    document.getElementById("opsRigBack")?.addEventListener("click", () => {
+      showRig(false);
+      document.getElementById("opsHub")?.classList.remove("hidden");
+      if (window.OpsTerminal && typeof window.OpsTerminal.renderHub === "function") window.OpsTerminal.renderHub();
+    });
+    document.getElementById("opsStoryRigGate")?.addEventListener("click", () => {
+      show(false);
+      showRig(true);
+    });
+    document.querySelectorAll("[data-rig-tab]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        state.rigTab = btn.dataset.rigTab;
+        save();
+        renderRig();
+      });
     });
     document.getElementById("opsStoryReset")?.addEventListener("click", () => {
-      if (!confirm("Сбросить сюжет и деньги?")) return;
+      if (!confirm("Сбросить сюжет, деньги и железо?")) return;
       stopMine();
       state = defaultState();
       save();
       renderChapter();
+      renderRig();
     });
-    e.continueBtn?.addEventListener("click", () => advanceChapter());
+    e.continueBtn?.addEventListener("click", () => {
+      const ch = chapter();
+      if (ch.requireCap && !hasCap(ch.requireCap)) {
+        renderChapter();
+        return;
+      }
+      if (state.chapter >= CHAPTERS.length - 1 && ch.mode === "continue") {
+        show(false);
+        document.getElementById("opsHub")?.classList.remove("hidden");
+        return;
+      }
+      advanceChapter();
+    });
     e.quiz?.addEventListener("click", (ev) => {
       const btn = ev.target.closest("[data-quiz]");
       if (!btn) return;
@@ -1349,17 +1732,19 @@
       }
     });
 
-    if (state.mining && state.assembled) startMine();
+    if (state.mining && hasCap("mine")) startMine();
   }
 
   window.OpsStory = {
     open: () => show(true),
     close: () => show(false),
     isOpen: () => open,
+    openRig: () => showRig(true),
     hide: () => {
       const e = els();
       if (e.panel) e.panel.classList.add("hidden");
       open = false;
+      document.getElementById("opsRig")?.classList.add("hidden");
     },
   };
 

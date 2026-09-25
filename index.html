@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=46" />
+  <link rel="stylesheet" href="style.css?v=47" />
 </head>
 <body data-theme="easy">
   <div class="sky">
@@ -620,6 +620,7 @@
         <p class="ops-lead">Drills · сценарии · сюжет · docs. >1 мин → TRACED.</p>
         <div class="ops-hub-actions">
           <button type="button" class="ops-btn" id="opsStoryOpen">story · сюжет</button>
+          <button type="button" class="ops-btn" id="opsRigOpen">rig · железо</button>
           <button type="button" class="ops-btn" id="opsDocsOpen">docs · справка</button>
         </div>
         <div class="ops-cats" id="opsCats"></div>
@@ -642,6 +643,7 @@
           <div class="ops-story-shop" id="opsStoryShop"></div>
         </div>
         <button type="button" class="ops-btn hidden" id="opsStoryContinue">далее →</button>
+        <button type="button" class="ops-btn ghost hidden" id="opsStoryRigGate">открыть Rig →</button>
         <div class="ops-story-term hidden" id="opsStoryTerm">
           <div class="ops-story-out" id="opsStoryOut"></div>
           <div class="ops-prompt-row">
@@ -650,6 +652,23 @@
             <button type="button" class="ops-btn" id="opsStorySubmit">enter</button>
           </div>
         </div>
+      </section>
+
+      <section class="ops-rig hidden" id="opsRig">
+        <div class="ops-docs-bar">
+          <h2 class="ops-docs-h">RIG · lab hardware</h2>
+          <div class="ops-story-cash">$ <strong id="opsRigMoney">0</strong></div>
+          <button type="button" class="ops-btn ghost" id="opsRigBack">← hub</button>
+        </div>
+        <p class="ops-lead">Тюнь ПК по слотам, покупай серверы под proxy/VPN/SMTP/web. CAP решают, какие главы сюжета доступны.</p>
+        <nav class="ops-docs-toc" id="opsRigTabs">
+          <button type="button" data-rig-tab="pc" class="on">PC</button>
+          <button type="button" data-rig-tab="servers">Servers</button>
+          <button type="button" data-rig-tab="shop">Shop</button>
+          <button type="button" data-rig-tab="caps">Caps</button>
+        </nav>
+        <div id="opsRigBody" class="ops-rig-body"></div>
+        <p class="ops-meta" id="opsRigLog">—</p>
       </section>
 
       <section class="ops-docs hidden" id="opsDocs">
@@ -694,7 +713,7 @@
   </div>
 
   <script src="app.js?v=42"></script>
-  <script src="ops.js?v=10"></script>
-  <script src="ops-story.js?v=2"></script>
+  <script src="ops.js?v=11"></script>
+  <script src="ops-story.js?v=3"></script>
 </body>
 </html>

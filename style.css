@@ -5182,3 +5182,83 @@ body.ops-on .toast-stack {
   margin-bottom: 8px;
 }
 #opsStoryContinue.hidden { display: none !important; }
+#opsStoryRigGate.hidden { display: none !important; }
+.ops-rig {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+.ops-rig.hidden { display: none !important; }
+.ops-rig-body {
+  max-height: min(58vh, 520px);
+  overflow: auto;
+  padding-top: 4px;
+}
+.ops-rig-specs {
+  font-size: 8px;
+  color: #ffe566;
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+.ops-rig-slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.ops-rig-slot {
+  border: 1px solid #1f4a2e;
+  background: #07140c;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ops-rig-slot-id {
+  font-size: 8px;
+  color: #4a9a62;
+  text-transform: uppercase;
+}
+.ops-rig-slot strong {
+  font-size: 9px;
+  color: #d6ffe0;
+}
+.ops-rig-shop {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.ops-rig-shop .ops-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  text-align: left;
+  max-width: 220px;
+}
+.ops-rig-caps {
+  display: grid;
+  gap: 6px;
+}
+.ops-rig-cap {
+  border: 1px solid #1f4a2e;
+  padding: 8px 10px;
+  font-size: 9px;
+  color: #4a9a62;
+  display: grid;
+  gap: 2px;
+}
+.ops-rig-cap.on {
+  border-color: #3ecf6e;
+  color: #b8ffcc;
+  background: #0a1a10;
+}
+.ops-rig-cap strong { font-size: 8px; }
+.ops-rig-cap span { font-size: 8px; color: #4a9a62; }
+.ops-docs-toc button.on {
+  border-color: #3ecf6e;
+  background: #0c1f14;
+  color: #d6ffe0;
+}
