@@ -3,208 +3,335 @@
  * Fiction / lab sim. IP из TEST-NET (RFC 5737).
  */
 (function () {
-  const KEY = "schet-ops-story-v1";
+  const KEY = "schet-ops-story-v2";
   const HOST_IP = "203.0.113.77";
+  const DECOY_IP = "203.0.113.12";
   const VPN_IP = "198.51.100.23";
+  const WEB_IP = "198.51.100.40";
   const BACKUP_PASS = "RESTORE-OK-991";
+  const ALIAS_CODE = "NEON-7741";
 
   const SHOP = [
-    { id: "mobo", name: "MOBO·basic", price: 40, slot: "mobo" },
-    { id: "cpu", name: "CPU·4c", price: 55, slot: "cpu" },
-    { id: "ram", name: "RAM·16G", price: 35, slot: "ram" },
-    { id: "gpu", name: "GPU·entry", price: 80, slot: "gpu" },
-    { id: "psu", name: "PSU·500W", price: 30, slot: "psu" },
+    { id: "mobo", name: "MOBO·basic", price: 40, slot: "mobo", need: true },
+    { id: "cpu", name: "CPU·4c", price: 55, slot: "cpu", need: true },
+    { id: "ram", name: "RAM·16G", price: 35, slot: "ram", need: true },
+    { id: "gpu", name: "GPU·entry", price: 80, slot: "gpu", need: true },
+    { id: "psu", name: "PSU·500W", price: 30, slot: "psu", need: true },
+    { id: "ssd", name: "SSD·1T", price: 45, slot: "ssd", boost: 1 },
+    { id: "cool", name: "COOL·tower", price: 25, slot: "cool", boost: 1 },
+    { id: "nic", name: "NIC·2.5G", price: 35, slot: "nic", boost: 1 },
+    { id: "gpu_pro", name: "GPU·pro", price: 140, slot: "gpu_pro", boost: 3 },
   ];
 
   const FS = {
     router: {
-      "/": { type: "dir", kids: ["var"] },
+      "/": { type: "dir", kids: ["var", "tmp", "etc"] },
+      "/etc": { type: "dir", kids: ["banner.txt"] },
+      "/etc/banner.txt": {
+        type: "file",
+        body: "HOME-ROUTER LAB SIM\nNo real packets. Commands: ls cd cat grep find pwd help\n",
+      },
+      "/tmp": { type: "dir", kids: ["scratch.txt"] },
+      "/tmp/scratch.txt": { type: "file", body: "empty buffer\n" },
       "/var": { type: "dir", kids: ["log"] },
-      "/var/log": { type: "dir", kids: ["connections.log", "auth.log", "readme.txt"] },
+      "/var/log": { type: "dir", kids: ["connections.log", "auth.log", "dhcp.log", "readme.txt", "alerts.json"] },
       "/var/log/readme.txt": {
         type: "file",
-        body: "ROUTER LAB SIM — not a real device.\nUse: ls, cd, cat, grep, pwd, help\n",
+        body: "Forensics tip: grep SSH, DATA_OUT, Accepted.\nThen: track <ip>\n",
       },
       "/var/log/connections.log": {
         type: "file",
         body:
           "08:11 accept 192.168.1.10 → wan\n" +
           "08:14 accept 192.168.1.14 → wan\n" +
+          `08:19 probe from ${DECOY_IP} (noise)\n` +
           `08:22 SSH_SESSION from ${HOST_IP} user=unknown\n` +
           "08:25 accept 192.168.1.10 → wan\n" +
-          `08:31 DATA_OUT large → ${HOST_IP} (backup?\n` +
-          "08:40 dhcp renew 192.168.1.14\n",
+          `08:31 DATA_OUT large → ${HOST_IP} label=backup_stream\n` +
+          "08:40 dhcp renew 192.168.1.14\n" +
+          `08:44 keepalive ${HOST_IP}\n`,
       },
       "/var/log/auth.log": {
         type: "file",
         body:
           "sshd: Failed password for root from 198.51.100.9\n" +
           `sshd: Accepted password for admin from ${HOST_IP}\n` +
+          `sshd: session opened for admin from ${HOST_IP}\n` +
           "sshd: session closed\n",
+      },
+      "/var/log/dhcp.log": {
+        type: "file",
+        body: "DHCPACK 192.168.1.10 laptop\nDHCPACK 192.168.1.14 phone\n",
+      },
+      "/var/log/alerts.json": {
+        type: "file",
+        body:
+          "{\n" +
+          `  "top_talker": "${HOST_IP}",\n` +
+          `  "decoy": "${DECOY_IP}",\n` +
+          '  "severity": "exfil_suspected"\n' +
+          "}\n",
       },
     },
     remote: {
-      "/": { type: "dir", kids: ["home", "etc", "tmp"] },
+      "/": { type: "dir", kids: ["home", "etc", "tmp", "var"] },
       "/home": { type: "dir", kids: ["admin"] },
-      "/home/admin": { type: "dir", kids: ["notes.txt", "loot", ".secret", "tools"] },
+      "/home/admin": { type: "dir", kids: ["notes.txt", "loot", ".secret", "tools", "mail", "work"] },
       "/home/admin/notes.txt": {
         type: "file",
         body:
-          "todo: wipe target, stash vault, leave.\n" +
-          "vault pass is NOT in this file.\n" +
-          "try .secret or grep -r pass .\n",
+          "ops journal (stolen target)\n" +
+          "- wipe disk\n- stash vault\n- leave decoy traffic on other IP\n" +
+          "vault pass is NOT here.\n" +
+          "try .secret / grep / find pass\n",
       },
-      "/home/admin/loot": { type: "dir", kids: ["backup_hint.txt", "system_backup.vault"] },
+      "/home/admin/loot": { type: "dir", kids: ["backup_hint.txt", "system_backup.vault", "fake_pass.txt", "readme.md"] },
       "/home/admin/loot/backup_hint.txt": {
         type: "file",
-        body: "hint: password file name contains 'pass'\nhint: hidden dir starts with dot\n",
+        body: "hint: filename contains 'pass'\nhint: hidden dir starts with .\nhint: also check mail/\n",
+      },
+      "/home/admin/loot/fake_pass.txt": {
+        type: "file",
+        body: "password=hunter2\n(note: decoy, do not use)\n",
+      },
+      "/home/admin/loot/readme.md": {
+        type: "file",
+        body: "# loot\nvault is encrypted. need real backup_pass.\n",
       },
       "/home/admin/loot/system_backup.vault": {
         type: "file",
-        body: "[binary vault simulation — need password from .secret/backup_pass.txt]\n",
+        body: "[binary vault simulation — unlock with backup_pass from .secret]\n",
       },
-      "/home/admin/.secret": { type: "dir", kids: ["backup_pass.txt"] },
+      "/home/admin/.secret": { type: "dir", kids: ["backup_pass.txt", "alias.txt"] },
       "/home/admin/.secret/backup_pass.txt": {
         type: "file",
-        body: `backup_password=${BACKUP_PASS}\nowner=ops-lab\n`,
+        body: `backup_password=${BACKUP_PASS}\nowner=ops-lab\nrotate: never :)\n`,
       },
-      "/home/admin/tools": { type: "dir", kids: ["mining_guide.txt", "vpn_cheatsheet.txt", "ids_notes.txt"] },
+      "/home/admin/.secret/alias.txt": {
+        type: "file",
+        body: `drop_alias=${ALIAS_CODE}\nuse later in report\n`,
+      },
+      "/home/admin/tools": {
+        type: "dir",
+        kids: ["mining_guide.txt", "vpn_cheatsheet.txt", "ids_notes.txt", "nginx_lab.txt", "monitor.txt"],
+      },
       "/home/admin/tools/mining_guide.txt": {
         type: "file",
         body:
-          "BONUS GUIDE (lab)\n" +
-          "1) buy MOBO CPU RAM GPU PSU in shop\n" +
-          "2) assemble\n" +
-          "3) mine-start\n",
+          "BONUS · RIG BUILD\n" +
+          "need: mobo cpu ram gpu psu\n" +
+          "optional boost: ssd cool nic gpu_pro\n" +
+          "assemble → mine-start\n",
       },
       "/home/admin/tools/vpn_cheatsheet.txt": {
         type: "file",
         body:
-          "VPN LAB\n" +
-          "sudo apt install wireguard\n" +
+          "VPN LAB\nsudo apt install wireguard\n" +
           "sudo systemctl enable wg-quick@wg0\n" +
           "sudo systemctl start wg-quick@wg0\n",
       },
       "/home/admin/tools/ids_notes.txt": {
         type: "file",
         body:
-          "DEFENSE LAB\n" +
-          "sudo ufw enable\n" +
+          "DEFENSE LAB\nsudo ufw enable\n" +
           `sudo ufw deny from ${HOST_IP}\n` +
-          "sudo systemctl start fail2ban\n",
+          "sudo apt install fail2ban\n" +
+          "sudo systemctl enable fail2ban\n" +
+          "sudo systemctl start fail2ban\n" +
+          "sudo systemctl start suricata   # IDS flavor\n",
       },
-      "/etc": { type: "dir", kids: ["hostname"] },
+      "/home/admin/tools/nginx_lab.txt": {
+        type: "file",
+        body:
+          "WEB LAB\nsudo apt install nginx\n" +
+          "sudo systemctl enable nginx\n" +
+          "sudo systemctl start nginx\n" +
+          "echo ok | sudo tee /var/www/html/index.html\n",
+      },
+      "/home/admin/tools/monitor.txt": {
+        type: "file",
+        body: "MONITOR\nsystemctl status nginx\njournalctl -u nginx -n 20\ndf -h\nfree -m\n",
+      },
+      "/home/admin/mail": { type: "dir", kids: ["inbox.txt", "draft_ransom.txt"] },
+      "/home/admin/mail/inbox.txt": {
+        type: "file",
+        body:
+          "From: fence@dark.lab\n" +
+          "vault still locked? check .secret\n" +
+          `also burn decoy ${DECOY_IP}\n`,
+      },
+      "/home/admin/mail/draft_ransom.txt": {
+        type: "file",
+        body: "(unsent) pay me coins — ignored in this story. We restore & defend.\n",
+      },
+      "/home/admin/work": { type: "dir", kids: ["events.json", "todo.csv"] },
+      "/home/admin/work/events.json": {
+        type: "file",
+        body:
+          "[\n" +
+          `  {"ts":"08:22","ev":"ssh_in","ip":"${HOST_IP}"},\n` +
+          `  {"ts":"08:31","ev":"exfil","ip":"${HOST_IP}"},\n` +
+          `  {"ts":"08:19","ev":"noise","ip":"${DECOY_IP}"}\n` +
+          "]\n",
+      },
+      "/home/admin/work/todo.csv": {
+        type: "file",
+        body: "task,done\nwipe,yes\nstash,yes\nclean_logs,no\n",
+      },
+      "/etc": { type: "dir", kids: ["hostname", "motd"] },
       "/etc/hostname": { type: "file", body: "shadow-vps-lab\n" },
-      "/tmp": { type: "dir", kids: [] },
+      "/etc/motd": { type: "file", body: "Authorized fiction only. Welcome, admin.\n" },
+      "/tmp": { type: "dir", kids: ["keysmash.txt"] },
+      "/tmp/keysmash.txt": { type: "file", body: "asdfasdf\n" },
+      "/var": { type: "dir", kids: ["log"] },
+      "/var/log": { type: "dir", kids: ["syslog"] },
+      "/var/log/syslog": {
+        type: "file",
+        body: "cron: noop\nkernel: lab-sim\n",
+      },
     },
   };
 
   const CHAPTERS = [
     {
       id: "intro",
-      title: "PROLOGUE · ghost contract",
+      title: "PROLOGUE · neon freelancers",
       narrative:
-        "Ты — ops-фрилансер в неоновом городе. Это ИСТОРИЯ-СИМУЛЯТОР: никакой реальной сети, только учебный терминал.\n" +
-        "Сначала подними свой «базовый ПК» на Linux и поставь пару пакетов. Потом пара викторин и оплачиваемые мини-заказы.\n" +
-        "Дальше — инцидент, расследование, защита, оффер на VPN и лёгкий тюнинг/майнинг-лаба.",
+        "Неоновый район Grid-7. Ты — ops-фрилансер: ставишь Linux, чинишь сервисы, пишешь короткие отчёты.\n" +
+        "Это ИСТОРИЯ-СИМУЛЯТОР: нет реальной сети и файлов, только учебный терминал и сюжет.\n" +
+        "План: собрать базу → викторины → заказы за $ → инцидент → расследование → защита → контракты (VPN/web) → гараж и idle-майнинг.",
       mode: "continue",
-      reward: 20,
+      reward: 25,
     },
     {
       id: "linux",
       title: "CH.01 · bootstrap linux",
       narrative:
-        "Базовый ПК. Нужно обновить индексы и поставить curl, git, htop.\n" +
-        "Команды (по одной): sudo apt update → sudo apt install curl git htop",
+        "Чистый ПК. Подними базу:\n" +
+        "1) sudo apt update\n" +
+        "2) sudo apt upgrade -y\n" +
+        "3) sudo apt install curl git htop net-tools\n" +
+        "4) hostnamectl set-hostname neon-ops",
       mode: "term",
       host: "local",
       cwd: "~",
       goals: [
         { id: "upd", match: /^sudo\s+apt\s+update$/, out: "Get: lab mirrors… Done.", pay: 10 },
-        { id: "ins", match: /^sudo\s+apt\s+install\s+curl\s+git\s+htop$/, out: "Setting up curl git htop… done.", pay: 25 },
+        { id: "upg", match: /^sudo\s+apt\s+upgrade\s+-y$/, out: "0 upgraded (lab). System fresh.", pay: 12 },
+        { id: "ins", match: /^sudo\s+apt\s+install\s+curl\s+git\s+htop\s+net-tools$/, out: "Setting up curl git htop net-tools… done.", pay: 28 },
+        { id: "host", match: /^hostnamectl\s+set-hostname\s+neon-ops$/, out: "Static hostname: neon-ops", pay: 15 },
       ],
     },
     {
       id: "quiz1",
       title: "CH.02 · quiz · packages",
-      narrative: "Закрепление перед заказами. Ответы помогут в следующих главах.",
+      narrative: "Закрепление. Это не тест ради теста — слова всплывут в заказах и инциденте.",
       mode: "quiz",
       questions: [
-        {
-          q: "apt update делает…",
-          options: ["обновляет списки пакетов", "сразу ставит все обновления", "удаляет пакеты"],
-          ok: 0,
-        },
-        {
-          q: "sudo нужно чтобы…",
-          options: ["ускорить интернет", "выполнить команду с правами администратора", "очистить диск"],
-          ok: 1,
-        },
-        {
-          q: "htop — это…",
-          options: ["веб-сервер", "монитор процессов", "файрвол"],
-          ok: 1,
-        },
+        { q: "apt update делает…", options: ["обновляет списки пакетов", "сразу ставит все обновления", "удаляет пакеты"], ok: 0 },
+        { q: "apt upgrade делает…", options: ["только чистит кэш", "обновляет установленные пакеты", "меняет hostname"], ok: 1 },
+        { q: "sudo нужно чтобы…", options: ["ускорить Wi‑Fi", "выполнить команду с правами администратора", "сжать логи"], ok: 1 },
+        { q: "htop — это…", options: ["веб-сервер", "монитор процессов", "файрвол"], ok: 1 },
+        { q: "net-tools обычно даёт…", options: ["ifconfig/netstat (классика)", "только Docker", "майнер"], ok: 0 },
       ],
-      reward: 30,
+      reward: 40,
     },
     {
-      id: "gigs",
-      title: "CH.03 · paid gigs",
+      id: "gigs1",
+      title: "CH.03 · gigs · files",
       narrative:
-        "Биржа заказов. Выполни 3 простых задания — получи кредиты.\n" +
-        "1) mkdir ~/projects\n2) echo ready > ~/projects/status.txt\n3) cat ~/projects/status.txt",
+        "Биржа · пакет FILE-OPS:\n" +
+        "1) mkdir -p ~/projects/client-a\n" +
+        "2) echo ready > ~/projects/client-a/status.txt\n" +
+        "3) cp ~/projects/client-a/status.txt ~/projects/client-a/status.bak\n" +
+        "4) cat ~/projects/client-a/status.txt",
       mode: "term",
       host: "local",
       cwd: "~",
       goals: [
-        { id: "g1", match: /^mkdir\s+~\/projects$/, out: "ok: ~/projects", pay: 15 },
-        { id: "g2", match: /^echo\s+ready\s+>\s+~\/projects\/status\.txt$/, out: "ok: wrote status.txt", pay: 15 },
-        { id: "g3", match: /^cat\s+~\/projects\/status\.txt$/, out: "ready", pay: 20 },
+        { id: "g1", match: /^mkdir\s+-p\s+~\/projects\/client-a$/, out: "ok: tree created", pay: 12 },
+        { id: "g2", match: /^echo\s+ready\s+>\s+~\/projects\/client-a\/status\.txt$/, out: "ok: wrote status.txt", pay: 12 },
+        { id: "g3", match: /^cp\s+~\/projects\/client-a\/status\.txt\s+~\/projects\/client-a\/status\.bak$/, out: "ok: backup copy", pay: 14 },
+        { id: "g4", match: /^cat\s+~\/projects\/client-a\/status\.txt$/, out: "ready", pay: 16 },
+      ],
+    },
+    {
+      id: "gigs2",
+      title: "CH.04 · gigs · service hygiene",
+      narrative:
+        "Заказ · SERVICE-LITE (имитация):\n" +
+        "1) sudo systemctl status ssh\n" +
+        "2) sudo systemctl enable ssh\n" +
+        "3) sudo systemctl restart ssh\n" +
+        "4) journalctl -u ssh -n 20",
+      mode: "term",
+      host: "local",
+      cwd: "~",
+      goals: [
+        { id: "s1", match: /^sudo\s+systemctl\s+status\s+ssh$/, out: "ssh.service · active (lab)", pay: 12 },
+        { id: "s2", match: /^sudo\s+systemctl\s+enable\s+ssh$/, out: "Created symlink… enabled", pay: 12 },
+        { id: "s3", match: /^sudo\s+systemctl\s+restart\s+ssh$/, out: "restarted ok", pay: 14 },
+        { id: "s4", match: /^journalctl\s+-u\s+ssh\s+-n\s+20$/, out: "-- Logs begin (lab) --\nsshd: Server listening", pay: 18 },
       ],
     },
     {
       id: "quiz2",
-      title: "CH.04 · quiz · ops words",
-      narrative: "Ещё викторина: логи, поиск, сеть — пригодится в расследовании.",
+      title: "CH.05 · quiz · logs & remote",
+      narrative: "Перед ночным инцидентом — слова: grep, ssh, ufw, journalctl.",
       mode: "quiz",
       questions: [
-        {
-          q: "grep ищет…",
-          options: ["процессы", "строки по шаблону в тексте", "IP-адреса только в роутере"],
-          ok: 1,
-        },
-        {
-          q: "SSH обычно нужен чтобы…",
-          options: ["рисовать обои", "удалённо работать в терминале на хосте", "майнить"],
-          ok: 1,
-        },
-        {
-          q: "UFW — это…",
-          options: ["пакетный менеджер", "простой файрвол в Ubuntu", "редактор текста"],
-          ok: 1,
-        },
+        { q: "grep ищет…", options: ["процессы GPU", "строки по шаблону в тексте", "только JSON"], ok: 1 },
+        { q: "SSH нужен чтобы…", options: ["рисовать обои", "удалённо работать в терминале", "форматировать диск всегда"], ok: 1 },
+        { q: "UFW — это…", options: ["пакетный менеджер", "простой файрвол (Ubuntu)", "редактор"], ok: 1 },
+        { q: "journalctl смотрит…", options: ["журналы systemd", "только браузерную историю", "магазин"], ok: 0 },
+        { q: "systemctl enable делает службу…", options: ["удалённой", "автозапуск при загрузке", "скрытой от логов"], ok: 1 },
       ],
-      reward: 30,
+      reward: 45,
+    },
+    {
+      id: "netlab",
+      title: "CH.06 · net drill",
+      narrative:
+        "Клиент просит «проверить сеть» (lab):\n" +
+        "1) ip a\n2) ping -c 3 1.1.1.1\n3) dig example.com\n4) curl -I https://example.com",
+      mode: "term",
+      host: "local",
+      cwd: "~",
+      goals: [
+        { id: "n1", match: /^ip\s+a$/, out: "eth0: UP · 192.168.1.50/24 (lab)", pay: 10 },
+        { id: "n2", match: /^ping\s+-c\s+3\s+1\.1\.1\.1$/, out: "3 packets transmitted, 3 received (lab)", pay: 12 },
+        { id: "n3", match: /^dig\s+example\.com$/, out: "ANSWER: 93.184.216.34 (lab fiction)", pay: 12 },
+        { id: "n4", match: /^curl\s+-I\s+https:\/\/example\.com$/, out: "HTTP/2 200 · server: lab", pay: 16 },
+      ],
+    },
+    {
+      id: "night",
+      title: "CH.07 · 03:17 AM",
+      narrative:
+        "Сообщение на бирже: «Срочно. У клиента диск пустой, сайты молчат. Платим за восстановление + отчёт».\n" +
+        "Ты ещё не знаешь: кто-то уже унёс бэкап.\nЖми далее — начнётся BLACKOUT.",
+      mode: "continue",
+      reward: 20,
     },
     {
       id: "incident",
-      title: "CH.05 · BLACKOUT",
+      title: "CH.08 · BLACKOUT",
       narrative:
-        `УТРО. Твой рабочий ПК «стёрт». В записке от неизвестного: «бэкап у меня».\n` +
-        `Системы нет — только веб-консоль домашнего роутера (СИМУЛЯЦИЯ).\n` +
-        `Нужно найти, кто забирал данные. Потом «зайдём» на хост злоумышленника (lab fiction).\n` +
-        `Известно: IP из диапазона документации ${HOST_IP}.`,
+        `Рабочий ПК клиента «обнулён». Записка в tty: «бэкап у меня».\n` +
+        `Железа нет — только консоль домашнего роутера (СИМУЛЯЦИЯ).\n` +
+        `Задача: найти IP эксфильтрации. В логах будет шум (${DECOY_IP}) и цель (${HOST_IP}).\n` +
+        `Не вестись на decoy.`,
       mode: "continue",
-      reward: 15,
+      reward: 20,
     },
     {
       id: "router",
-      title: "CH.06 · router forensics",
+      title: "CH.09 · router forensics",
       narrative:
-        "Роутер lab. Найди IP сессии в логах.\n" +
-        "Подсказка: cd /var/log → ls → cat connections.log или grep SSH /var/log/connections.log\n" +
-        `Когда увидишь IP ${HOST_IP}, введи: track ${HOST_IP}`,
+        "Роутер lab. Исследуй /var/log (ls, cd, cat, grep, find).\n" +
+        "Полезно: grep SSH /var/log/connections.log · cat alerts.json\n" +
+        `Когда уверен в IP эксфильтрации — track ${HOST_IP}\n` +
+        `(track decoy не засчитается.)`,
       mode: "term",
       host: "router",
       cwd: "/",
@@ -212,18 +339,45 @@
         {
           id: "track",
           match: new RegExp(`^track\\s+${HOST_IP.replace(/\./g, "\\.")}$`),
-          out: `TRACE LOCK · ${HOST_IP} marked. Open SSH path…`,
-          pay: 40,
+          out: `TRACE LOCK · ${HOST_IP} · exfil path marked`,
+          pay: 50,
           needFlag: "sawHostIp",
         },
       ],
     },
     {
-      id: "ssh",
-      title: "CH.07 · shadow shell",
+      id: "osint",
+      title: "CH.10 · label the host",
       narrative:
-        `Fiction login на lab-хост ${HOST_IP}. В истории это «забытый VPS» со стандартным admin/admin — учебный клише, не рецепт.\n` +
-        `Команда: ssh admin@${HOST_IP}\nПотом пароль: admin`,
+        "«OSINT» в рамках lab — без реального интернета:\n" +
+        `1) whois ${HOST_IP}\n` +
+        `2) dig -x ${HOST_IP}\n` +
+        `3) echo shadow-vps-lab > ~/case/host.txt`,
+      mode: "term",
+      host: "local",
+      cwd: "~",
+      goals: [
+        {
+          id: "w1",
+          match: new RegExp(`^whois\\s+${HOST_IP.replace(/\./g, "\\.")}$`),
+          out: "Org: TEST-NET-3 · status: documentation (RFC5737)",
+          pay: 15,
+        },
+        {
+          id: "w2",
+          match: new RegExp(`^dig\\s+-x\\s+${HOST_IP.replace(/\./g, "\\.")}$`),
+          out: "PTR: shadow-vps-lab.example.test (fiction)",
+          pay: 15,
+        },
+        { id: "w3", match: /^echo\s+shadow-vps-lab\s+>\s+~\/case\/host\.txt$/, out: "case note saved", pay: 18 },
+      ],
+    },
+    {
+      id: "ssh",
+      title: "CH.11 · shadow shell",
+      narrative:
+        `Fiction: «забытый lab-VPS» ${HOST_IP}, клише admin/admin — только сюжет, не инструкция для чужих систем.\n` +
+        `ssh admin@${HOST_IP}\nзатем пароль: admin`,
       mode: "term",
       host: "local",
       cwd: "~",
@@ -239,11 +393,12 @@
     },
     {
       id: "explore",
-      title: "CH.08 · find the vault pass",
+      title: "CH.12 · vault & breadcrumbs",
       narrative:
-        "Ты «внутри» (имитация). Найди пароль бэкапа через ls/cd/cat/grep/find.\n" +
-        "Стартовая точка: /home/admin. Есть notes, loot, .secret, tools.\n" +
-        `Когда найдёшь пароль, введи: unlock-vault ${BACKUP_PASS}`,
+        "Внутри (имитация ФС). Старт: /home/admin\n" +
+        "Есть notes, loot (есть decoy fake_pass), .secret, tools, mail, work.\n" +
+        `Найди реальный пароль бэкапа и: unlock-vault ${BACKUP_PASS}\n` +
+        "Бонус: прочитай tools/* и .secret/alias.txt — пригодится в отчёте и гараже.",
       mode: "term",
       host: "remote",
       cwd: "/home/admin",
@@ -251,56 +406,161 @@
         {
           id: "unlock",
           match: new RegExp(`^unlock-vault\\s+${BACKUP_PASS}$`, "i"),
-          out: "VAULT OPEN · backup restored to lab snapshot. +loot notes saved.",
-          pay: 60,
+          out: "VAULT OPEN · snapshot staged for restore",
+          pay: 70,
           needFlag: "sawPass",
         },
       ],
     },
     {
-      id: "defense",
-      title: "CH.09 · fence the door",
+      id: "parse",
+      title: "CH.13 · parse the timeline",
       narrative:
-        "Разверни защиту и «поймай» нарушителя на периметре (lab):\n" +
-        "1) sudo ufw enable\n" +
-        `2) sudo ufw deny from ${HOST_IP}\n` +
-        "3) sudo systemctl start fail2ban",
+        "На том же хосте собери картину:\n" +
+        "1) grep exfil /home/admin/work/events.json\n" +
+        "2) grep top_talker — нет, это на роутере… здесь: cat /home/admin/work/todo.csv\n" +
+        "3) find pass   (или find backup)\n" +
+        `4) confirm-case ${HOST_IP}`,
+      mode: "term",
+      host: "remote",
+      cwd: "/home/admin",
+      goals: [
+        { id: "p1", match: /^grep\s+exfil\s+\/home\/admin\/work\/events\.json$/, out: '{"ts":"08:31","ev":"exfil",...}', pay: 15 },
+        { id: "p2", match: /^cat\s+\/home\/admin\/work\/todo\.csv$/, out: "task,done\nwipe,yes\nstash,yes\nclean_logs,no", pay: 12 },
+        { id: "p3", match: /^find\s+(pass|backup)$/, out: "(paths listed in lab fs)", pay: 12 },
+        {
+          id: "p4",
+          match: new RegExp(`^confirm-case\\s+${HOST_IP.replace(/\./g, "\\.")}$`),
+          out: "CASE CONFIRMED · ready to restore & defend",
+          pay: 25,
+        },
+      ],
+    },
+    {
+      id: "restore",
+      title: "CH.14 · restore snapshot",
+      narrative:
+        "Верни клиенту систему (lab):\n" +
+        `1) restore-backup --pass ${BACKUP_PASS}\n` +
+        "2) sudo systemctl reboot\n" +
+        "3) (после «ребута») hostnamectl",
       mode: "term",
       host: "local",
       cwd: "~",
       goals: [
-        { id: "ufw", match: /^sudo\s+ufw\s+enable$/, out: "Firewall is active.", pay: 15 },
         {
-          id: "deny",
+          id: "r1",
+          match: new RegExp(`^restore-backup\\s+--pass\\s+${BACKUP_PASS}$`, "i"),
+          out: "Restoring neon-ops snapshot…… OK",
+          pay: 40,
+        },
+        { id: "r2", match: /^sudo\s+systemctl\s+reboot$/, out: "Reboot scheduled (lab fade)…", pay: 10 },
+        { id: "r3", match: /^hostnamectl$/, out: "Static hostname: neon-ops\nBoot: restored", pay: 20 },
+      ],
+    },
+    {
+      id: "quiz3",
+      title: "CH.15 · quiz · defense",
+      narrative: "Перед периметром — короткая викторина.",
+      mode: "quiz",
+      questions: [
+        { q: "fail2ban обычно…", options: ["рисует графики", "банит IP после грубых попыток входа", "ставит пакеты"], ok: 1 },
+        { q: "ufw deny from IP…", options: ["разрешает IP", "блокирует трафик с IP", "меняет DNS"], ok: 1 },
+        { q: "IDS вроде Suricata…", options: ["смотрит подозрительный трафик по правилам", "заменяет SSH", "это файловый менеджер"], ok: 0 },
+        { q: "После restore важно…", options: ["сразу выключить бэкапы навсегда", "закрыть дыру (firewall/IDS) и сменить секреты", "удалить journalctl"], ok: 1 },
+      ],
+      reward: 40,
+    },
+    {
+      id: "defense",
+      title: "CH.16 · fence & IDS",
+      narrative:
+        "Закрой дверь (lab):\n" +
+        "1) sudo ufw enable\n" +
+        `2) sudo ufw deny from ${HOST_IP}\n` +
+        "3) sudo apt install fail2ban\n" +
+        "4) sudo systemctl enable fail2ban\n" +
+        "5) sudo systemctl start fail2ban\n" +
+        "6) sudo systemctl start suricata",
+      mode: "term",
+      host: "local",
+      cwd: "~",
+      goals: [
+        { id: "d1", match: /^sudo\s+ufw\s+enable$/, out: "Firewall is active.", pay: 12 },
+        {
+          id: "d2",
           match: new RegExp(`^sudo\\s+ufw\\s+deny\\s+from\\s+${HOST_IP.replace(/\./g, "\\.")}$`),
           out: `Rule added: deny ${HOST_IP}`,
-          pay: 25,
+          pay: 20,
         },
-        { id: "f2b", match: /^sudo\s+systemctl\s+start\s+fail2ban$/, out: "fail2ban.service: started · INTRUDER FLAGGED", pay: 30 },
+        { id: "d3", match: /^sudo\s+apt\s+install\s+fail2ban$/, out: "fail2ban installed", pay: 12 },
+        { id: "d4", match: /^sudo\s+systemctl\s+enable\s+fail2ban$/, out: "enabled", pay: 10 },
+        { id: "d5", match: /^sudo\s+systemctl\s+start\s+fail2ban$/, out: "fail2ban started", pay: 14 },
+        { id: "d6", match: /^sudo\s+systemctl\s+start\s+suricata$/, out: "suricata: IDS online · INTRUDER FLAGGED", pay: 30 },
+      ],
+    },
+    {
+      id: "report",
+      title: "CH.17 · incident report",
+      narrative:
+        "Клиент хочет отчёт:\n" +
+        `1) echo "attacker ${HOST_IP}" > ~/case/report.txt\n` +
+        `2) echo "alias ${ALIAS_CODE}" >> ~/case/report.txt\n` +
+        "3) cat ~/case/report.txt\n" +
+        `(alias — из .secret/alias.txt, если нашёл; иначе подставь ${ALIAS_CODE})`,
+      mode: "term",
+      host: "local",
+      cwd: "~",
+      goals: [
+        {
+          id: "rp1",
+          match: new RegExp(`^echo\\s+"attacker\\s+${HOST_IP.replace(/\./g, "\\.")}"\\s+>\\s+~\/case\/report\\.txt$`),
+          out: "report created",
+          pay: 15,
+        },
+        {
+          id: "rp2",
+          match: new RegExp(`^echo\\s+"alias\\s+${ALIAS_CODE}"\\s+>>\\s+~\/case\/report\\.txt$`),
+          out: "alias appended",
+          pay: 20,
+        },
+        { id: "rp3", match: /^cat\s+~\/case\/report\.txt$/, out: `attacker ${HOST_IP}\nalias ${ALIAS_CODE}`, pay: 20 },
       ],
     },
     {
       id: "offer",
-      title: "CH.10 · inbox · hire",
+      title: "CH.18 · inbox · NeonOps hire",
       narrative:
-        "СООБЩЕНИЕ · NeonOps GmbH\n" +
-        "«Видели ваше lab-расследование. Оффер: развернуть VPN для филиала.\n" +
-        `Хост: ${VPN_IP}\nЛогин: admin\nПароль: admin\n` +
-        "Стек: WireGuard. Чеклист в tools/vpn_cheatsheet (если сняли на прошлом хосте) или ниже.»\n\n" +
-        "Продолжай, когда готов.",
+        "MAIL · NeonOps GmbH\n" +
+        "«Отчёт по BLACKOUT видели. Оффер: VPN для филиала + позже витрина nginx.\n" +
+        `VPN host: ${VPN_IP}\nuser: admin\npass: admin\n` +
+        "Стек: WireGuard. Чеклисты могли остаться в notes с shadow-хоста.»",
       mode: "continue",
-      reward: 25,
+      reward: 35,
       setNotes: true,
     },
     {
+      id: "corpquiz",
+      title: "CH.19 · quiz · corp onboarding",
+      narrative: "Онбординг NeonOps — 4 вопроса.",
+      mode: "quiz",
+      questions: [
+        { q: "WireGuard — это…", options: ["текстовый редактор", "современный VPN", "антивирус"], ok: 1 },
+        { q: "wg-quick@wg0 в systemd…", options: ["юнит интерфейса WireGuard", "имя пользователя", "пакет apt"], ok: 0 },
+        { q: "nginx чаще всего…", options: ["веб-сервер/прокси", "СУБД", "BIOS"], ok: 0 },
+        { q: "Перед стартом сервиса в проде полезно…", options: ["выключить логи навсегда", "enable + status/journal после start", "удалить ufw"], ok: 1 },
+      ],
+      reward: 40,
+    },
+    {
       id: "vpn",
-      title: "CH.11 · VPN deploy",
+      title: "CH.20 · VPN deploy",
       narrative:
-        `Подключение к корпоративному хосту (sim): ssh admin@${VPN_IP} → пароль admin\n` +
-        "Затем:\n" +
+        `ssh admin@${VPN_IP} → пароль admin\n` +
         "sudo apt install wireguard\n" +
         "sudo systemctl enable wg-quick@wg0\n" +
-        "sudo systemctl start wg-quick@wg0",
+        "sudo systemctl start wg-quick@wg0\n" +
+        "sudo systemctl status wg-quick@wg0",
       mode: "term",
       host: "local",
       cwd: "~",
@@ -312,20 +572,82 @@
           pay: 10,
           set: { awaitVpnPass: true },
         },
-        { id: "wgins", match: /^sudo\s+apt\s+install\s+wireguard$/, out: "wireguard installed.", pay: 20, needFlag: "vpnIn" },
-        { id: "wgen", match: /^sudo\s+systemctl\s+enable\s+wg-quick@wg0$/, out: "enabled.", pay: 15, needFlag: "vpnIn" },
-        { id: "wgst", match: /^sudo\s+systemctl\s+start\s+wg-quick@wg0$/, out: "wg0 up · VPN READY · contract paid", pay: 50, needFlag: "vpnIn" },
+        { id: "wgins", match: /^sudo\s+apt\s+install\s+wireguard$/, out: "wireguard installed.", pay: 18, needFlag: "vpnIn" },
+        { id: "wgen", match: /^sudo\s+systemctl\s+enable\s+wg-quick@wg0$/, out: "enabled.", pay: 14, needFlag: "vpnIn" },
+        { id: "wgst", match: /^sudo\s+systemctl\s+start\s+wg-quick@wg0$/, out: "wg0 up", pay: 28, needFlag: "vpnIn" },
+        { id: "wgs", match: /^sudo\s+systemctl\s+status\s+wg-quick@wg0$/, out: "active (running) · VPN READY · paid", pay: 22, needFlag: "vpnIn" },
+      ],
+    },
+    {
+      id: "web",
+      title: "CH.21 · shopfront nginx",
+      narrative:
+        `Второй хост витрины ${WEB_IP} (те же admin/admin в письме):\n` +
+        `1) ssh admin@${WEB_IP}\n` +
+        "2) sudo apt install nginx\n" +
+        "3) sudo systemctl enable nginx\n" +
+        "4) sudo systemctl start nginx\n" +
+        "5) echo neon > /var/www/html/index.html\n" +
+        "6) curl http://localhost",
+      mode: "term",
+      host: "local",
+      cwd: "~",
+      goals: [
+        {
+          id: "wssh",
+          match: new RegExp(`^ssh\\s+admin@${WEB_IP.replace(/\./g, "\\.")}$`),
+          out: `admin@${WEB_IP}'s password:`,
+          pay: 10,
+          set: { awaitWebPass: true },
+        },
+        { id: "ni", match: /^sudo\s+apt\s+install\s+nginx$/, out: "nginx installed", pay: 16, needFlag: "webIn" },
+        { id: "ne", match: /^sudo\s+systemctl\s+enable\s+nginx$/, out: "enabled", pay: 12, needFlag: "webIn" },
+        { id: "ns", match: /^sudo\s+systemctl\s+start\s+nginx$/, out: "started", pay: 14, needFlag: "webIn" },
+        { id: "nw", match: /^echo\s+neon\s+>\s+\/var\/www\/html\/index\.html$/, out: "index written", pay: 14, needFlag: "webIn" },
+        { id: "nc", match: /^curl\s+http:\/\/localhost$/, out: "neon", pay: 24, needFlag: "webIn" },
+      ],
+    },
+    {
+      id: "monitor",
+      title: "CH.22 · keep the lights on",
+      narrative:
+        "Смена мониторинга:\n" +
+        "1) systemctl status nginx\n" +
+        "2) journalctl -u nginx -n 20\n" +
+        "3) df -h\n" +
+        "4) free -m\n" +
+        "5) uptime",
+      mode: "term",
+      host: "local",
+      cwd: "~",
+      goals: [
+        { id: "m1", match: /^systemctl\s+status\s+nginx$/, out: "active (running)", pay: 12 },
+        { id: "m2", match: /^journalctl\s+-u\s+nginx\s+-n\s+20$/, out: "-- nginx access ok (lab) --", pay: 12 },
+        { id: "m3", match: /^df\s+-h$/, out: "Filesystem Size Used … / 42G 12G", pay: 10 },
+        { id: "m4", match: /^free\s+-m$/, out: "Mem: 15923 …", pay: 10 },
+        { id: "m5", match: /^uptime$/, out: "up 3 days · load 0.12 (lab)", pay: 14 },
       ],
     },
     {
       id: "garage",
-      title: "CH.12 · garage · tune & mine",
+      title: "CH.23 · garage · tune & mine",
       narrative:
-        "Финальный слой: простой магазин железа, сборка ПК и «майнинг» как idle-доход в lab.\n" +
-        "Команды: shop · buy <id> · inv · assemble · mine-start · mine-stop · status\n" +
-        "Нужны все слоты: mobo cpu ram gpu psu. Гайд мог быть в /home/admin/tools/mining_guide.txt.",
+        "Гараж Grid-7: магазин железа, сборка, idle-майнинг.\n" +
+        "Команды: shop · buy <id> · inv · assemble · mine-start · mine-stop · status · rate\n" +
+        "Обязательно: mobo cpu ram gpu psu. Буст: ssd cool nic gpu_pro.\n" +
+        "Гайды — в notes, если читал tools/ на shadow-хосте.",
       mode: "garage",
-      reward: 40,
+      reward: 50,
+    },
+    {
+      id: "epilogue",
+      title: "EPILOGUE · contract open",
+      narrative:
+        "Клиент онлайн, VPN поднят, витрина отвечает, периметр закрыт.\n" +
+        "Биржа шлёт новые тикеты — можешь крутить гараж (майнинг) или reset сюжета.\n" +
+        "Это был учебный кибернуар без реальных взломов: только команды, логи и история.",
+      mode: "continue",
+      reward: 60,
     },
   ];
 
@@ -459,6 +781,7 @@
     termCwd = ch.cwd || (termHost === "remote" ? "/home/admin" : termHost === "router" ? "/" : "~");
     state.flags.awaitPass = false;
     state.flags.awaitVpnPass = false;
+    state.flags.awaitWebPass = false;
 
     if (ch.mode === "continue") {
       if (e.continueBtn) {
@@ -478,13 +801,18 @@
       if (e.term) e.term.classList.remove("hidden");
       if (e.garage) e.garage.classList.remove("hidden");
       if (e.shop) e.shop.classList.remove("hidden");
+      if (e.continueBtn) {
+        e.continueBtn.classList.remove("hidden");
+        e.continueBtn.textContent = "к эпилогу →";
+      }
       renderShop();
       updatePrompt();
-      appendOut("garage online · shop | buy <id> | assemble | mine-start", "dim");
-      if (!state.finished) {
-        state.finished = true;
+      appendOut("garage online · shop | buy <id> | assemble | mine-start | rate", "dim");
+      if (!state.doneGoals.garage_unlock) {
+        state.doneGoals.garage_unlock = true;
         pay(ch.reward || 0, "garage unlock");
         addNote("Garage unlocked · mine when PC assembled");
+        save();
       }
     }
     renderChrome();
@@ -540,6 +868,7 @@
     }
     if (ch.setNotes) {
       addNote(`VPN job host ${VPN_IP} · admin/admin`);
+      addNote(`Web job host ${WEB_IP} · admin/admin`);
       addNote("WireGuard: apt install → enable → start wg-quick@wg0");
     }
     if (state.chapter < CHAPTERS.length - 1) {
@@ -621,7 +950,9 @@
     }
     if (/mining_guide/i.test(text) || /mine-start/i.test(text)) addNote("Mining: assemble full PC then mine-start");
     if (/wireguard/i.test(text)) addNote("VPN cheat: wireguard + wg-quick@wg0");
-    if (/fail2ban|ufw deny/i.test(text)) addNote("Defense: ufw enable + deny IP + fail2ban");
+    if (/fail2ban|ufw deny|suricata/i.test(text)) addNote("Defense: ufw + fail2ban + suricata");
+    if (/nginx/i.test(text)) addNote("Web: apt install nginx → enable → start → index.html");
+    if (text.includes(ALIAS_CODE) || /drop_alias=/i.test(text)) addNote(`Report alias: ${ALIAS_CODE}`);
     save();
   }
 
@@ -752,7 +1083,7 @@
   }
 
   function tryAssemble() {
-    const need = ["mobo", "cpu", "ram", "gpu", "psu"];
+    const need = SHOP.filter((x) => x.need).map((x) => x.slot);
     const ok = need.every((s) => state.parts[s]);
     if (!ok) {
       appendOut(`missing: ${need.filter((s) => !state.parts[s]).join(", ")}`, "bad");
@@ -760,9 +1091,17 @@
     }
     state.assembled = true;
     pay(25, "assemble bonus");
-    appendOut("PC ASSEMBLED · ready for mine-start", "ok");
+    appendOut(`PC ASSEMBLED · rate ${mineRate()}/tick · mine-start`, "ok");
     addNote("PC assembled");
     save();
+  }
+
+  function mineRate() {
+    let r = 2;
+    SHOP.forEach((item) => {
+      if (item.boost && state.parts[item.slot] === item.id) r += item.boost;
+    });
+    return r;
   }
 
   function startMine() {
@@ -776,12 +1115,14 @@
     }
     state.mining = true;
     save();
-    appendOut("MINER ONLINE · idle credits…", "ok");
+    const rate = mineRate();
+    appendOut(`MINER ONLINE · +$${rate} / 4s`, "ok");
     if (mineTimer) clearInterval(mineTimer);
     mineTimer = setInterval(() => {
       if (!state.mining) return;
-      state.money += 2;
-      state.mined += 2;
+      const gain = mineRate();
+      state.money += gain;
+      state.mined += gain;
       save();
       renderChrome();
     }, 4000);
@@ -832,6 +1173,20 @@
       return true;
     }
 
+    if (state.flags.awaitWebPass) {
+      if (line === "admin") {
+        state.flags.awaitWebPass = false;
+        state.flags.webIn = true;
+        appendOut(`WEB-host ${WEB_IP} · shell ready`, "ok");
+        const g = ch.goals.find((x) => x.id === "wssh");
+        if (g && !state.doneGoals[`${ch.id}:${g.id}`]) markGoal(ch, { ...g, pay: 15, set: undefined });
+        else pay(15, "web login");
+        return true;
+      }
+      appendOut("Access denied", "bad");
+      return true;
+    }
+
     for (let i = 0; i < ch.goals.length; i += 1) {
       const g = ch.goals[i];
       if (state.doneGoals[`${ch.id}:${g.id}`]) continue;
@@ -839,7 +1194,7 @@
       if (g.match.test(line)) {
         appendOut(g.out || "ok", "ok");
         if (g.set) Object.assign(state.flags, g.set);
-        if (g.set && (g.set.awaitPass || g.set.awaitVpnPass)) {
+        if (g.set && (g.set.awaitPass || g.set.awaitVpnPass || g.set.awaitWebPass)) {
           if (g.pay) pay(g.pay, g.id);
           save();
           return true;
@@ -870,8 +1225,19 @@
       return;
     }
     if (low === "status") {
-      appendOut(`$:${state.money} assembled:${state.assembled} mining:${state.mining} mined:${state.mined}`);
+      appendOut(`$:${state.money} assembled:${state.assembled} mining:${state.mining} mined:${state.mined} rate:${mineRate()}`);
       return;
+    }
+    if (low === "rate") {
+      appendOut(`mine rate: $${mineRate()} / 4s · assembled:${state.assembled}`);
+      return;
+    }
+    if (low.startsWith("track ")) {
+      const ip = low.slice(6).trim();
+      if (ip === DECOY_IP) {
+        appendOut("NOISE · decoy IP · not the exfil path", "bad");
+        return;
+      }
     }
     if (low === "inv") {
       const slots = Object.keys(state.parts);
