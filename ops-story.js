@@ -38,6 +38,11 @@
     { id: "nic_10", slot: "nic", name: "NIC·10G", price: 90, tier: 3, specs: { nicMbps: 10000 }, boost: 2 },
     { id: "cool_a", slot: "cool", name: "COOL·air", price: 20, tier: 1, boost: 1 },
     { id: "cool_l", slot: "cool", name: "COOL·aio", price: 55, tier: 2, boost: 2 },
+    { id: "cpu_16", slot: "cpu", name: "CPU·16c", price: 180, tier: 3, need: true, specs: { cores: 16 }, reqSlots: ["mobo"] },
+    { id: "ram_64", slot: "ram", name: "RAM·64G", price: 160, tier: 4, need: true, specs: { ramGb: 64 }, reqSlots: ["mobo"] },
+    { id: "gpu_u", slot: "gpu", name: "GPU·ultra", price: 320, tier: 4, need: true, specs: { gpu: 320, wattsNeed: 450 }, reqSlots: ["mobo", "psu"], minPsu: 850, boost: 6 },
+    { id: "psu_1k", slot: "psu", name: "PSU·1000W", price: 120, tier: 4, need: true, specs: { psuW: 1000 } },
+    { id: "ssd_2", slot: "ssd", name: "SSD·2T", price: 130, tier: 3, specs: { storageGb: 2000 }, boost: 3 },
   ];
 
   const SERVERS = [
@@ -45,17 +50,33 @@
     { id: "srv_vpn", role: "vpn", name: "Node·VPN", price: 140, blurb: "WireGuard / VPN lab", specs: { ramGb: 8, nicMbps: 1000, storageGb: 20 } },
     { id: "srv_smtp", role: "smtp", name: "Node·SMTP", price: 160, blurb: "почта кампании (lab)", specs: { ramGb: 8, nicMbps: 1000, storageGb: 80 } },
     { id: "srv_web", role: "web", name: "Node·Web", price: 120, blurb: "nginx витрина", specs: { ramGb: 4, nicMbps: 1000, storageGb: 40 } },
-    { id: "srv_rack", role: "multi", name: "Rack·AllInOne", price: 320, blurb: "proxy+vpn+smtp+web одним узлом", specs: { ramGb: 32, nicMbps: 10000, storageGb: 500 } },
+    { id: "srv_dns", role: "dns", name: "Node·DNS", price: 100, blurb: "bind/unbound lab", specs: { ramGb: 2, nicMbps: 1000, storageGb: 20 } },
+    { id: "srv_db", role: "db", name: "Node·DB", price: 170, blurb: "postgres lab", specs: { ramGb: 16, nicMbps: 1000, storageGb: 200 } },
+    { id: "srv_bastion", role: "bastion", name: "Node·Bastion", price: 130, blurb: "jump-host lab", specs: { ramGb: 4, nicMbps: 1000, storageGb: 20 } },
+    { id: "srv_rack", role: "multi", name: "Rack·AllInOne", price: 320, blurb: "все роли одним узлом", specs: { ramGb: 32, nicMbps: 10000, storageGb: 500 } },
+  ];
+
+  const SKILLS = [
+    { id: "linux", name: "Linux", max: 5, hint: "+pay за гиги, быстрее bootstrap" },
+    { id: "net", name: "Network", max: 5, hint: "DNS/прокси миссии, +NIC efficacy" },
+    { id: "forensics", name: "Forensics", max: 5, hint: "расследования, бонус к case-pay" },
+    { id: "defense", name: "Defense", max: 5, hint: "IDS/firewall главы, +к защите" },
+    { id: "devops", name: "DevOps", max: 5, hint: "docker/ssl/cron, +mine soft" },
   ];
 
   const CAPS = [
-    { id: "workstation", label: "Workstation собрана", hint: "mobo+cpu+ram+gpu+psu+(hdd|ssd)" },
+    { id: "workstation", label: "Workstation собрана", hint: "mobo+cpu+ram+gpu+psu+nic+(hdd|ssd)" },
     { id: "mine", label: "Idle mining", hint: "GPU ≥ 60" },
     { id: "mine_fast", label: "Fast mining", hint: "GPU ≥ 120 + cool" },
+    { id: "mine_ultra", label: "Ultra mining", hint: "GPU ≥ 300 + cool + devops≥2" },
     { id: "vpn", label: "VPN-миссии", hint: "сервер VPN/Rack или ПК: RAM≥8 + NIC≥1G" },
-    { id: "proxy", label: "Proxy-миссии", hint: "сервер Proxy/Rack" },
-    { id: "smtp", label: "SMTP-миссии", hint: "сервер SMTP/Rack + storage≥80 на узле" },
+    { id: "proxy", label: "Proxy-миссии", hint: "сервер Proxy/Rack или net≥2 + web-сервер" },
+    { id: "smtp", label: "SMTP-миссии", hint: "сервер SMTP/Rack" },
     { id: "web", label: "Web-миссии", hint: "сервер Web/Rack или ПК: NIC + диск" },
+    { id: "dns", label: "DNS-миссии", hint: "сервер DNS/Rack или net≥3" },
+    { id: "db", label: "DB-миссии", hint: "сервер DB/Rack" },
+    { id: "docker", label: "Container-миссии", hint: "devops≥2 и (web-сервер или workstation)" },
+    { id: "bastion", label: "Bastion-миссии", hint: "сервер Bastion/Rack или defense≥2+vpn" },
   ];
 
   // совместимость со старым shop-API в гараже
@@ -701,23 +722,216 @@
       ],
     },
     {
-      id: "garage",
-      title: "CH.24 · garage → Rig tab",
+      id: "skill_brief",
+      title: "CH.24 · skill chip",
       narrative:
-        "Гараж вырос в отдельную вкладку RIG: слоты GPU/CPU/RAM/MOBO/NIC/HDD/SSD, покупка серверов, CAP под миссии.\n" +
-        "Здесь терминал ещё понимает shop/buy/assemble/mine-*. Полный UI — кнопка «rig · железо» на хабе.\n" +
-        "Собери ПК, купи Node·VPN/SMTP по мере сюжета, тюнь постепенно.",
+        "NeonOps выдаёт skill-chip: очки навыков копятся с XP за заказы.\n" +
+        "Rig → Skills: Linux / Network / Forensics / Defense / DevOps.\n" +
+        "Прокачка открывает контракты и бусты.",
+      mode: "continue",
+      reward: 30,
+      skillPts: 2,
+    },
+    {
+      id: "proxy",
+      title: "CH.25 · reverse proxy",
+      narrative:
+        "CAP «Proxy»:\n" +
+        "1) sudo apt install nginx\n" +
+        "2) echo proxy_pass ok > /etc/nginx/sites-available/app\n" +
+        "3) sudo ln -s /etc/nginx/sites-available/app /etc/nginx/sites-enabled/app\n" +
+        "4) sudo nginx -t\n" +
+        "5) sudo systemctl reload nginx",
+      mode: "term",
+      host: "local",
+      cwd: "~",
+      requireCap: "proxy",
+      goals: [
+        { id: "px1", match: /^sudo\s+apt\s+install\s+nginx$/, out: "nginx ready", pay: 12 },
+        { id: "px2", match: /^echo\s+proxy_pass\s+ok\s+>\s+\/etc\/nginx\/sites-available\/app$/, out: "site file written", pay: 14 },
+        { id: "px3", match: /^sudo\s+ln\s+-s\s+\/etc\/nginx\/sites-available\/app\s+\/etc\/nginx\/sites-enabled\/app$/, out: "enabled link", pay: 14 },
+        { id: "px4", match: /^sudo\s+nginx\s+-t$/, out: "syntax is ok", pay: 16 },
+        { id: "px5", match: /^sudo\s+systemctl\s+reload\s+nginx$/, out: "reloaded · PROXY OK", pay: 24 },
+      ],
+    },
+    {
+      id: "ssl",
+      title: "CH.26 · TLS lipstick",
+      narrative:
+        "TLS lab (нужен CAP web):\n" +
+        "1) sudo apt install certbot\n" +
+        "2) sudo certbot --nginx -d shop.neon.test\n" +
+        "3) sudo systemctl reload nginx\n" +
+        "4) echo tls_ok > ~/case/ssl.txt",
+      mode: "term",
+      host: "local",
+      cwd: "~",
+      requireCap: "web",
+      goals: [
+        { id: "t1", match: /^sudo\s+apt\s+install\s+certbot$/, out: "certbot installed", pay: 12 },
+        { id: "t2", match: /^sudo\s+certbot\s+--nginx\s+-d\s+shop\.neon\.test$/, out: "Certificate (lab) issued", pay: 22 },
+        { id: "t3", match: /^sudo\s+systemctl\s+reload\s+nginx$/, out: "nginx reloaded TLS", pay: 12 },
+        { id: "t4", match: /^echo\s+tls_ok\s+>\s+~\/case\/ssl\.txt$/, out: "note saved", pay: 14 },
+      ],
+    },
+    {
+      id: "cronbak",
+      title: "CH.27 · night backup cron",
+      narrative:
+        "Автобэкап:\n" +
+        "1) echo '0 3 * * * root tar -czf /backup/night.tgz /var/www' > /tmp/bak.cron\n" +
+        "2) sudo cp /tmp/bak.cron /etc/cron.d/neon-backup\n" +
+        "3) sudo systemctl reload cron\n" +
+        "4) grep neon-backup /etc/cron.d/neon-backup",
+      mode: "term",
+      host: "local",
+      cwd: "~",
+      goals: [
+        { id: "c1", match: /^echo\s+'0\s+3\s+\*\s+\*\s+\*\s+root\s+tar\s+-czf\s+\/backup\/night\.tgz\s+\/var\/www'\s+>\s+\/tmp\/bak\.cron$/, out: "cron line staged", pay: 16 },
+        { id: "c2", match: /^sudo\s+cp\s+\/tmp\/bak\.cron\s+\/etc\/cron\.d\/neon-backup$/, out: "installed cron.d", pay: 14 },
+        { id: "c3", match: /^sudo\s+systemctl\s+reload\s+cron$/, out: "cron reloaded", pay: 12 },
+        { id: "c4", match: /^grep\s+neon-backup\s+\/etc\/cron\.d\/neon-backup$/, out: "0 3 * * * root tar …", pay: 18 },
+      ],
+    },
+    {
+      id: "docker",
+      title: "CH.28 · container bay",
+      narrative:
+        "CAP «Container» (devops≥2 + web/workstation):\n" +
+        "1) sudo apt install docker.io\n" +
+        "2) sudo systemctl enable docker\n" +
+        "3) sudo systemctl start docker\n" +
+        "4) sudo docker run -d --name neon-web -p 8080:80 nginx:alpine\n" +
+        "5) sudo docker ps\n" +
+        "6) curl http://localhost:8080",
+      mode: "term",
+      host: "local",
+      cwd: "~",
+      requireCap: "docker",
+      goals: [
+        { id: "dk1", match: /^sudo\s+apt\s+install\s+docker\.io$/, out: "docker.io installed", pay: 14 },
+        { id: "dk2", match: /^sudo\s+systemctl\s+enable\s+docker$/, out: "enabled", pay: 10 },
+        { id: "dk3", match: /^sudo\s+systemctl\s+start\s+docker$/, out: "started", pay: 10 },
+        { id: "dk4", match: /^sudo\s+docker\s+run\s+-d\s+--name\s+neon-web\s+-p\s+8080:80\s+nginx:alpine$/, out: "container started", pay: 24 },
+        { id: "dk5", match: /^sudo\s+docker\s+ps$/, out: "neon-web … Up", pay: 12 },
+        { id: "dk6", match: /^curl\s+http:\/\/localhost:8080$/, out: "Welcome to nginx! (lab)", pay: 20 },
+      ],
+    },
+    {
+      id: "dns",
+      title: "CH.29 · company DNS",
+      narrative:
+        "CAP «DNS»:\n" +
+        "1) sudo apt install unbound\n" +
+        "2) sudo systemctl enable unbound\n" +
+        "3) sudo systemctl start unbound\n" +
+        "4) dig @127.0.0.1 neon.test\n" +
+        "5) echo 'nameserver 127.0.0.1' > /tmp/resolv.lab",
+      mode: "term",
+      host: "local",
+      cwd: "~",
+      requireCap: "dns",
+      goals: [
+        { id: "dn1", match: /^sudo\s+apt\s+install\s+unbound$/, out: "unbound installed", pay: 14 },
+        { id: "dn2", match: /^sudo\s+systemctl\s+enable\s+unbound$/, out: "enabled", pay: 10 },
+        { id: "dn3", match: /^sudo\s+systemctl\s+start\s+unbound$/, out: "started", pay: 12 },
+        { id: "dn4", match: /^dig\s+@127\.0\.0\.1\s+neon\.test$/, out: "ANSWER: 198.51.100.40 (lab)", pay: 18 },
+        { id: "dn5", match: /^echo\s+'nameserver\s+127\.0\.0\.1'\s+>\s+\/tmp\/resolv\.lab$/, out: "resolv staged", pay: 12 },
+      ],
+    },
+    {
+      id: "db",
+      title: "CH.30 · postgres pocket",
+      narrative:
+        "CAP «DB»:\n" +
+        "1) sudo apt install postgresql\n" +
+        "2) sudo systemctl enable postgresql\n" +
+        "3) sudo systemctl start postgresql\n" +
+        "4) sudo -u postgres psql -c 'SELECT 1'\n" +
+        "5) echo db_ok > ~/case/db.txt",
+      mode: "term",
+      host: "local",
+      cwd: "~",
+      requireCap: "db",
+      goals: [
+        { id: "db1", match: /^sudo\s+apt\s+install\s+postgresql$/, out: "postgresql installed", pay: 16 },
+        { id: "db2", match: /^sudo\s+systemctl\s+enable\s+postgresql$/, out: "enabled", pay: 10 },
+        { id: "db3", match: /^sudo\s+systemctl\s+start\s+postgresql$/, out: "started", pay: 12 },
+        { id: "db4", match: /^sudo\s+-u\s+postgres\s+psql\s+-c\s+'SELECT\s+1'$/, out: " ?column? \n----------\n        1", pay: 22 },
+        { id: "db5", match: /^echo\s+db_ok\s+>\s+~\/case\/db\.txt$/, out: "note saved", pay: 12 },
+      ],
+    },
+    {
+      id: "insider",
+      title: "CH.31 · whisper on bastion",
+      narrative:
+        "Тикет: ночные логины с bastion. Нужен CAP Bastion — потом аудит.",
+      mode: "continue",
+      reward: 25,
+    },
+    {
+      id: "bastion",
+      title: "CH.32 · bastion audit",
+      narrative:
+        "CAP Bastion:\n" +
+        "1) last -a\n" +
+        "2) grep Accepted /var/log/auth.log\n" +
+        "3) sudo ufw allow from 10.0.0.0/8 to any port 22\n" +
+        "4) sudo systemctl restart ssh\n" +
+        "5) echo bastion_hardened > ~/case/bastion.txt",
+      mode: "term",
+      host: "local",
+      cwd: "~",
+      requireCap: "bastion",
+      goals: [
+        { id: "b1", match: /^last\s+-a$/, out: "admin pts/0 … still logged in (lab)", pay: 12 },
+        { id: "b2", match: /^grep\s+Accepted\s+\/var\/log\/auth\.log$/, out: "Accepted publickey for admin …", pay: 14 },
+        { id: "b3", match: /^sudo\s+ufw\s+allow\s+from\s+10\.0\.0\.0\/8\s+to\s+any\s+port\s+22$/, out: "Rule added", pay: 16 },
+        { id: "b4", match: /^sudo\s+systemctl\s+restart\s+ssh$/, out: "ssh restarted", pay: 12 },
+        { id: "b5", match: /^echo\s+bastion_hardened\s+>\s+~\/case\/bastion\.txt$/, out: "case updated", pay: 18 },
+      ],
+    },
+    {
+      id: "quiz4",
+      title: "CH.33 · quiz · senior ops",
+      narrative: "Совет директоров проверяет уровень.",
+      mode: "quiz",
+      questions: [
+        { q: "reverse-proxy обычно…", options: ["принимает снаружи и проксирует на бэкенд", "форматирует диск", "заменяет DNS"], ok: 0 },
+        { q: "certbot чаще выдаёт…", options: ["TLS-сертификаты", "RAM", "GPU-драйверы"], ok: 0 },
+        { q: "cron '0 3 * * *' значит…", options: ["каждый час", "каждый день в 03:00", "раз в месяц"], ok: 1 },
+        { q: "docker run -p 8080:80 …", options: ["порт хоста 8080 → 80 в контейнере", "удаляет образ", "выключает ufw"], ok: 0 },
+        { q: "bastion/jump-host — это…", options: ["игрушка", "вход во внутреннюю сеть через промежуточный хост", "только SMTP"], ok: 1 },
+      ],
+      reward: 55,
+      skillPts: 1,
+    },
+    {
+      id: "finale_mail",
+      title: "CH.34 · board letter",
+      narrative:
+        "MAIL · NeonOps Board\n" +
+        "«Инфра жива. Дальше — Rig + Skills. Контракты на бирже.»",
+      mode: "continue",
+      reward: 80,
+      skillPts: 2,
+    },
+    {
+      id: "garage",
+      title: "CH.35 · garage → Rig tab",
+      narrative:
+        "Rig: железо, серверы (DNS/DB/Bastion), Skills, Caps.\n" +
+        "Терминал shop/buy/assemble/mine-* · UI — «rig · железо».",
       mode: "garage",
       reward: 50,
     },
     {
       id: "epilogue",
-      title: "EPILOGUE · contract open",
+      title: "EPILOGUE · city still hums",
       narrative:
-        "Клиент онлайн, VPN/web/mail по возможностям Rig, периметр закрыт.\n" +
-        "Дальше крути железо во вкладке Rig и idle-майнинг. Reset — новый проход сюжета.",
+        "Grid-7 гудит. Качай Skills, апгрейди GPU, бери Rack, сейвь в cloud nick.",
       mode: "continue",
-      reward: 60,
+      reward: 70,
     },
   ];
 
@@ -737,6 +951,9 @@
       quizOk: 0,
       finished: false,
       rigTab: "pc",
+      opsXp: 0,
+      skillPts: 0,
+      skills: { linux: 0, net: 0, forensics: 0, defense: 0, devops: 0 },
     };
   }
 
@@ -752,6 +969,9 @@
         parts: raw.parts || {},
         servers: raw.servers || {},
         notes: raw.notes || [],
+        skills: { linux: 0, net: 0, forensics: 0, defense: 0, devops: 0, ...(raw.skills || {}) },
+        opsXp: Number(raw.opsXp) || 0,
+        skillPts: Number(raw.skillPts) || 0,
       };
     } catch {
       return defaultState();
@@ -824,12 +1044,39 @@
     return s;
   }
 
+  function skill(id) {
+    return (state.skills && state.skills[id]) || 0;
+  }
+
+  function opsLevel() {
+    return Math.floor(Math.sqrt((state.opsXp || 0) / 35)) + 1;
+  }
+
+  function gainXp(n) {
+    const before = opsLevel();
+    state.opsXp = (state.opsXp || 0) + Math.max(0, n);
+    const after = opsLevel();
+    if (after > before) {
+      const gained = after - before;
+      state.skillPts = (state.skillPts || 0) + gained;
+      appendOut(`LEVEL UP · ops L${after} · +${gained} skill pt`, "ok");
+      rigLog(`LEVEL UP L${after}`);
+    }
+  }
+
+  function payMult() {
+    return 1 + skill("linux") * 0.06 + skill("forensics") * 0.04;
+  }
+
   function hasServerRole(role) {
     if (state.servers.multi || state.servers.srv_rack) return true;
     if (role === "proxy") return !!(state.servers.proxy || state.servers.srv_proxy);
     if (role === "vpn") return !!(state.servers.vpn || state.servers.srv_vpn);
     if (role === "smtp") return !!(state.servers.smtp || state.servers.srv_smtp);
     if (role === "web") return !!(state.servers.web || state.servers.srv_web);
+    if (role === "dns") return !!(state.servers.dns || state.servers.srv_dns);
+    if (role === "db") return !!(state.servers.db || state.servers.srv_db);
+    if (role === "bastion") return !!(state.servers.bastion || state.servers.srv_bastion);
     return !!state.servers[role];
   }
 
@@ -838,10 +1085,15 @@
     if (id === "workstation") return !!state.assembled;
     if (id === "mine") return state.assembled && sp.gpu >= 60;
     if (id === "mine_fast") return state.assembled && sp.gpu >= 120 && !!state.parts.cool;
+    if (id === "mine_ultra") return state.assembled && sp.gpu >= 300 && !!state.parts.cool && skill("devops") >= 2;
     if (id === "vpn") return hasServerRole("vpn") || (state.assembled && sp.ramGb >= 8 && sp.nicMbps >= 1000);
-    if (id === "proxy") return hasServerRole("proxy");
+    if (id === "proxy") return hasServerRole("proxy") || (skill("net") >= 2 && hasServerRole("web"));
     if (id === "smtp") return hasServerRole("smtp");
     if (id === "web") return hasServerRole("web") || (state.assembled && sp.nicMbps >= 1000 && sp.storageGb >= 40);
+    if (id === "dns") return hasServerRole("dns") || skill("net") >= 3;
+    if (id === "db") return hasServerRole("db");
+    if (id === "docker") return skill("devops") >= 2 && (hasServerRole("web") || state.assembled);
+    if (id === "bastion") return hasServerRole("bastion") || (skill("defense") >= 2 && hasCap("vpn"));
     return false;
   }
 
@@ -850,10 +1102,33 @@
     return c ? `${c.label} (${c.hint})` : id;
   }
 
-  function pay(n, why) {
-    state.money += n;
+  function buySkill(id) {
+    const def = SKILLS.find((s) => s.id === id);
+    if (!def) return;
+    const cur = skill(id);
+    if (cur >= def.max) {
+      rigLog("skill max");
+      return;
+    }
+    if ((state.skillPts || 0) < 1) {
+      rigLog("нет skill pts · качай XP заказами");
+      return;
+    }
+    state.skillPts -= 1;
+    state.skills[id] = cur + 1;
+    gainXp(5);
+    rigLog(`${def.name} → L${state.skills[id]}`);
     save();
-    appendOut(`+$ ${n}${why ? ` · ${why}` : ""}`, "ok");
+    renderRig();
+    renderChrome();
+  }
+
+  function pay(n, why) {
+    const gained = Math.max(1, Math.round(n * payMult()));
+    state.money += gained;
+    gainXp(Math.max(1, Math.floor(gained / 4)));
+    save();
+    appendOut(`+$ ${gained}${why ? ` · ${why}` : ""}${gained !== n ? ` (x${payMult().toFixed(2)})` : ""}`, "ok");
     renderChrome();
     renderRigMoney();
   }
@@ -883,8 +1158,8 @@
     if (e.title) e.title.textContent = ch.title;
     if (e.meta) {
       e.meta.textContent = state.finished
-        ? `COMPLETE · mined:${state.mined}`
-        : `ch ${state.chapter + 1}/${CHAPTERS.length} · host:${termHost} · cwd:${termCwd}`;
+        ? `COMPLETE · L${opsLevel()} · mined:${state.mined}`
+        : `ch ${state.chapter + 1}/${CHAPTERS.length} · L${opsLevel()} xp:${state.opsXp} pts:${state.skillPts} · ${termHost}`;
     }
     if (e.notes) {
       e.notes.innerHTML = (state.notes || []).map((n) => `<li>${escapeHtml(n)}</li>`).join("") || "<li>—</li>";
@@ -1024,12 +1299,17 @@
       state.doneGoals[`chpay_${ch.id}`] = true;
       pay(ch.reward, ch.id);
     }
+    if (ch.skillPts && !state.doneGoals[`skpts_${ch.id}`]) {
+      state.doneGoals[`skpts_${ch.id}`] = true;
+      state.skillPts = (state.skillPts || 0) + ch.skillPts;
+      appendOut(`+${ch.skillPts} skill pt`, "ok");
+    }
     if (ch.setNotes) {
       addNote(`VPN job host ${VPN_IP} · admin/admin`);
       addNote(`Web job host ${WEB_IP} · admin/admin`);
       addNote(`SMTP job host ${SMTP_IP} · admin/admin`);
       addNote("WireGuard: apt install → enable → start wg-quick@wg0");
-      addNote("Rig: купи Node·VPN / Web / SMTP или Rack под CAP");
+      addNote("Rig → Skills + Nodes DNS/DB/Bastion");
     }
     if (state.chapter < CHAPTERS.length - 1) {
       state.chapter += 1;
@@ -1299,7 +1579,7 @@
     state.servers[srv.id] = true;
     state.servers[srv.role] = true;
     if (srv.role === "multi") {
-      ["proxy", "vpn", "smtp", "web"].forEach((r) => { state.servers[r] = true; });
+      ["proxy", "vpn", "smtp", "web", "dns", "db", "bastion"].forEach((r) => { state.servers[r] = true; });
     }
     rigLog(`SERVER ONLINE · ${srv.name}`);
     save();
@@ -1340,10 +1620,12 @@
 
   function mineRate() {
     const sp = computeSpecs();
-    let r = 2 + (sp.boost || 0);
+    let r = 2 + (sp.boost || 0) + skill("devops");
     if (sp.gpu >= 120) r += 2;
     if (sp.gpu >= 200) r += 3;
+    if (sp.gpu >= 300) r += 4;
     if (hasCap("mine_fast")) r += 2;
+    if (hasCap("mine_ultra")) r += 4;
     return Math.max(1, r);
   }
 
@@ -1417,7 +1699,7 @@
       });
     } else if (tab === "servers") {
       body.innerHTML = `
-        <p class="ops-lead">Серверы для proxy / VPN / SMTP / web. Rack открывает все роли.</p>
+        <p class="ops-lead">Серверы: proxy/VPN/SMTP/web/DNS/DB/bastion. Rack = все роли.</p>
         <div class="ops-rig-shop">
           ${SERVERS.map((s) => {
             const own = !!(state.servers[s.id] || state.servers[s.role]);
@@ -1448,6 +1730,24 @@
         </div>`).join("");
       body.querySelectorAll("[data-buy-part]").forEach((btn) => {
         btn.addEventListener("click", () => buyPart(btn.dataset.buyPart));
+      });
+    } else if (tab === "skills") {
+      body.innerHTML = `
+        <div class="ops-rig-specs">ops L${opsLevel()} · XP ${state.opsXp} · skill pts ${state.skillPts || 0} · pay x${payMult().toFixed(2)}</div>
+        <div class="ops-rig-caps">
+          ${SKILLS.map((s) => {
+            const lv = skill(s.id);
+            const maxed = lv >= s.max;
+            return `<div class="ops-rig-cap ${lv ? "on" : ""}">
+              <strong>${escapeHtml(s.name)} L${lv}/${s.max}</strong>
+              <span>${escapeHtml(s.hint)}</span>
+              <button type="button" class="ops-btn" data-skill-up="${s.id}" ${maxed || !(state.skillPts > 0) ? "disabled" : ""}>${maxed ? "MAX" : "upgrade · 1 pt"}</button>
+            </div>`;
+          }).join("")}
+        </div>
+        <p class="ops-lead">XP за заказы и главы → level-up → skill pts. Skills открывают CAP (dns/docker/bastion…).</p>`;
+      body.querySelectorAll("[data-skill-up]").forEach((btn) => {
+        btn.addEventListener("click", () => buySkill(btn.dataset.skillUp));
       });
     } else if (tab === "caps") {
       body.innerHTML = `
@@ -1755,6 +2055,9 @@
         parts: incoming.parts || {},
         servers: incoming.servers || {},
         notes: incoming.notes || [],
+        skills: { linux: 0, net: 0, forensics: 0, defense: 0, devops: 0, ...(incoming.skills || {}) },
+        opsXp: Number(incoming.opsXp) || 0,
+        skillPts: Number(incoming.skillPts) || 0,
       };
       try {
         localStorage.setItem(KEY, JSON.stringify(state));
