@@ -785,6 +785,119 @@
         { ask: "Убить X/сессию жёстко (осторожно, учебный факт)", answer: "ctrl+alt+backspace", alts: ["ctrl + alt + backspace"], tip: "не везде включено; не злоупотреблять" },
       ],
     },
+    {
+      id: "tech_en",
+      name: "Tech·EN",
+      blurb: "Технический английский",
+      learn: true,
+      intro: "Отдельный блок: читать man/docs, логи, ошибки и писать ответы на английском. Без «школьной» грамматики — только IT-лексика и устойчивые фразы.",
+      lessons: [
+        {
+          title: "Зачем Tech English",
+          points: [
+            "Документация, ошибки, Stack Overflow, GitHub Issues — почти всё на английском.",
+            "Команды и флаги сами по себе английские глаголы: copy, remove, list, install.",
+            "Цель блока: узнавать слово в логе и уметь сказать короткий ответ по-английски.",
+          ],
+          tip: "Учи слово + где его встретишь (лог / команда / UI).",
+        },
+        {
+          title: "Глаголы команд",
+          points: [
+            "list / get / show — показать список.",
+            "create / make / new — создать.",
+            "remove / delete / erase — удалить.",
+            "move / rename / copy — переместить / переименовать / копировать.",
+            "install / update / upgrade / uninstall — поставить / обновить / удалить пакет.",
+            "start / stop / restart — служба или процесс.",
+          ],
+          tip: "В PowerShell: Verb-Noun → Get-Process = get + process.",
+        },
+        {
+          title: "Файлы, пути, права",
+          points: [
+            "file / folder (directory) — файл / папка.",
+            "path / directory / root — путь / каталог / корень.",
+            "permission / access denied — право / доступ запрещён.",
+            "read / write / execute — читать / писать / выполнять.",
+            "owner / group / user — владелец / группа / пользователь.",
+          ],
+          tip: "Access denied = нет прав, не «сломался интернет».",
+        },
+        {
+          title: "Сеть и HTTP",
+          points: [
+            "host / server / client — хост / сервер / клиент.",
+            "request / response — запрос / ответ.",
+            "timeout / unreachable / connection refused — таймаут / недоступен / отказ в соединении.",
+            "port / firewall / DNS — порт / файрвол / DNS.",
+            "upload / download — загрузить на сервер / скачать.",
+          ],
+          tip: "refused ≠ timeout: отказали сразу vs не дождались.",
+        },
+        {
+          title: "Ошибки и статус",
+          points: [
+            "error / warning / failed / success — ошибка / предупреждение / сбой / успех.",
+            "not found (404) / unauthorized (401) / forbidden (403).",
+            "invalid / missing / required — неверно / отсутствует / обязательно.",
+            "deprecated — устарело (ещё работает, но лучше не использовать).",
+            "issue / bug / fix / workaround — проблема / баг / исправление / обходной путь.",
+          ],
+          tip: "В логах сначала ищи ERROR / FAILED / denied.",
+        },
+        {
+          title: "Короткие фразы ops",
+          points: [
+            "Please reboot the server. — Перезагрузите сервер.",
+            "Check the logs. — Проверьте логи.",
+            "Permission denied. — Недостаточно прав.",
+            "Service is down. — Служба не работает.",
+            "Disk is full. — Диск заполнен.",
+            "Works on my machine. — «У меня работает» (мем, но частая фраза).",
+          ],
+          tip: "В ответах drill пиши английское слово/фразу.",
+        },
+      ],
+      drills: [
+        { ask: "EN: список / показать (глагол команд)", answer: "list", alts: ["get", "show"], tip: "list / get / show", why: "Учебный момент. Часто list, get или show — «показать»." },
+        { ask: "EN: удалить", answer: "delete", alts: ["remove", "erase"], tip: "delete / remove" },
+        { ask: "EN: создать", answer: "create", alts: ["make", "new"], tip: "create / make" },
+        { ask: "EN: скопировать", answer: "copy", tip: "copy" },
+        { ask: "EN: переместить", answer: "move", tip: "move" },
+        { ask: "EN: переименовать", answer: "rename", tip: "rename" },
+        { ask: "EN: установить (пакет/программу)", answer: "install", tip: "install" },
+        { ask: "EN: обновить (пакеты/систему)", answer: "update", alts: ["upgrade"], tip: "update / upgrade" },
+        { ask: "EN: папка (синоним directory)", answer: "folder", alts: ["directory"], tip: "folder = directory" },
+        { ask: "EN: путь к файлу", answer: "path", tip: "path" },
+        { ask: "EN: доступ запрещён (частая ошибка)", answer: "access denied", alts: ["permission denied"], tip: "Access denied / Permission denied" },
+        { ask: "EN: право / разрешение", answer: "permission", alts: ["permissions"], tip: "permission" },
+        { ask: "EN: запрос (HTTP/API)", answer: "request", tip: "request → response" },
+        { ask: "EN: ответ (HTTP/API)", answer: "response", tip: "response" },
+        { ask: "EN: таймаут (не дождались)", answer: "timeout", tip: "timeout" },
+        { ask: "EN: соединение отклонено", answer: "connection refused", alts: ["refused"], tip: "connection refused" },
+        { ask: "EN: не найдено (HTTP 404)", answer: "not found", alts: ["404", "404 not found"], tip: "Not Found" },
+        { ask: "EN: нужна авторизация (HTTP 401)", answer: "unauthorized", alts: ["401", "401 unauthorized"], tip: "Unauthorized" },
+        { ask: "EN: запрещено (HTTP 403)", answer: "forbidden", alts: ["403", "403 forbidden"], tip: "Forbidden" },
+        { ask: "EN: ошибка", answer: "error", tip: "error" },
+        { ask: "EN: сбой / не удалось", answer: "failed", alts: ["failure"], tip: "failed" },
+        { ask: "EN: успех", answer: "success", alts: ["successful", "ok"], tip: "success" },
+        { ask: "EN: предупреждение", answer: "warning", tip: "warning" },
+        { ask: "EN: журнал / логи", answer: "log", alts: ["logs"], tip: "check the logs" },
+        { ask: "EN: перезагрузить", answer: "reboot", alts: ["restart"], tip: "reboot / restart" },
+        { ask: "EN: служба не работает (коротко)", answer: "service is down", alts: ["service down", "down"], tip: "Service is down" },
+        { ask: "EN: диск заполнен", answer: "disk is full", alts: ["disk full"], tip: "Disk is full" },
+        { ask: "EN: скачать с сервера/сети", answer: "download", tip: "download ≠ upload" },
+        { ask: "EN: загрузить на сервер", answer: "upload", tip: "upload" },
+        { ask: "EN: файрвол / межсетевой экран", answer: "firewall", tip: "firewall" },
+        { ask: "EN: порт (сетевой)", answer: "port", tip: "port" },
+        { ask: "EN: устаревшее API/функция", answer: "deprecated", tip: "deprecated" },
+        { ask: "EN: обходной путь (временный)", answer: "workaround", tip: "workaround" },
+        { ask: "EN: исправление бага", answer: "fix", alts: ["bugfix", "patch"], tip: "fix / patch" },
+        { ask: "Перевод: Permission denied → RU (кратко)", answer: "доступ запрещен", alts: ["нет прав", "отказано в доступе", "доступ запрещён", "permission denied"], tip: "нет прав" },
+        { ask: "Перевод: Check the logs → RU", answer: "проверьте логи", alts: ["проверь логи", "смотрите логи", "посмотри логи"], tip: "проверьте логи" },
+      ],
+    },
   ];
 
   const FX_STYLE = [
@@ -832,6 +945,7 @@
     { re: /hostname|systeminfo|get-computerinfo|msinfo32|get-disk|get-pnpdevice|devmgmt/, t: "DEVICE OK", sub: "hardware seen" },
     { re: /\bmain\b|\bint\b|string|boolean|\bfor\b|\bwhile\b|java/, t: "COMPILE OK", sub: "syntax clear" },
     { re: /sudo apt update|apt update|source update/, t: "INDEX UPDATED", sub: "repos synced" },
+    { re: /tech·en|tech_en|tech english|permission denied|access denied|workaround|deprecated/, t: "TERM OK", sub: "lexicon hit" },
   ];
 
   const FX_CAT_DEFAULT = {
@@ -853,6 +967,7 @@
     backup: { t: "BACKUP OK", sub: "copy secured" },
     macro_win: { t: "HOTKEY OK", sub: "win shortcut" },
     macro_linux: { t: "HOTKEY OK", sub: "linux shortcut" },
+    tech_en: { t: "TERM OK", sub: "tech english" },
   };
 
   const ACHIEVEMENTS = [
@@ -869,6 +984,7 @@
     { id: "dev1", name: "device.ops", desc: "Прогон Device", check: (s) => (s.catRuns || {}).device >= 1 },
     { id: "bak1", name: "backup.ok", desc: "Прогон Backup", check: (s) => (s.catRuns || {}).backup >= 1 },
     { id: "mac1", name: "macro.keys", desc: "Прогон Macro·Win или Linux", check: (s) => ["macro_win", "macro_linux"].some((id) => (s.catRuns || {})[id] >= 1) },
+    { id: "en1", name: "tech.en", desc: "Прогон Tech·EN", check: (s) => (s.catRuns || {}).tech_en >= 1 },
     { id: "xp200", name: "xp.200", desc: "Набрать 200 XP", check: (s) => (s.xp || 0) >= 200 },
     { id: "senior", name: "senior.ops", desc: "Ранг senior.ops+", check: (s) => (s.xp || 0) >= 280 },
   ];
