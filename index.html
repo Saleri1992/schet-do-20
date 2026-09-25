@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=45" />
+  <link rel="stylesheet" href="style.css?v=46" />
 </head>
 <body data-theme="easy">
   <div class="sky">
@@ -617,13 +617,39 @@
       </div>
 
       <section class="ops-hub" id="opsHub">
-        <p class="ops-lead">Drills · сценарии · docs. >1 мин на шаг → жёлтый режим TRACED.</p>
+        <p class="ops-lead">Drills · сценарии · сюжет · docs. >1 мин → TRACED.</p>
         <div class="ops-hub-actions">
+          <button type="button" class="ops-btn" id="opsStoryOpen">story · сюжет</button>
           <button type="button" class="ops-btn" id="opsDocsOpen">docs · справка</button>
         </div>
         <div class="ops-cats" id="opsCats"></div>
         <h3 class="ops-h">achievements</h3>
         <div class="ops-ach-list" id="opsAch"></div>
+      </section>
+
+      <section class="ops-story hidden" id="opsStory">
+        <div class="ops-docs-bar">
+          <h2 class="ops-docs-h" id="opsStoryTitle">STORY</h2>
+          <div class="ops-story-cash">$ <strong id="opsStoryMoney">0</strong></div>
+          <button type="button" class="ops-btn ghost" id="opsStoryReset">reset</button>
+          <button type="button" class="ops-btn ghost" id="opsStoryBack">← hub</button>
+        </div>
+        <div class="ops-meta" id="opsStoryMeta">—</div>
+        <p class="ops-story-nar" id="opsStoryNarrative">—</p>
+        <ul class="ops-story-notes" id="opsStoryNotes"></ul>
+        <div class="ops-story-quiz hidden" id="opsStoryQuiz"></div>
+        <div class="ops-story-garage hidden" id="opsStoryGarage">
+          <div class="ops-story-shop" id="opsStoryShop"></div>
+        </div>
+        <button type="button" class="ops-btn hidden" id="opsStoryContinue">далее →</button>
+        <div class="ops-story-term hidden" id="opsStoryTerm">
+          <div class="ops-story-out" id="opsStoryOut"></div>
+          <div class="ops-prompt-row">
+            <span class="ops-prompt" id="opsStoryPrompt">ops@local:~$</span>
+            <input id="opsStoryInput" class="ops-input" type="text" autocomplete="off" spellcheck="false" autocapitalize="off" />
+            <button type="button" class="ops-btn" id="opsStorySubmit">enter</button>
+          </div>
+        </div>
       </section>
 
       <section class="ops-docs hidden" id="opsDocs">
@@ -668,6 +694,7 @@
   </div>
 
   <script src="app.js?v=42"></script>
-  <script src="ops.js?v=9"></script>
+  <script src="ops.js?v=10"></script>
+  <script src="ops-story.js?v=1"></script>
 </body>
 </html>

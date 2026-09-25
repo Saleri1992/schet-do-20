@@ -1367,6 +1367,7 @@
     if (e.drill) e.drill.classList.add("hidden");
     if (e.lesson) e.lesson.classList.add("hidden");
     if (e.docs) e.docs.classList.add("hidden");
+    if (window.OpsStory && typeof window.OpsStory.hide === "function") window.OpsStory.hide();
   }
 
   function openShell() {
@@ -1933,6 +1934,7 @@
     close: closeShell,
     tryUnlock,
     isUnlocked: () => unlocked,
+    renderHub,
   };
 
   if (document.readyState === "loading") {
