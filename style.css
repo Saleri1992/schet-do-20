@@ -5262,3 +5262,36 @@ body.ops-on .toast-stack {
   background: #0c1f14;
   color: #d6ffe0;
 }
+
+.ops-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 10px;
+  border: 1px solid #1f4a2e;
+  background: #07140c;
+}
+.ops-cloud-label {
+  font-size: 8px;
+  color: #4a9a62;
+}
+.ops-cloud-input {
+  flex: 1 1 140px;
+  min-width: 120px;
+  max-width: 220px;
+  font-size: 9px;
+  padding: 8px 10px;
+}
+.ops-cloud-status {
+  font-size: 8px;
+  color: #4a9a62;
+  min-width: 80px;
+}
+.ops-cloud-status.ok { color: #7CFF9A; }
+.ops-cloud-status.bad { color: #ff7a7a; }
+.ops-cloud-hint {
+  margin-top: -4px;
+  margin-bottom: 12px;
+}
