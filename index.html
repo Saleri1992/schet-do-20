@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=47" />
+  <link rel="stylesheet" href="style.css?v=48" />
 </head>
 <body data-theme="easy">
   <div class="sky">
@@ -623,6 +623,14 @@
           <button type="button" class="ops-btn" id="opsRigOpen">rig · железо</button>
           <button type="button" class="ops-btn" id="opsDocsOpen">docs · справка</button>
         </div>
+        <div class="ops-cloud">
+          <label class="ops-cloud-label" for="opsCloudNick">cloud nick</label>
+          <input id="opsCloudNick" class="ops-input ops-cloud-input" type="text" autocomplete="off" spellcheck="false" placeholder="secret_save_id" maxlength="32" />
+          <button type="button" class="ops-btn" id="opsCloudPush">cloud ↑</button>
+          <button type="button" class="ops-btn" id="opsCloudPull">cloud ↓</button>
+          <span class="ops-cloud-status" id="opsCloudStatus"></span>
+        </div>
+        <p class="ops-lead ops-cloud-hint">Облако Supabase: сюжет + Rig + drill XP. Ник = ключ сейва (не свети чужим). Без ↑ пропадёт при очистке кэша.</p>
         <div class="ops-cats" id="opsCats"></div>
         <h3 class="ops-h">achievements</h3>
         <div class="ops-ach-list" id="opsAch"></div>
@@ -713,7 +721,8 @@
   </div>
 
   <script src="app.js?v=42"></script>
-  <script src="ops.js?v=11"></script>
-  <script src="ops-story.js?v=3"></script>
+  <script src="ops.js?v=12"></script>
+  <script src="ops-story.js?v=4"></script>
+  <script src="ops-cloud.js?v=1"></script>
 </body>
 </html>

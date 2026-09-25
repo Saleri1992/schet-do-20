@@ -1193,6 +1193,9 @@
     try {
       localStorage.setItem(OPS_KEY, JSON.stringify(state));
     } catch { /* ignore */ }
+    if (window.OpsCloud && typeof window.OpsCloud.schedulePush === "function") {
+      window.OpsCloud.schedulePush();
+    }
   }
 
   function rankFor(xp) {
@@ -1935,6 +1938,41 @@
     tryUnlock,
     isUnlocked: () => unlocked,
     renderHub,
+    getCloudState: () => ({
+      drill: {
+        xp: state.xp,
+        runs: state.runs,
+        perfects: state.perfects,
+        bestMs: state.bestMs,
+        catRuns: state.catRuns,
+        achievements: state.achievements,
+        lastCat: state.lastCat,
+        lessonsSeen: state.lessonsSeen,
+      },
+      unlocked,
+    }),
+    applyCloudState: (pack) => {
+      if (!pack || typeof pack !== "object") return;
+      if (pack.drill && typeof pack.drill === "object") {
+        state = {
+          xp: Number(pack.drill.xp) || 0,
+          runs: Number(pack.drill.runs) || 0,
+          perfects: Number(pack.drill.perfects) || 0,
+          bestMs: pack.drill.bestMs == null ? null : Number(pack.drill.bestMs),
+          catRuns: pack.drill.catRuns && typeof pack.drill.catRuns === "object" ? pack.drill.catRuns : {},
+          achievements: Array.isArray(pack.drill.achievements) ? pack.drill.achievements : [],
+          lastCat: pack.drill.lastCat || "files",
+          lessonsSeen: pack.drill.lessonsSeen && typeof pack.drill.lessonsSeen === "object" ? pack.drill.lessonsSeen : {},
+        };
+        try {
+          localStorage.setItem(OPS_KEY, JSON.stringify(state));
+        } catch { /* ignore */ }
+      }
+      if (typeof pack.unlocked === "boolean") {
+        setUnlocked(pack.unlocked);
+      }
+      renderHub();
+    },
   };
 
   if (document.readyState === "loading") {

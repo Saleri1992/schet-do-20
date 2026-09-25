@@ -51,3 +51,37 @@ create policy "insert scores"
 
 -- Убрать старые неидеальные результаты из топа (по желанию)
 -- delete from scores where correct < 10 or timed_out is true;
+
+-- ============================================================
+-- OPS / story / rig — личный облачный сейв (ник = ключ сейва)
+-- Вставьте этот блок в SQL Editor и Run.
+-- ============================================================
+
+create table if not exists ops_saves (
+  nick text primary key,
+  story jsonb not null default '{}'::jsonb,
+  drill jsonb not null default '{}'::jsonb,
+  unlocked boolean default false,
+  updated_at timestamptz default now()
+);
+
+alter table ops_saves enable row level security;
+
+drop policy if exists "read ops_saves" on ops_saves;
+drop policy if exists "insert ops_saves" on ops_saves;
+drop policy if exists "update ops_saves" on ops_saves;
+
+create policy "read ops_saves"
+  on ops_saves for select
+  using (true);
+
+create policy "insert ops_saves"
+  on ops_saves for insert
+  with check (
+    char_length(trim(nick)) between 3 and 32
+  );
+
+create policy "update ops_saves"
+  on ops_saves for update
+  using (char_length(trim(nick)) between 3 and 32)
+  with check (char_length(trim(nick)) between 3 and 32);

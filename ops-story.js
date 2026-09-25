@@ -762,6 +762,9 @@
     try {
       localStorage.setItem(KEY, JSON.stringify(state));
     } catch { /* ignore */ }
+    if (window.OpsCloud && typeof window.OpsCloud.schedulePush === "function") {
+      window.OpsCloud.schedulePush();
+    }
   }
 
   let state = load();
@@ -1740,6 +1743,28 @@
     close: () => show(false),
     isOpen: () => open,
     openRig: () => showRig(true),
+    getState: () => JSON.parse(JSON.stringify(state)),
+    applyState: (incoming) => {
+      if (!incoming || typeof incoming !== "object") return;
+      stopMine();
+      state = {
+        ...defaultState(),
+        ...incoming,
+        flags: incoming.flags || {},
+        doneGoals: incoming.doneGoals || {},
+        parts: incoming.parts || {},
+        servers: incoming.servers || {},
+        notes: incoming.notes || [],
+      };
+      try {
+        localStorage.setItem(KEY, JSON.stringify(state));
+      } catch { /* ignore */ }
+      if (open) renderChapter();
+      if (!document.getElementById("opsRig")?.classList.contains("hidden")) renderRig();
+      renderChrome();
+      renderRigMoney();
+      if (state.mining && hasCap("mine")) startMine();
+    },
     hide: () => {
       const e = els();
       if (e.panel) e.panel.classList.add("hidden");
