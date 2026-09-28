@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=50" />
+  <link rel="stylesheet" href="style.css?v=51" />
 </head>
 <body data-theme="easy">
   <div class="sky">
@@ -644,21 +644,41 @@
           <button type="button" class="ops-btn ghost" id="opsStoryBack">← hub</button>
         </div>
         <div class="ops-meta" id="opsStoryMeta">—</div>
-        <p class="ops-story-nar" id="opsStoryNarrative">—</p>
-        <ul class="ops-story-notes" id="opsStoryNotes"></ul>
-        <div class="ops-story-quiz hidden" id="opsStoryQuiz"></div>
-        <div class="ops-story-garage hidden" id="opsStoryGarage">
-          <div class="ops-story-shop" id="opsStoryShop"></div>
-        </div>
-        <button type="button" class="ops-btn hidden" id="opsStoryContinue">далее →</button>
-        <button type="button" class="ops-btn ghost hidden" id="opsStoryRigGate">открыть Rig →</button>
-        <div class="ops-story-term hidden" id="opsStoryTerm">
-          <div class="ops-story-out" id="opsStoryOut"></div>
-          <div class="ops-prompt-row">
-            <span class="ops-prompt" id="opsStoryPrompt">ops@local:~$</span>
-            <input id="opsStoryInput" class="ops-input" type="text" autocomplete="off" spellcheck="false" autocapitalize="off" />
-            <button type="button" class="ops-btn" id="opsStorySubmit">enter</button>
+        <div class="ops-desk">
+          <div class="ops-monitor">
+            <div class="ops-monitor-top">
+              <span class="ops-monitor-brand">NEON CRT</span>
+              <span class="ops-monitor-telem" id="opsMonTelemetry">load — · cpu —° · gpu —°</span>
+            </div>
+            <div class="ops-monitor-screen">
+              <p class="ops-story-nar" id="opsStoryNarrative">—</p>
+              <ul class="ops-story-notes" id="opsStoryNotes"></ul>
+              <div class="ops-story-quiz hidden" id="opsStoryQuiz"></div>
+              <div class="ops-story-garage hidden" id="opsStoryGarage">
+                <div class="ops-story-shop" id="opsStoryShop"></div>
+              </div>
+              <button type="button" class="ops-btn hidden" id="opsStoryContinue">далее →</button>
+              <button type="button" class="ops-btn ghost hidden" id="opsStoryRigGate">открыть Rig →</button>
+              <div class="ops-story-term hidden" id="opsStoryTerm">
+                <div class="ops-story-term-bar">
+                  <span class="ops-story-term-label">tty · local shell</span>
+                  <button type="button" class="ops-btn ghost ops-story-term-pin" id="opsStoryTermPin" title="зафиксировать терминал">pin</button>
+                </div>
+                <div class="ops-story-out" id="opsStoryOut"></div>
+                <div class="ops-prompt-row">
+                  <span class="ops-prompt" id="opsStoryPrompt">ops@local:~$</span>
+                  <input id="opsStoryInput" class="ops-input" type="text" autocomplete="off" spellcheck="false" autocapitalize="off" />
+                  <button type="button" class="ops-btn" id="opsStorySubmit">enter</button>
+                </div>
+              </div>
+            </div>
+            <div class="ops-monitor-stand"></div>
           </div>
+          <aside class="ops-tower-aside">
+            <div class="ops-tower-label">WORKSTATION</div>
+            <div id="opsStoryTower" class="ops-tower"></div>
+            <button type="button" class="ops-btn ghost" id="opsStoryOpenRigMini">тюнинг Rig →</button>
+          </aside>
         </div>
       </section>
 
@@ -723,7 +743,7 @@
 
   <script src="app.js?v=42"></script>
   <script src="ops.js?v=12"></script>
-  <script src="ops-story.js?v=6"></script>
+  <script src="ops-story.js?v=7"></script>
   <script src="ops-cloud.js?v=1"></script>
 </body>
 </html>

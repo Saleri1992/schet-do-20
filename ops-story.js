@@ -3,7 +3,7 @@
  * Fiction / lab sim. IP из TEST-NET (RFC 5737).
  */
 (function () {
-  const KEY = "schet-ops-story-v3";
+  const KEY = "schet-ops-story-v4";
   const HOST_IP = "203.0.113.77";
   const DECOY_IP = "203.0.113.12";
   const VPN_IP = "198.51.100.23";
@@ -12,38 +12,78 @@
   const BACKUP_PASS = "RESTORE-OK-991";
   const ALIAS_CODE = "NEON-7741";
 
-  const PC_SLOTS = ["mobo", "cpu", "ram", "gpu", "psu", "hdd", "ssd", "nic", "cool"];
+  const FORM_RANK = { itx: 1, matx: 2, atx: 3, eatx: 4 };
+  const PC_SLOTS = ["case", "mobo", "cpu", "ram", "gpu", "psu", "hdd", "ssd", "nic", "cool"];
 
-  /** Каталог комплектующих: слоты + зависимости + вклад в specs. */
+  /** Каталог: case/form, mobo ddr+socket, cpu/gpu модели, DDR2→5. */
   const PARTS = [
-    { id: "mobo_b", slot: "mobo", name: "MOBO·B450", price: 40, tier: 1, need: true, specs: { wattsNeed: 0 } },
-    { id: "mobo_x", slot: "mobo", name: "MOBO·X570", price: 90, tier: 2, need: true, specs: { wattsNeed: 0 } },
-    { id: "cpu_4", slot: "cpu", name: "CPU·4c", price: 55, tier: 1, need: true, specs: { cores: 4 }, reqSlots: ["mobo"] },
-    { id: "cpu_8", slot: "cpu", name: "CPU·8c", price: 110, tier: 2, need: true, specs: { cores: 8 }, reqSlots: ["mobo"] },
-    { id: "ram_8", slot: "ram", name: "RAM·8G", price: 25, tier: 1, need: true, specs: { ramGb: 8 }, reqSlots: ["mobo"] },
-    { id: "ram_16", slot: "ram", name: "RAM·16G", price: 45, tier: 2, need: true, specs: { ramGb: 16 }, reqSlots: ["mobo"] },
-    { id: "ram_32", slot: "ram", name: "RAM·32G", price: 85, tier: 3, need: true, specs: { ramGb: 32 }, reqSlots: ["mobo"] },
-    { id: "gpu_e", slot: "gpu", name: "GPU·entry", price: 70, tier: 1, need: true, specs: { gpu: 60, wattsNeed: 150 }, reqSlots: ["mobo", "psu"], minPsu: 400 },
-    { id: "gpu_m", slot: "gpu", name: "GPU·mid", price: 130, tier: 2, need: true, specs: { gpu: 120, wattsNeed: 220 }, reqSlots: ["mobo", "psu"], minPsu: 550, boost: 2 },
-    { id: "gpu_p", slot: "gpu", name: "GPU·pro", price: 200, tier: 3, need: true, specs: { gpu: 200, wattsNeed: 320 }, reqSlots: ["mobo", "psu"], minPsu: 650, boost: 4 },
+    { id: "case_itx", slot: "case", name: "CASE·Mini-ITX", price: 35, tier: 1, form: "itx", need: true },
+    { id: "case_matx", slot: "case", name: "CASE·mATX scrap", price: 12, tier: 0, form: "matx", need: true },
+    { id: "case_atx", slot: "case", name: "CASE·ATX Mid", price: 45, tier: 1, form: "atx", need: true },
+    { id: "case_ft", slot: "case", name: "CASE·Full Tower", price: 95, tier: 2, form: "eatx", need: true },
+
+    { id: "mobo_g31", slot: "mobo", name: "MOBO·G31 DDR2", price: 18, tier: 0, need: true, ddr: 2, socket: "lga775", form: "matx", specs: { wattsNeed: 25 } },
+    { id: "mobo_h61", slot: "mobo", name: "MOBO·H61 DDR3", price: 28, tier: 1, need: true, ddr: 3, socket: "lga1155", form: "matx", specs: { wattsNeed: 30 } },
+    { id: "mobo_b", slot: "mobo", name: "MOBO·B450 DDR4", price: 40, tier: 2, need: true, ddr: 4, socket: "am4", form: "atx", specs: { wattsNeed: 35 } },
+    { id: "mobo_itx", slot: "mobo", name: "MOBO·B550-I DDR4", price: 75, tier: 2, need: true, ddr: 4, socket: "am4", form: "itx", specs: { wattsNeed: 30 } },
+    { id: "mobo_x", slot: "mobo", name: "MOBO·X570 DDR4", price: 90, tier: 3, need: true, ddr: 4, socket: "am4", form: "atx", specs: { wattsNeed: 40 } },
+    { id: "mobo_z", slot: "mobo", name: "MOBO·Z790 DDR5", price: 160, tier: 4, need: true, ddr: 5, socket: "lga1700", form: "atx", specs: { wattsNeed: 45 } },
+
+    { id: "cpu_c2d", slot: "cpu", name: "CPU·C2D E8400", price: 14, tier: 0, need: true, socket: "lga775", specs: { cores: 2, igpu: 8, wattsNeed: 65 }, reqSlots: ["mobo"] },
+    { id: "cpu_i5o", slot: "cpu", name: "CPU·i5-2500", price: 32, tier: 1, need: true, socket: "lga1155", specs: { cores: 4, igpu: 18, wattsNeed: 95 }, reqSlots: ["mobo"] },
+    { id: "cpu_4", slot: "cpu", name: "CPU·R3 3100", price: 55, tier: 2, need: true, socket: "am4", specs: { cores: 4, wattsNeed: 65 }, reqSlots: ["mobo"] },
+    { id: "cpu_5600g", slot: "cpu", name: "CPU·R5 5600G", price: 95, tier: 2, need: true, socket: "am4", specs: { cores: 6, igpu: 45, wattsNeed: 65 }, reqSlots: ["mobo"] },
+    { id: "cpu_8", slot: "cpu", name: "CPU·R7 5700X", price: 110, tier: 3, need: true, socket: "am4", specs: { cores: 8, wattsNeed: 105 }, reqSlots: ["mobo"] },
+    { id: "cpu_16", slot: "cpu", name: "CPU·R9 5950X", price: 180, tier: 4, need: true, socket: "am4", specs: { cores: 16, wattsNeed: 145 }, reqSlots: ["mobo"] },
+    { id: "cpu_i5n", slot: "cpu", name: "CPU·i5-13400", price: 140, tier: 3, need: true, socket: "lga1700", specs: { cores: 10, igpu: 30, wattsNeed: 95 }, reqSlots: ["mobo"] },
+
+    { id: "ram_ddr2_2", slot: "ram", name: "RAM·2G DDR2", price: 8, tier: 0, need: true, ddr: 2, specs: { ramGb: 2 }, reqSlots: ["mobo"] },
+    { id: "ram_ddr3_4", slot: "ram", name: "RAM·4G DDR3", price: 14, tier: 1, need: true, ddr: 3, specs: { ramGb: 4 }, reqSlots: ["mobo"] },
+    { id: "ram_ddr3_8", slot: "ram", name: "RAM·8G DDR3", price: 22, tier: 1, need: true, ddr: 3, specs: { ramGb: 8 }, reqSlots: ["mobo"] },
+    { id: "ram_8", slot: "ram", name: "RAM·8G DDR4", price: 25, tier: 2, need: true, ddr: 4, specs: { ramGb: 8 }, reqSlots: ["mobo"] },
+    { id: "ram_16", slot: "ram", name: "RAM·16G DDR4", price: 45, tier: 2, need: true, ddr: 4, specs: { ramGb: 16 }, reqSlots: ["mobo"] },
+    { id: "ram_32", slot: "ram", name: "RAM·32G DDR4", price: 85, tier: 3, need: true, ddr: 4, specs: { ramGb: 32 }, reqSlots: ["mobo"] },
+    { id: "ram_64", slot: "ram", name: "RAM·64G DDR4", price: 160, tier: 4, need: true, ddr: 4, specs: { ramGb: 64 }, reqSlots: ["mobo"] },
+    { id: "ram_ddr5_16", slot: "ram", name: "RAM·16G DDR5", price: 70, tier: 3, need: true, ddr: 5, specs: { ramGb: 16 }, reqSlots: ["mobo"] },
+    { id: "ram_ddr5_32", slot: "ram", name: "RAM·32G DDR5", price: 120, tier: 4, need: true, ddr: 5, specs: { ramGb: 32 }, reqSlots: ["mobo"] },
+
+    { id: "gpu_gt210", slot: "gpu", name: "GPU·GT 210", price: 18, tier: 0, specs: { gpu: 12, wattsNeed: 30 }, reqSlots: ["mobo", "psu"], minPsu: 250 },
+    { id: "gpu_e", slot: "gpu", name: "GPU·GTX 1650", price: 70, tier: 1, need: true, specs: { gpu: 60, wattsNeed: 150 }, reqSlots: ["mobo", "psu"], minPsu: 400 },
+    { id: "gpu_m", slot: "gpu", name: "GPU·RTX 3060", price: 130, tier: 2, need: true, specs: { gpu: 120, wattsNeed: 220 }, reqSlots: ["mobo", "psu"], minPsu: 550, boost: 2 },
+    { id: "gpu_p", slot: "gpu", name: "GPU·RTX 4070", price: 200, tier: 3, need: true, specs: { gpu: 200, wattsNeed: 320 }, reqSlots: ["mobo", "psu"], minPsu: 650, boost: 4 },
+    { id: "gpu_u", slot: "gpu", name: "GPU·RTX 4090", price: 320, tier: 4, need: true, specs: { gpu: 320, wattsNeed: 450 }, reqSlots: ["mobo", "psu"], minPsu: 850, boost: 6 },
+
+    { id: "psu_3", slot: "psu", name: "PSU·300W junk", price: 12, tier: 0, need: true, specs: { psuW: 300 } },
     { id: "psu_4", slot: "psu", name: "PSU·450W", price: 30, tier: 1, need: true, specs: { psuW: 450 } },
     { id: "psu_6", slot: "psu", name: "PSU·650W", price: 55, tier: 2, need: true, specs: { psuW: 650 } },
     { id: "psu_8", slot: "psu", name: "PSU·850W", price: 80, tier: 3, need: true, specs: { psuW: 850 } },
+    { id: "psu_1k", slot: "psu", name: "PSU·1000W", price: 120, tier: 4, need: true, specs: { psuW: 1000 } },
+
+    { id: "hdd_250", slot: "hdd", name: "HDD·250G scrap", price: 10, tier: 0, specs: { storageGb: 250 } },
     { id: "hdd_1", slot: "hdd", name: "HDD·1T", price: 30, tier: 1, specs: { storageGb: 1000 } },
     { id: "hdd_2", slot: "hdd", name: "HDD·2T", price: 50, tier: 2, specs: { storageGb: 2000 } },
     { id: "ssd_5", slot: "ssd", name: "SSD·512", price: 40, tier: 1, specs: { storageGb: 512, boost: 1 }, boost: 1 },
     { id: "ssd_1", slot: "ssd", name: "SSD·1T", price: 70, tier: 2, specs: { storageGb: 1000, boost: 1 }, boost: 2 },
+    { id: "ssd_2", slot: "ssd", name: "SSD·2T", price: 130, tier: 3, specs: { storageGb: 2000 }, boost: 3 },
+
+    { id: "nic_100", slot: "nic", name: "NIC·100M", price: 8, tier: 0, specs: { nicMbps: 100 } },
     { id: "nic_1", slot: "nic", name: "NIC·1G", price: 20, tier: 1, specs: { nicMbps: 1000 } },
     { id: "nic_25", slot: "nic", name: "NIC·2.5G", price: 40, tier: 2, specs: { nicMbps: 2500 }, boost: 1 },
     { id: "nic_10", slot: "nic", name: "NIC·10G", price: 90, tier: 3, specs: { nicMbps: 10000 }, boost: 2 },
+
     { id: "cool_a", slot: "cool", name: "COOL·air", price: 20, tier: 1, boost: 1 },
     { id: "cool_l", slot: "cool", name: "COOL·aio", price: 55, tier: 2, boost: 2 },
-    { id: "cpu_16", slot: "cpu", name: "CPU·16c", price: 180, tier: 3, need: true, specs: { cores: 16 }, reqSlots: ["mobo"] },
-    { id: "ram_64", slot: "ram", name: "RAM·64G", price: 160, tier: 4, need: true, specs: { ramGb: 64 }, reqSlots: ["mobo"] },
-    { id: "gpu_u", slot: "gpu", name: "GPU·ultra", price: 320, tier: 4, need: true, specs: { gpu: 320, wattsNeed: 450 }, reqSlots: ["mobo", "psu"], minPsu: 850, boost: 6 },
-    { id: "psu_1k", slot: "psu", name: "PSU·1000W", price: 120, tier: 4, need: true, specs: { psuW: 1000 } },
-    { id: "ssd_2", slot: "ssd", name: "SSD·2T", price: 130, tier: 3, specs: { storageGb: 2000 }, boost: 3 },
   ];
+
+  const STARTER_PARTS = {
+    case: "case_matx",
+    mobo: "mobo_g31",
+    cpu: "cpu_c2d",
+    ram: "ram_ddr2_2",
+    psu: "psu_3",
+    hdd: "hdd_250",
+    nic: "nic_100",
+  };
 
   const SERVERS = [
     { id: "srv_proxy", role: "proxy", name: "Node·Proxy", price: 110, blurb: "прокси / reverse-proxy lab", specs: { ramGb: 4, nicMbps: 1000, storageGb: 40 } },
@@ -65,7 +105,7 @@
   ];
 
   const CAPS = [
-    { id: "workstation", label: "Workstation собрана", hint: "mobo+cpu+ram+gpu+psu+nic+(hdd|ssd)" },
+    { id: "workstation", label: "Workstation собрана", hint: "case+mobo+cpu+ram+psu+nic+disk + GPU/iGPU · assemble" },
     { id: "mine", label: "Idle mining", hint: "GPU ≥ 60" },
     { id: "mine_fast", label: "Fast mining", hint: "GPU ≥ 120 + cool" },
     { id: "mine_ultra", label: "Ultra mining", hint: "GPU ≥ 300 + cool + devops≥2" },
@@ -308,9 +348,9 @@
       id: "intro",
       title: "PROLOGUE · neon freelancers",
       narrative:
-        "Неоновый район Grid-7. Ты — ops-фрилансер: ставишь Linux, чинишь сервисы, пишешь короткие отчёты.\n" +
-        "Это ИСТОРИЯ-СИМУЛЯТОР: нет реальной сети и файлов, только учебный терминал и сюжет.\n" +
-        "План: собрать базу → викторины → заказы за $ → инцидент → расследование → защита → контракты (VPN/web) → гараж и idle-майнинг.",
+        "Неоновый район Grid-7. На столе — раздолбанный mATX: старый C2D + DDR2, детали в корпусе, но ещё не собраны.\n" +
+        "Это ИСТОРИЯ-СИМУЛЯТОР: учебный терминал на мониторе + железо справа (Rig).\n" +
+        "План: собрать этот ящик → поставить Linux на него → заказы → инцидент → контракты → апгрейд DDR/CPU/GPU.",
       mode: "continue",
       reward: 25,
     },
@@ -318,7 +358,8 @@
       id: "linux",
       title: "CH.01 · bootstrap linux",
       narrative:
-        "Чистый ПК. Подними базу:\n" +
+        "Цель: поднять Linux именно на этом scrap-ПК (C2D / DDR2).\n" +
+        "Если ещё не собрал — Rig → assemble (или команда assemble).\n" +
         "1) sudo apt update\n" +
         "2) sudo apt upgrade -y\n" +
         "3) sudo apt install curl git htop net-tools\n" +
@@ -990,11 +1031,11 @@
   function defaultState() {
     return {
       chapter: 0,
-      money: 80,
+      money: 55,
       doneGoals: {},
       flags: {},
-      notes: [],
-      parts: {},
+      notes: ["Scrap PC: C2D + DDR2 · assemble в Rig"],
+      parts: { ...STARTER_PARTS },
       servers: {},
       assembled: false,
       mining: false,
@@ -1007,25 +1048,50 @@
       skillPts: 0,
       skills: { linux: 0, net: 0, forensics: 0, defense: 0, devops: 0 },
       eggs: {},
+      termPinned: false,
     };
+  }
+
+  function migrateParts(raw) {
+    const parts = { ...(raw.parts || {}) };
+    const empty = !Object.keys(parts).length;
+    if (empty) Object.assign(parts, STARTER_PARTS);
+    if (parts.mobo && !parts.case) {
+      const mobo = partById(parts.mobo);
+      const f = (mobo && mobo.form) || "atx";
+      parts.case = f === "itx" ? "case_itx" : f === "matx" ? "case_matx" : f === "eatx" ? "case_ft" : "case_atx";
+    }
+    // drop unknown ids from older builds
+    Object.keys(parts).forEach((slot) => {
+      if (!partById(parts[slot])) delete parts[slot];
+    });
+    if (!Object.keys(parts).length) Object.assign(parts, STARTER_PARTS);
+    return parts;
   }
 
   function load() {
     try {
-      const raw = JSON.parse(localStorage.getItem(KEY) || "null");
+      let raw = JSON.parse(localStorage.getItem(KEY) || "null");
+      if (!raw || typeof raw !== "object") {
+        const legacy = JSON.parse(localStorage.getItem("schet-ops-story-v3") || "null");
+        raw = legacy && typeof legacy === "object" ? legacy : null;
+      }
       if (!raw || typeof raw !== "object") return defaultState();
+      const parts = migrateParts(raw);
       return {
         ...defaultState(),
         ...raw,
         flags: raw.flags || {},
         doneGoals: raw.doneGoals || {},
-        parts: raw.parts || {},
+        parts,
         servers: raw.servers || {},
-        notes: raw.notes || [],
+        notes: raw.notes && raw.notes.length ? raw.notes : defaultState().notes,
         skills: { linux: 0, net: 0, forensics: 0, defense: 0, devops: 0, ...(raw.skills || {}) },
         opsXp: Number(raw.opsXp) || 0,
         skillPts: Number(raw.skillPts) || 0,
         eggs: raw.eggs && typeof raw.eggs === "object" ? raw.eggs : {},
+        termPinned: !!raw.termPinned,
+        money: raw.money != null ? Number(raw.money) : 55,
       };
     } catch {
       return defaultState();
@@ -1045,6 +1111,7 @@
   let termCwd = "/";
   let termHost = "local";
   let mineTimer = 0;
+  let telemTimer = 0;
   let open = false;
   let animBusy = false;
 
@@ -1089,8 +1156,27 @@
     return id ? partById(id) : null;
   }
 
+  function formRankOf(part) {
+    if (!part || !part.form) return 0;
+    return FORM_RANK[part.form] || 0;
+  }
+
   function computeSpecs() {
-    const s = { cores: 0, ramGb: 0, gpu: 0, psuW: 0, storageGb: 0, nicMbps: 0, wattsNeed: 0, boost: 0 };
+    const s = {
+      cores: 0,
+      ramGb: 0,
+      gpu: 0,
+      igpu: 0,
+      psuW: 0,
+      storageGb: 0,
+      nicMbps: 0,
+      wattsNeed: 0,
+      boost: 0,
+      ddr: 0,
+      socket: "",
+      form: "matx",
+      caseForm: "matx",
+    };
     PC_SLOTS.forEach((slot) => {
       const p = installedPart(slot);
       if (!p) return;
@@ -1098,13 +1184,42 @@
       s.cores += sp.cores || 0;
       s.ramGb += sp.ramGb || 0;
       s.gpu += sp.gpu || 0;
+      s.igpu += sp.igpu || 0;
       s.psuW += sp.psuW || 0;
       s.storageGb += sp.storageGb || 0;
       s.nicMbps += sp.nicMbps || 0;
       s.wattsNeed += sp.wattsNeed || 0;
       s.boost += p.boost || sp.boost || 0;
+      if (slot === "mobo") {
+        s.ddr = p.ddr || 0;
+        s.socket = p.socket || "";
+        s.form = p.form || s.form;
+      }
+      if (slot === "case") s.caseForm = p.form || s.caseForm;
     });
+    s.gpuEff = s.gpu || s.igpu;
     return s;
+  }
+
+  function computeTelemetry() {
+    const sp = computeSpecs();
+    const cool = installedPart("cool");
+    const coolN = cool ? (cool.boost || 1) * 9 : 0;
+    let load = 6 + sp.cores * 1.8 + Math.min(25, sp.ramGb * 0.35);
+    if (state.mining) load += 28 + sp.gpu * 0.09;
+    if (animBusy) load += 12;
+    if (!state.assembled) load = Math.max(2, load * 0.25);
+    load = Math.round(Math.min(99, Math.max(1, load)));
+    let cpuT = 28 + load * 0.52 + (sp.cores > 8 ? 6 : 0) + (sp.ddr <= 2 ? 4 : 0) - coolN;
+    let gpuT = 26 + (state.mining ? 38 : 8) + sp.gpuEff * 0.11 - coolN * 0.55;
+    if (!state.assembled) {
+      cpuT = 24;
+      gpuT = 22;
+    }
+    cpuT = Math.round(Math.min(105, Math.max(22, cpuT)));
+    gpuT = Math.round(Math.min(110, Math.max(22, gpuT)));
+    const psuLoad = Math.round(Math.min(100, (sp.wattsNeed / Math.max(1, sp.psuW)) * 100));
+    return { load, cpuT, gpuT, psuLoad, sp };
   }
 
   function skill(id) {
@@ -1400,6 +1515,8 @@
       }
     }
     renderChrome();
+    applyTermPin();
+    paintTower();
     save();
   }
 
@@ -1672,12 +1789,27 @@
         if (!state.parts[item.reqSlots[i]]) return `нужен слот ${item.reqSlots[i]}`;
       }
     }
+    const mobo = installedPart("mobo");
+    if (item.slot === "cpu" && mobo && item.socket && mobo.socket && item.socket !== mobo.socket) {
+      return `socket ${item.socket} ≠ mobo ${mobo.socket}`;
+    }
+    if (item.slot === "ram" && mobo && item.ddr && mobo.ddr && item.ddr !== mobo.ddr) {
+      return `DDR${item.ddr} ≠ mobo DDR${mobo.ddr}`;
+    }
+    if (item.slot === "mobo") {
+      const cse = installedPart("case");
+      if (cse && formRankOf(cse) < formRankOf(item)) {
+        return `корпус ${cse.form} мал для платы ${item.form}`;
+      }
+    }
+    if (item.slot === "case" && mobo && formRankOf(item) < formRankOf(mobo)) {
+      return `корпус ${item.form} мал для ${mobo.form}`;
+    }
     if (item.minPsu) {
       const psu = installedPart("psu");
       const w = (psu && psu.specs && psu.specs.psuW) || 0;
       if (w < item.minPsu) return `PSU ≥ ${item.minPsu}W (сейчас ${w || 0})`;
     }
-    const sp = computeSpecs();
     const extraNeed = (item.specs && item.specs.wattsNeed) || 0;
     if (item.slot === "gpu" && state.parts.psu) {
       const psuW = (installedPart("psu").specs || {}).psuW || 0;
@@ -1685,8 +1817,29 @@
         .reduce((a, p) => a + ((p.specs && p.specs.wattsNeed) || 0), 0);
       if (psuW < otherNeed + extraNeed) return `не хватает питания PSU (${psuW}W)`;
     }
-    void sp;
     return null;
+  }
+
+  function ejectIncompatible(changed) {
+    if (changed.slot !== "mobo" && changed.slot !== "case") return;
+    const mobo = installedPart("mobo");
+    const cse = installedPart("case");
+    if (mobo && cse && formRankOf(cse) < formRankOf(mobo)) {
+      delete state.parts.mobo;
+      appendOut("mobo ejected · case too small", "dim");
+    }
+    const m2 = installedPart("mobo");
+    if (!m2) return;
+    const cpu = installedPart("cpu");
+    if (cpu && cpu.socket && m2.socket && cpu.socket !== m2.socket) {
+      delete state.parts.cpu;
+      appendOut("cpu ejected · socket", "dim");
+    }
+    const ram = installedPart("ram");
+    if (ram && ram.ddr && m2.ddr && ram.ddr !== m2.ddr) {
+      delete state.parts.ram;
+      appendOut(`ram ejected · need DDR${m2.ddr}`, "dim");
+    }
   }
 
   function buyPart(id) {
@@ -1718,12 +1871,14 @@
     state.money -= item.price;
     state.parts[item.slot] = item.id;
     state.assembled = false;
+    ejectIncompatible(item);
     playActionFx(`INSTALLED ${item.name}`, { label: "mount" });
     rigLog(`bought ${item.name}`);
     save();
     renderShop();
     renderChrome();
     renderRig();
+    paintTower();
   }
 
   function buyServer(id) {
@@ -1753,7 +1908,7 @@
   }
 
   function tryAssemble() {
-    const need = ["mobo", "cpu", "ram", "gpu", "psu"];
+    const need = ["case", "mobo", "cpu", "ram", "psu"];
     const miss = need.filter((s) => !state.parts[s]);
     if (miss.length) {
       appendOut(`missing: ${miss.join(", ")}`, "bad");
@@ -1770,17 +1925,41 @@
       rigLog("нужен NIC");
       return;
     }
+    const mobo = installedPart("mobo");
+    const cse = installedPart("case");
+    if (mobo && cse && formRankOf(cse) < formRankOf(mobo)) {
+      appendOut("корпус не вмещает плату", "bad");
+      return;
+    }
+    const cpu = installedPart("cpu");
+    const ram = installedPart("ram");
+    if (cpu && mobo && cpu.socket !== mobo.socket) {
+      appendOut("cpu/mobo socket mismatch", "bad");
+      return;
+    }
+    if (ram && mobo && ram.ddr !== mobo.ddr) {
+      appendOut(`нужна DDR${mobo.ddr}`, "bad");
+      return;
+    }
     const sp = computeSpecs();
     if (sp.psuW < sp.wattsNeed) {
       appendOut(`PSU ${sp.psuW}W < need ${sp.wattsNeed}W`, "bad");
       return;
     }
+    if (!sp.gpu && !sp.igpu) {
+      appendOut("нет GPU и iGPU — поставь видео или APU", "bad");
+      return;
+    }
     state.assembled = true;
     pay(25, "assemble bonus");
-    playActionFx(`PC ASSEMBLED · ${sp.cores}c/${sp.ramGb}G gpu${sp.gpu} · rate ${mineRate()}`, { label: "boot" });
-    addNote("Workstation assembled");
+    playActionFx(
+      `PC ONLINE · ${sp.caseForm.toUpperCase()} · ${sp.cores}c/DDR${sp.ddr} ${sp.ramGb}G · gfx${sp.gpuEff} · rate ${mineRate()}`,
+      { label: "boot" }
+    );
+    addNote(`Workstation ${sp.caseForm} · DDR${sp.ddr} online`);
     save();
     renderRig();
+    paintTower();
   }
 
   function mineRate() {
@@ -1820,6 +1999,111 @@
     }, 4000);
   }
 
+  function heatClass(temp) {
+    if (temp >= 85) return "hot";
+    if (temp >= 65) return "warm";
+    return "cool";
+  }
+
+  function boardHtml() {
+    const t = computeTelemetry();
+    const sp = t.sp;
+    const form = sp.caseForm || "matx";
+    const assembled = !!state.assembled;
+    const chip = (slot, x, y, w, h) => {
+      const p = installedPart(slot);
+      const on = !!p;
+      const heat =
+        slot === "cpu" ? heatClass(t.cpuT) : slot === "gpu" ? heatClass(t.gpuT) : slot === "psu" ? (t.psuLoad > 80 ? "hot" : t.psuLoad > 55 ? "warm" : "cool") : "cool";
+      const label = p ? escapeHtml(p.name.replace(/^[^·]*·/, "").slice(0, 14)) : slot;
+      return `<div class="ops-chip ${on ? "on" : "off"} ${on ? heat : ""} ${assembled && on ? "live" : ""}" data-slot="${slot}" style="left:${x}%;top:${y}%;width:${w}%;height:${h}%">
+        <span class="ops-chip-slot">${slot}</span>
+        <strong>${label}</strong>
+      </div>`;
+    };
+    const power = assembled
+      ? `<path class="ops-trace power" d="M18 18 L18 42 M18 42 L42 42 M18 42 L42 58 M18 78 L42 78 M18 78 L70 78"/>`
+      : `<path class="ops-trace power dim" d="M18 18 L18 42 L42 42"/>`;
+    const data = assembled
+      ? `<path class="ops-trace data" d="M50 28 L72 28 M50 28 L50 48 L72 48 M50 48 L50 68 L78 68"/>`
+      : `<path class="ops-trace data dim" d="M50 28 L60 28"/>`;
+    return `
+      <div class="ops-case ops-case--${form} ${assembled ? "powered" : "open"}">
+        <div class="ops-case-badge">${form.toUpperCase()} · ${assembled ? "PWR ON" : "OPEN CHASSIS"}</div>
+        <div class="ops-pcb">
+          <svg class="ops-pcb-traces" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+            ${power}${data}
+          </svg>
+          ${chip("psu", 4, 4, 28, 18)}
+          ${chip("cool", 70, 4, 26, 14)}
+          ${chip("cpu", 36, 22, 28, 20)}
+          ${chip("ram", 68, 22, 28, 16)}
+          ${chip("mobo", 4, 28, 28, 22)}
+          ${chip("gpu", 36, 48, 60, 18)}
+          ${chip("hdd", 4, 72, 28, 14)}
+          ${chip("ssd", 36, 72, 28, 14)}
+          ${chip("nic", 68, 72, 28, 14)}
+          ${chip("case", 4, 88, 92, 10)}
+        </div>
+        <div class="ops-case-telem">
+          <span>LOAD ${t.load}%</span>
+          <span class="${heatClass(t.cpuT)}">CPU ${t.cpuT}°</span>
+          <span class="${heatClass(t.gpuT)}">GPU ${t.gpuT}°</span>
+          <span>PSU ${t.psuLoad}%</span>
+        </div>
+      </div>`;
+  }
+
+  function paintTower() {
+    const html = boardHtml();
+    const a = document.getElementById("opsStoryTower");
+    const b = document.getElementById("opsRigTower");
+    if (a) a.innerHTML = html;
+    if (b) b.innerHTML = html;
+    updateTelemetryHud();
+  }
+
+  function updateTelemetryHud() {
+    const t = computeTelemetry();
+    const mon = document.getElementById("opsMonTelemetry");
+    if (mon) {
+      mon.textContent = state.assembled
+        ? `load ${t.load}% · cpu ${t.cpuT}° · gpu ${t.gpuT}° · psu ${t.psuLoad}%`
+        : `chassis open · parts loose · assemble to boot`;
+    }
+    document.querySelectorAll(".ops-case-telem").forEach((el) => {
+      el.innerHTML = `
+        <span>LOAD ${t.load}%</span>
+        <span class="${heatClass(t.cpuT)}">CPU ${t.cpuT}°</span>
+        <span class="${heatClass(t.gpuT)}">GPU ${t.gpuT}°</span>
+        <span>PSU ${t.psuLoad}%</span>`;
+    });
+    document.querySelectorAll(".ops-chip[data-slot=cpu].on").forEach((el) => {
+      el.classList.remove("cool", "warm", "hot");
+      el.classList.add(heatClass(t.cpuT));
+    });
+    document.querySelectorAll(".ops-chip[data-slot=gpu].on").forEach((el) => {
+      el.classList.remove("cool", "warm", "hot");
+      el.classList.add(heatClass(t.gpuT));
+    });
+  }
+
+  function startTelemetry() {
+    if (telemTimer) return;
+    telemTimer = setInterval(() => {
+      if (document.getElementById("opsStory")?.classList.contains("hidden") &&
+          document.getElementById("opsRig")?.classList.contains("hidden")) return;
+      updateTelemetryHud();
+    }, 1200);
+  }
+
+  function applyTermPin() {
+    const term = document.getElementById("opsStoryTerm");
+    const btn = document.getElementById("opsStoryTermPin");
+    if (term) term.classList.toggle("pinned", !!state.termPinned);
+    if (btn) btn.textContent = state.termPinned ? "unpin" : "pin";
+  }
+
   function renderRigMoney() {
     const m = document.getElementById("opsRigMoney");
     if (m) m.textContent = String(state.money);
@@ -1841,21 +2125,23 @@
       btn.classList.toggle("on", btn.dataset.rigTab === tab);
     });
     const sp = computeSpecs();
+    const t = computeTelemetry();
 
     if (tab === "pc") {
       body.innerHTML = `
-        <div class="ops-rig-specs">cores:${sp.cores} · RAM:${sp.ramGb}G · GPU:${sp.gpu} · PSU:${sp.psuW}W · disk:${sp.storageGb}G · NIC:${sp.nicMbps}M · needW:${sp.wattsNeed}</div>
-        <div class="ops-rig-slots">
-          ${PC_SLOTS.map((slot) => {
-            const p = installedPart(slot);
-            return `<div class="ops-rig-slot"><span class="ops-rig-slot-id">${slot}</span><strong>${p ? escapeHtml(p.name) : "— empty —"}</strong></div>`;
-          }).join("")}
+        <div class="ops-rig-specs">
+          ${sp.caseForm.toUpperCase()} · DDR${sp.ddr || "?"} · ${sp.socket || "—"} ·
+          ${sp.cores}c / ${sp.ramGb}G · gfx ${sp.gpuEff} (d${sp.gpu}/i${sp.igpu}) ·
+          PSU ${sp.psuW}W need ${sp.wattsNeed}W · NIC ${sp.nicMbps}M ·
+          LOAD ${t.load}% CPU ${t.cpuT}° GPU ${t.gpuT}° · ${state.assembled ? "ASSEMBLED" : "OPEN"}
         </div>
+        <div id="opsRigTower" class="ops-tower ops-tower--rig"></div>
         <div class="ops-gate-actions">
           <button type="button" class="ops-btn" id="opsRigAssemble">assemble</button>
           <button type="button" class="ops-btn" id="opsRigMine">${state.mining ? "mine-stop" : "mine-start"}</button>
         </div>
-        <p class="ops-lead">Сборка: mobo+cpu+ram+gpu+psu+nic+(hdd|ssd). PSU должен тянуть GPU.</p>`;
+        <p class="ops-lead">Сборка: case+mobo+cpu+ram+psu+nic+(hdd|ssd)+GPU/iGPU. DDR и socket должны совпасть. Корпус ≥ форм-фактор платы.</p>`;
+      paintTower();
       document.getElementById("opsRigAssemble")?.addEventListener("click", tryAssemble);
       document.getElementById("opsRigMine")?.addEventListener("click", () => {
         if (state.mining) stopMine();
@@ -1890,7 +2176,7 @@
           ${(bySlot[slot] || []).map((item) => {
             const cur = state.parts[item.slot];
             const owned = cur === item.id;
-            return `<button type="button" class="ops-btn ${owned ? "ghost" : ""}" data-buy-part="${item.id}">${escapeHtml(item.name)} · $${item.price}${owned ? " · ON" : ""}</button>`;
+            return `<button type="button" class="ops-btn ${owned ? "ghost" : ""}" data-buy-part="${item.id}">${escapeHtml(item.name)} · $${item.price}${item.ddr ? ` · DDR${item.ddr}` : ""}${item.socket ? ` · ${item.socket}` : ""}${item.form ? ` · ${item.form}` : ""}${owned ? " · ON" : ""}</button>`;
           }).join("")}
         </div>`).join("");
       body.querySelectorAll("[data-buy-part]").forEach((btn) => {
@@ -1937,6 +2223,7 @@
       document.getElementById("opsLesson")?.classList.add("hidden");
       document.getElementById("opsDrill")?.classList.add("hidden");
       renderRig();
+      startTelemetry();
     }
   }
 
@@ -2073,7 +2360,11 @@
       return;
     }
     if (low === "status") {
-      appendOut(`$:${state.money} assembled:${state.assembled} mining:${state.mining} mined:${state.mined} rate:${mineRate()}`);
+      const t = computeTelemetry();
+      const sp = t.sp;
+      appendOut(
+        `$:${state.money} · ${state.assembled ? "ON" : "OPEN"} · ${sp.caseForm}/DDR${sp.ddr} ${sp.cores}c/${sp.ramGb}G gfx${sp.gpuEff} · load ${t.load}% cpu ${t.cpuT}° gpu ${t.gpuT}° · mine:${state.mining} rate:${mineRate()}`
+      );
       return;
     }
     if (low === "rate") {
@@ -2148,7 +2439,10 @@
       document.getElementById("opsLesson")?.classList.add("hidden");
       document.getElementById("opsDrill")?.classList.add("hidden");
       document.getElementById("opsRig")?.classList.add("hidden");
+      applyTermPin();
       renderChapter();
+      paintTower();
+      startTelemetry();
       setTimeout(() => e.input && e.input.focus(), 40);
     }
   }
@@ -2159,6 +2453,15 @@
 
     document.getElementById("opsStoryOpen")?.addEventListener("click", () => show(true));
     document.getElementById("opsRigOpen")?.addEventListener("click", () => showRig(true));
+    document.getElementById("opsStoryOpenRigMini")?.addEventListener("click", () => {
+      show(false);
+      showRig(true);
+    });
+    document.getElementById("opsStoryTermPin")?.addEventListener("click", () => {
+      state.termPinned = !state.termPinned;
+      save();
+      applyTermPin();
+    });
     document.getElementById("opsStoryBack")?.addEventListener("click", () => {
       show(false);
       document.getElementById("opsHub")?.classList.remove("hidden");
@@ -2185,7 +2488,9 @@
       stopMine();
       state = defaultState();
       save();
+      applyTermPin();
       renderChapter();
+      paintTower();
       renderRig();
     });
     e.continueBtn?.addEventListener("click", () => {
@@ -2226,6 +2531,9 @@
       }
     });
 
+    applyTermPin();
+    paintTower();
+    startTelemetry();
     if (state.mining && hasCap("mine")) startMine();
   }
 
@@ -2243,19 +2551,22 @@
         ...incoming,
         flags: incoming.flags || {},
         doneGoals: incoming.doneGoals || {},
-        parts: incoming.parts || {},
+        parts: migrateParts(incoming),
         servers: incoming.servers || {},
         notes: incoming.notes || [],
         skills: { linux: 0, net: 0, forensics: 0, defense: 0, devops: 0, ...(incoming.skills || {}) },
         opsXp: Number(incoming.opsXp) || 0,
         skillPts: Number(incoming.skillPts) || 0,
         eggs: incoming.eggs && typeof incoming.eggs === "object" ? incoming.eggs : {},
+        termPinned: !!incoming.termPinned,
       };
       try {
         localStorage.setItem(KEY, JSON.stringify(state));
       } catch { /* ignore */ }
+      applyTermPin();
       if (open) renderChapter();
       if (!document.getElementById("opsRig")?.classList.contains("hidden")) renderRig();
+      paintTower();
       renderChrome();
       renderRigMoney();
       if (state.mining && hasCap("mine")) startMine();
