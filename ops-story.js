@@ -368,10 +368,40 @@
       host: "local",
       cwd: "~",
       goals: [
-        { id: "upd", match: /^sudo\s+apt\s+update$/, out: "Get: lab mirrors… Done.", pay: 10 },
-        { id: "upg", match: /^sudo\s+apt\s+upgrade\s+-y$/, out: "0 upgraded (lab). System fresh.", pay: 12 },
-        { id: "ins", match: /^sudo\s+apt\s+install\s+curl\s+git\s+htop\s+net-tools$/, out: "Setting up curl git htop net-tools… done.", pay: 28 },
-        { id: "host", match: /^hostnamectl\s+set-hostname\s+neon-ops$/, out: "Static hostname: neon-ops", pay: 15 },
+        {
+          id: "upd",
+          match: /^sudo\s+apt(?:-get)?\s+update$/i,
+          out: "Get: lab mirrors… Done.",
+          pay: 10,
+          hintCmd: "sudo apt update",
+        },
+        {
+          id: "upg",
+          match: /^sudo\s+apt(?:-get)?\s+upgrade(?:\s+-y)?$/i,
+          out: "0 upgraded (lab). System fresh.",
+          pay: 12,
+          hintCmd: "sudo apt upgrade -y",
+        },
+        {
+          id: "ins",
+          match: (line) => {
+            const m = String(line).match(/^sudo\s+apt(?:-get)?\s+install\s+(.+)$/i);
+            if (!m) return false;
+            const want = ["curl", "git", "htop", "net-tools"];
+            const got = m[1].trim().toLowerCase().split(/\s+/).filter(Boolean).sort();
+            return got.length === want.length && got.join(" ") === want.slice().sort().join(" ");
+          },
+          out: "Setting up curl git htop net-tools… done.",
+          pay: 28,
+          hintCmd: "sudo apt install curl git htop net-tools",
+        },
+        {
+          id: "host",
+          match: /^hostnamectl\s+set-hostname\s+neon-ops$/i,
+          out: "Static hostname: neon-ops",
+          pay: 15,
+          hintCmd: "hostnamectl set-hostname neon-ops",
+        },
       ],
     },
     {
@@ -1495,7 +1525,9 @@
     } else if (ch.mode === "term") {
       if (e.term) e.term.classList.remove("hidden");
       updatePrompt();
-      appendOut(`session · ${ch.id} · type help`, "dim");
+      appendOut(`session · ${ch.id} · type help | hint`, "dim");
+      const next = nextOpenGoal(ch);
+      if (next) appendOut(`next: ${next.hintCmd || next.id}`, "ok");
     } else if (ch.mode === "garage") {
       if (e.term) e.term.classList.remove("hidden");
       if (e.garage) e.garage.classList.remove("hidden");
@@ -1608,10 +1640,82 @@
     return (ch.goals || []).every((g) => state.doneGoals[`${ch.id}:${g.id}`]);
   }
 
+  function normCmd(raw) {
+    return String(raw || "")
+      .replace(/\u00a0/g, " ")
+      .replace(/[–—]/g, "-")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function goalMatches(g, line) {
+    if (!g || !g.match) return false;
+    if (typeof g.match === "function") return !!g.match(line);
+    return g.match.test(line);
+  }
+
+  function nextOpenGoal(ch) {
+    return (ch.goals || []).find((g) => {
+      if (state.doneGoals[`${ch.id}:${g.id}`]) return false;
+      if (g.needFlag && !state.flags[g.needFlag]) return false;
+      return true;
+    }) || null;
+  }
+
+  function goalProgress(ch) {
+    const all = ch.goals || [];
+    if (!all.length) return "";
+    const done = all.filter((g) => state.doneGoals[`${ch.id}:${g.id}`]).length;
+    return `${done}/${all.length}`;
+  }
+
+  function linuxStyleHint(line, ch) {
+    const L = normCmd(line);
+    const low = L.toLowerCase();
+    const next = nextOpenGoal(ch);
+    const tips = [];
+
+    if (/^apt(\s|$)/i.test(L) && !/^sudo\s+/i.test(L)) {
+      tips.push("E: Could not open lock file — permission denied. Try: sudo …");
+    }
+    if (/^sudo\s+apt(\s|$)/i.test(L) && !/^sudo\s+apt(?:-get)?\s+/i.test(L)) {
+      tips.push("usage: sudo apt update | upgrade -y | install <pkgs>");
+    }
+    if (/apt\s+upgrade$/i.test(L) && !/-y\b/i.test(L) && next && next.id === "upg") {
+      tips.push("apt will wait for confirmation. In lab use: sudo apt upgrade -y");
+    }
+    if (/apt(?:-get)?\s+install\b/i.test(L) && next && next.id === "ins") {
+      const m = L.match(/install\s+(.+)$/i);
+      const got = m ? m[1].toLowerCase().split(/\s+/).filter(Boolean) : [];
+      const want = ["curl", "git", "htop", "net-tools"];
+      const missing = want.filter((p) => !got.includes(p));
+      const extra = got.filter((p) => !want.includes(p));
+      if (missing.length) tips.push(`E: need packages: ${missing.join(" ")}`);
+      if (extra.length) tips.push(`E: unexpected args: ${extra.join(" ")}`);
+    }
+    if (/hostnamectl/i.test(L) && !/set-hostname\s+neon-ops$/i.test(L)) {
+      tips.push("usage: hostnamectl set-hostname neon-ops");
+    }
+    if (/^sudo\s+apt-get\b/i.test(L)) {
+      tips.push("note: apt-get тоже ок в этой главе; проверь остаток команды.");
+    }
+    if (next && next.hintCmd) {
+      tips.push(`next step (${goalProgress(ch)}): ${next.hintCmd}`);
+    } else if (next && next.match && next.match instanceof RegExp) {
+      tips.push(`next step (${goalProgress(ch)}): смотри narrative / hint`);
+    }
+    if (!tips.length && next) {
+      tips.push(`command not found or not the next goal · try: hint`);
+    }
+    return tips;
+  }
+
   function markGoal(ch, g) {
     state.doneGoals[`${ch.id}:${g.id}`] = true;
     if (g.set) Object.assign(state.flags, g.set);
     if (g.pay) pay(g.pay, g.id);
+    const left = (ch.goals || []).filter((x) => !state.doneGoals[`${ch.id}:${x.id}`]).length;
+    if (left > 0) appendOut(`ok · goal ${g.id} · left ${left}`, "dim");
     save();
     if (goalsDone(ch)) {
       playActionFx("CHAPTER CLEAR", {
@@ -2321,7 +2425,7 @@
       const g = ch.goals[i];
       if (state.doneGoals[`${ch.id}:${g.id}`]) continue;
       if (g.needFlag && !state.flags[g.needFlag]) continue;
-      if (g.match.test(line)) {
+      if (goalMatches(g, line)) {
         playActionFx(g.out || "ok", {
           label: pick(LOAD_LABELS),
           after: () => {
@@ -2341,9 +2445,12 @@
   }
 
   function onCommand(raw) {
-    const line = String(raw || "").trim();
+    const line = normCmd(raw);
     if (!line) return;
-    if (animBusy) return;
+    if (animBusy) {
+      appendOut("…busy (wait for loader)", "dim");
+      return;
+    }
     appendOut(`${els().prompt ? els().prompt.textContent : ">"} ${line}`, "cmd");
 
     const low = line.toLowerCase();
@@ -2356,7 +2463,17 @@
       return;
     }
     if (low === "hint") {
-      appendOut(chapter().narrative.split("\n").slice(0, 3).join("\n"), "dim");
+      const ch = chapter();
+      const next = nextOpenGoal(ch);
+      appendOut(ch.narrative.split("\n").slice(0, 4).join("\n"), "dim");
+      if (ch.goals && ch.goals.length) {
+        appendOut(`progress ${goalProgress(ch)}`, "dim");
+        if (next) {
+          appendOut(`next: ${next.hintCmd || next.id}`, "ok");
+        } else {
+          appendOut("all goals done — wait CHAPTER CLEAR", "ok");
+        }
+      }
       return;
     }
     if (low === "status") {
@@ -2419,9 +2536,10 @@
       }
     }
 
-    // local soft echoes for flavor
-    if (/^sudo\s+apt\s+update/.test(line) || /^sudo\s+apt\s+install/.test(line)) {
-      playActionFx("ok (lab echo) — проверь точную цель главы", { label: "apt", cls: "dim", flavor: false });
+    const ch = chapter();
+    if (ch.mode === "term" && ch.goals) {
+      const tips = linuxStyleHint(line, ch);
+      tips.forEach((t) => appendOut(t, t.startsWith("next:") || t.startsWith("next step") ? "ok" : "bad"));
       return;
     }
 
