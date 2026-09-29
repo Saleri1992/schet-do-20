@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=57" />
+  <link rel="stylesheet" href="style.css?v=58" />
 </head>
 <body data-theme="easy">
   <div class="sky">
@@ -678,8 +678,15 @@
                   <div class="ops-story-out" id="opsStoryOut"></div>
                   <div class="ops-story-cmdline" id="opsStoryCmdline">
                     <span class="ops-story-prompt" id="opsStoryPrompt">ops@local:~$</span>
-                    <input id="opsStoryInput" class="ops-story-cmdline-input" type="text" inputmode="text" enterkeyhint="go" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+                    <input id="opsStoryInput" class="ops-story-cmdline-input" type="text" inputmode="none" enterkeyhint="go" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
                     <button type="button" class="ops-story-enter" id="opsStorySubmit" title="enter">↵</button>
+                  </div>
+                  <div class="ops-softkb hidden" id="opsStoryKb" aria-label="OPS keyboard">
+                    <div class="ops-softkb-bar">
+                      <span>OPS KEYS</span>
+                      <button type="button" class="ops-softkb-hide" id="opsStoryKbHide">hide</button>
+                    </div>
+                    <div class="ops-softkb-rows" id="opsStoryKbRows"></div>
                   </div>
                 </div>
               </div>
@@ -739,9 +746,16 @@
         <div class="ops-explain hidden" id="opsExplain"></div>
         <div class="ops-prompt-row">
           <span class="ops-prompt">&gt;</span>
-          <input id="opsInput" class="ops-input" type="text" autocomplete="off" spellcheck="false" autocapitalize="off" />
+          <input id="opsInput" class="ops-input" type="text" inputmode="none" autocomplete="off" spellcheck="false" autocapitalize="off" />
           <button type="button" class="ops-btn" id="opsHintBtn">hint</button>
           <button type="button" class="ops-btn" id="opsSubmit">enter</button>
+        </div>
+        <div class="ops-softkb hidden" id="opsDrillKb" aria-label="OPS keyboard">
+          <div class="ops-softkb-bar">
+            <span>OPS KEYS</span>
+            <button type="button" class="ops-softkb-hide" id="opsDrillKbHide">hide</button>
+          </div>
+          <div class="ops-softkb-rows" id="opsDrillKbRows"></div>
         </div>
         <div class="ops-log" id="opsLog" aria-live="polite"></div>
         <button type="button" class="ops-btn ghost" id="opsBackHub">← hub</button>
@@ -750,8 +764,8 @@
   </div>
 
   <script src="app.js?v=42"></script>
-  <script src="ops.js?v=13"></script>
-  <script src="ops-story.js?v=11"></script>
+  <script src="ops.js?v=14"></script>
+  <script src="ops-story.js?v=12"></script>
   <script src="ops-cloud.js?v=1"></script>
 </body>
 </html>

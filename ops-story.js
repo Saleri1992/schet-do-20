@@ -1652,6 +1652,7 @@
     renderChrome();
     applyTermPin();
     paintTower();
+    syncStorySoftKb();
     save();
   }
 
@@ -2970,6 +2971,7 @@
       paintTower();
       updateTelemetryHud();
       startTelemetry();
+      syncStorySoftKb();
       setTimeout(() => e.input && e.input.focus(), 40);
     }
   }
@@ -3061,8 +3063,214 @@
     applyTermPin();
     paintTower();
     startTelemetry();
-    if (state.mining && hasCap("mine")) startMine();
+    bindSoftKeyboards();
+    syncStorySoftKb();
+    if (state.mining && hasCap("mine") && isPcOn()) startMine();
   }
+
+  let kbShift = false;
+  let kbSym = false;
+  let kbForceShow = false;
+
+  const KB_ALPHA = [
+    ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "="],
+    ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
+    ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
+    ["⇧", "z", "x", "c", "v", "b", "n", "m", "⌫"],
+    ["123", "/", "_", ".", "space", "↵"],
+  ];
+  const KB_SYM = [
+    ["!", "@", "#", "$", "%", "^", "&", "*", "(", ")"],
+    ["-", "_", "=", "+", "[", "]", "{", "}", "\\", "|"],
+    [";", ":", "'", "\"", ",", ".", "<", ">", "?", "/"],
+    ["abc", "~", "`", "space", "⌫", "↵"],
+  ];
+
+  function useSoftKb() {
+    try {
+      return window.matchMedia("(max-width: 920px), (pointer: coarse)").matches || kbForceShow;
+    } catch {
+      return kbForceShow;
+    }
+  }
+
+  function kbInsertInto(input, ch) {
+    if (!input) return;
+    const start = input.selectionStart != null ? input.selectionStart : input.value.length;
+    const end = input.selectionEnd != null ? input.selectionEnd : start;
+    const v = input.value;
+    input.value = `${v.slice(0, start)}${ch}${v.slice(end)}`;
+    const pos = start + ch.length;
+    try { input.setSelectionRange(pos, pos); } catch { /* ignore */ }
+  }
+
+  function kbBackspace(input) {
+    if (!input) return;
+    const start = input.selectionStart != null ? input.selectionStart : input.value.length;
+    const end = input.selectionEnd != null ? input.selectionEnd : start;
+    if (start !== end) {
+      input.value = input.value.slice(0, start) + input.value.slice(end);
+      try { input.setSelectionRange(start, start); } catch { /* ignore */ }
+      return;
+    }
+    if (start <= 0) return;
+    input.value = input.value.slice(0, start - 1) + input.value.slice(start);
+    try { input.setSelectionRange(start - 1, start - 1); } catch { /* ignore */ }
+  }
+
+  function renderSoftKbRows(rowsEl, onKey) {
+    if (!rowsEl) return;
+    const layout = kbSym ? KB_SYM : KB_ALPHA;
+    rowsEl.innerHTML = layout.map((row) => `
+      <div class="ops-softkb-row">
+        ${row.map((key) => {
+          let cls = "ops-softkb-key";
+          let label = key;
+          if (key === "space") { cls += " wide"; label = "␣"; }
+          if (key === "⇧") { cls += kbShift ? " on" : ""; cls += " mod"; }
+          if (key === "123" || key === "abc") cls += " mod";
+          if (key === "⌫" || key === "↵") cls += " mod";
+          if (key.length === 1 && /[a-z]/.test(key) && kbShift && !kbSym) label = key.toUpperCase();
+          return `<button type="button" class="${cls}" data-kb="${escapeHtml(key)}">${escapeHtml(label)}</button>`;
+        }).join("")}
+      </div>`).join("");
+    rowsEl.querySelectorAll("[data-kb]").forEach((btn) => {
+      btn.addEventListener("pointerdown", (ev) => {
+        ev.preventDefault();
+        onKey(btn.dataset.kb);
+      });
+    });
+  }
+
+  function handleSoftKey(key, input, submitBtn) {
+    if (!input) return;
+    if (key === "⇧") {
+      kbShift = !kbShift;
+      syncStorySoftKb(true);
+      syncDrillSoftKb(true);
+      return;
+    }
+    if (key === "123") {
+      kbSym = true;
+      kbShift = false;
+      syncStorySoftKb(true);
+      syncDrillSoftKb(true);
+      return;
+    }
+    if (key === "abc") {
+      kbSym = false;
+      syncStorySoftKb(true);
+      syncDrillSoftKb(true);
+      return;
+    }
+    if (key === "⌫") {
+      kbBackspace(input);
+      return;
+    }
+    if (key === "↵") {
+      if (submitBtn) submitBtn.click();
+      return;
+    }
+    if (key === "space") {
+      kbInsertInto(input, " ");
+      return;
+    }
+    let ch = key;
+    if (!kbSym && kbShift && /^[a-z]$/.test(key)) ch = key.toUpperCase();
+    kbInsertInto(input, ch);
+    if (kbShift && !kbSym && /^[a-z]$/i.test(key)) {
+      kbShift = false;
+      syncStorySoftKb(true);
+      syncDrillSoftKb(true);
+    }
+  }
+
+  function syncStorySoftKb(keepLayout) {
+    const term = document.getElementById("opsStoryTerm");
+    const kb = document.getElementById("opsStoryKb");
+    const rows = document.getElementById("opsStoryKbRows");
+    const input = document.getElementById("opsStoryInput");
+    const submit = document.getElementById("opsStorySubmit");
+    if (!kb || !input) return;
+    const termOn = term && !term.classList.contains("hidden");
+    const want = termOn && useSoftKb();
+    kb.classList.toggle("hidden", !want);
+    if (want) {
+      input.setAttribute("readonly", "readonly");
+      input.setAttribute("inputmode", "none");
+      if (!keepLayout) {
+        kbShift = false;
+        kbSym = false;
+      }
+      renderSoftKbRows(rows, (key) => handleSoftKey(key, input, submit));
+    } else if (!useSoftKb()) {
+      input.removeAttribute("readonly");
+      input.setAttribute("inputmode", "text");
+    }
+  }
+
+  function syncDrillSoftKb(keepLayout) {
+    const drill = document.getElementById("opsDrill");
+    const kb = document.getElementById("opsDrillKb");
+    const rows = document.getElementById("opsDrillKbRows");
+    const input = document.getElementById("opsInput");
+    const submit = document.getElementById("opsSubmit");
+    if (!kb || !input) return;
+    const drillOn = drill && !drill.classList.contains("hidden");
+    const want = drillOn && useSoftKb();
+    kb.classList.toggle("hidden", !want);
+    if (want) {
+      input.setAttribute("readonly", "readonly");
+      input.setAttribute("inputmode", "none");
+      if (!keepLayout) {
+        kbShift = false;
+        kbSym = false;
+      }
+      renderSoftKbRows(rows, (key) => handleSoftKey(key, input, submit));
+    } else if (!useSoftKb()) {
+      input.removeAttribute("readonly");
+      input.removeAttribute("inputmode");
+    }
+  }
+
+  function bindSoftKeyboards() {
+    const storyInput = document.getElementById("opsStoryInput");
+    const drillInput = document.getElementById("opsInput");
+    const blockNative = (ev) => {
+      if (!useSoftKb()) return;
+      ev.preventDefault();
+      const el = ev.currentTarget;
+      try { el.focus({ preventScroll: true }); } catch { el.focus(); }
+      if (el.id === "opsStoryInput") syncStorySoftKb(true);
+      if (el.id === "opsInput") syncDrillSoftKb(true);
+    };
+    storyInput?.addEventListener("touchstart", blockNative, { passive: false });
+    drillInput?.addEventListener("touchstart", blockNative, { passive: false });
+    storyInput?.addEventListener("focus", () => { if (useSoftKb()) syncStorySoftKb(true); });
+    drillInput?.addEventListener("focus", () => { if (useSoftKb()) syncDrillSoftKb(true); });
+    document.getElementById("opsStoryKbHide")?.addEventListener("click", () => {
+      document.getElementById("opsStoryKb")?.classList.add("hidden");
+    });
+    document.getElementById("opsDrillKbHide")?.addEventListener("click", () => {
+      document.getElementById("opsDrillKb")?.classList.add("hidden");
+    });
+    document.getElementById("opsStoryCmdline")?.addEventListener("click", () => {
+      if (useSoftKb()) {
+        kbForceShow = true;
+        syncStorySoftKb(true);
+      }
+    });
+    window.addEventListener("resize", () => {
+      syncStorySoftKb(true);
+      syncDrillSoftKb(true);
+    });
+  }
+
+  window.OpsSoftKb = {
+    syncStory: syncStorySoftKb,
+    syncDrill: syncDrillSoftKb,
+    show: () => { kbForceShow = true; syncStorySoftKb(); syncDrillSoftKb(); },
+  };
 
   window.OpsStory = {
     open: () => show(true),

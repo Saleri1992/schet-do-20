@@ -1403,6 +1403,9 @@
     hidePanels();
     const e = els();
     if (e.drill) e.drill.classList.remove("hidden");
+    if (window.OpsSoftKb && typeof window.OpsSoftKb.syncDrill === "function") {
+      window.OpsSoftKb.syncDrill();
+    }
   }
 
   function showLesson() {
