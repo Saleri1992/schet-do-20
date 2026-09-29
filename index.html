@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=58" />
+  <link rel="stylesheet" href="style.css?v=60" />
 </head>
 <body data-theme="easy">
   <div class="sky">
@@ -677,8 +677,12 @@
                 <div class="ops-story-console">
                   <div class="ops-story-out" id="opsStoryOut"></div>
                   <div class="ops-story-cmdline" id="opsStoryCmdline">
-                    <span class="ops-story-prompt" id="opsStoryPrompt">ops@local:~$</span>
-                    <input id="opsStoryInput" class="ops-story-cmdline-input" type="text" inputmode="none" enterkeyhint="go" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+                    <div class="ops-story-cmd-wrap">
+                      <div class="ops-story-cmd-echo" id="opsStoryCmdEcho" aria-hidden="true">
+                        <span class="ops-story-prompt" id="opsStoryPrompt">ops@local:~$</span><span class="ops-story-typed" id="opsStoryTyped"></span><span class="ops-story-caret" id="opsStoryCaret">▌</span>
+                      </div>
+                      <textarea id="opsStoryInput" class="ops-story-cmdline-input" rows="2" inputmode="none" enterkeyhint="go" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="command"></textarea>
+                    </div>
                     <button type="button" class="ops-story-enter" id="opsStorySubmit" title="enter">↵</button>
                   </div>
                   <div class="ops-softkb hidden" id="opsStoryKb" aria-label="OPS keyboard">
@@ -765,7 +769,7 @@
 
   <script src="app.js?v=42"></script>
   <script src="ops.js?v=14"></script>
-  <script src="ops-story.js?v=12"></script>
+  <script src="ops-story.js?v=13"></script>
   <script src="ops-cloud.js?v=1"></script>
 </body>
 </html>

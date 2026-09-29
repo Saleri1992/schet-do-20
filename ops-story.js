@@ -1834,6 +1834,7 @@
     if (!e.prompt) return;
     const user = termHost === "remote" ? "admin" : termHost === "router" ? "router" : "ops";
     e.prompt.textContent = `${user}@${termHost}:${termCwd}$`;
+    syncCmdEcho();
   }
 
   function normPath(cwd, input) {
@@ -3051,15 +3052,17 @@
     document.getElementById("opsStorySubmit")?.addEventListener("click", () => {
       const v = e.input ? e.input.value : "";
       if (e.input) e.input.value = "";
+      syncCmdEcho();
       onCommand(v);
     });
+    e.input?.addEventListener("input", () => syncCmdEcho());
     e.input?.addEventListener("keydown", (ev) => {
       if (ev.key === "Enter") {
         ev.preventDefault();
         document.getElementById("opsStorySubmit")?.click();
       }
     });
-
+    syncCmdEcho();
     applyTermPin();
     paintTower();
     startTelemetry();
@@ -3094,6 +3097,15 @@
     }
   }
 
+  function syncCmdEcho() {
+    const input = document.getElementById("opsStoryInput");
+    const typed = document.getElementById("opsStoryTyped");
+    const echo = document.getElementById("opsStoryCmdEcho");
+    if (!typed || !input) return;
+    typed.textContent = input.value || "";
+    if (echo) echo.scrollTop = echo.scrollHeight;
+  }
+
   function kbInsertInto(input, ch) {
     if (!input) return;
     const start = input.selectionStart != null ? input.selectionStart : input.value.length;
@@ -3102,6 +3114,7 @@
     input.value = `${v.slice(0, start)}${ch}${v.slice(end)}`;
     const pos = start + ch.length;
     try { input.setSelectionRange(pos, pos); } catch { /* ignore */ }
+    if (input.id === "opsStoryInput") syncCmdEcho();
   }
 
   function kbBackspace(input) {
@@ -3111,11 +3124,13 @@
     if (start !== end) {
       input.value = input.value.slice(0, start) + input.value.slice(end);
       try { input.setSelectionRange(start, start); } catch { /* ignore */ }
+      if (input.id === "opsStoryInput") syncCmdEcho();
       return;
     }
     if (start <= 0) return;
     input.value = input.value.slice(0, start - 1) + input.value.slice(start);
     try { input.setSelectionRange(start - 1, start - 1); } catch { /* ignore */ }
+    if (input.id === "opsStoryInput") syncCmdEcho();
   }
 
   function renderSoftKbRows(rowsEl, onKey) {
