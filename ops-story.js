@@ -1144,6 +1144,25 @@
   let telemTimer = 0;
   let open = false;
   let animBusy = false;
+  let liveProcs = [];
+
+  function bumpProc(name, loadBonus, ms) {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    liveProcs.push({ id, name: String(name || "task").slice(0, 18), load: Number(loadBonus) || 10 });
+    updateTelemetryHud();
+    setTimeout(() => {
+      liveProcs = liveProcs.filter((p) => p.id !== id);
+      updateTelemetryHud();
+    }, Math.max(400, ms || 900));
+  }
+
+  function activeProcList() {
+    const list = liveProcs.map((p) => p.name);
+    if (state.mining) list.unshift("miner");
+    if (animBusy && !list.length) list.push("shell");
+    if (state.assembled && !list.length) list.push("init");
+    return list;
+  }
 
   function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -1235,21 +1254,28 @@
     const sp = computeSpecs();
     const cool = installedPart("cool");
     const coolN = cool ? (cool.boost || 1) * 9 : 0;
-    let load = 6 + sp.cores * 1.8 + Math.min(25, sp.ramGb * 0.35);
+    const procExtra = liveProcs.reduce((a, p) => a + (p.load || 0), 0);
+    const procs = activeProcList();
+    let load = 4 + sp.cores * 1.5 + Math.min(18, sp.ramGb * 0.28);
+    if (sp.ddr && sp.ddr <= 2) load += 6;
+    if (sp.ddr && sp.ddr <= 3) load += 2;
     if (state.mining) load += 28 + sp.gpu * 0.09;
-    if (animBusy) load += 12;
-    if (!state.assembled) load = Math.max(2, load * 0.25);
-    load = Math.round(Math.min(99, Math.max(1, load)));
-    let cpuT = 28 + load * 0.52 + (sp.cores > 8 ? 6 : 0) + (sp.ddr <= 2 ? 4 : 0) - coolN;
+    if (animBusy) load += 10;
+    load += Math.min(40, procExtra);
+    if (!state.assembled) load = Math.max(1, Math.round(load * 0.2));
+    load = Math.round(Math.min(99, Math.max(1, load + (Date.now() % 5) - 2)));
+    let cpuT = 28 + load * 0.52 + (sp.cores > 8 ? 6 : 0) + (sp.ddr <= 2 ? 5 : 0) - coolN;
     let gpuT = 26 + (state.mining ? 38 : 8) + sp.gpuEff * 0.11 - coolN * 0.55;
+    if (animBusy) cpuT += 4;
     if (!state.assembled) {
-      cpuT = 24;
-      gpuT = 22;
+      cpuT = 22 + Math.min(6, liveProcs.length);
+      gpuT = 21;
     }
     cpuT = Math.round(Math.min(105, Math.max(22, cpuT)));
     gpuT = Math.round(Math.min(110, Math.max(22, gpuT)));
-    const psuLoad = Math.round(Math.min(100, (sp.wattsNeed / Math.max(1, sp.psuW)) * 100));
-    return { load, cpuT, gpuT, psuLoad, sp };
+    const drawW = sp.wattsNeed + (state.mining ? Math.round(sp.gpu * 0.35) : 0) + (animBusy ? 25 : 0) + procExtra;
+    const psuLoad = Math.round(Math.min(100, (drawW / Math.max(1, sp.psuW || 1)) * 100));
+    return { load, cpuT, gpuT, psuLoad, sp, procs };
   }
 
   function skill(id) {
@@ -1360,10 +1386,12 @@
   async function animateLoader(label) {
     const e = els();
     if (!e.out) return;
+    const base = label || pick(LOAD_LABELS);
+    bumpProc(base, 14, 750);
+    updateTelemetryHud();
     const div = document.createElement("div");
     div.className = "ops-story-line dim ops-story-load";
     e.out.appendChild(div);
-    const base = label || pick(LOAD_LABELS);
     for (let i = 0; i < 7; i += 1) {
       div.textContent = `${base}${".".repeat((i % 3) + 1)}`;
       e.out.scrollTop = e.out.scrollHeight;
@@ -1382,6 +1410,7 @@
       return;
     }
     animBusy = true;
+    updateTelemetryHud();
     if (input) input.disabled = true;
     if (submit) submit.disabled = true;
     await animateLoader(label || pick(LOAD_LABELS));
@@ -1389,6 +1418,7 @@
     if (input) input.disabled = false;
     if (submit) submit.disabled = false;
     animBusy = false;
+    updateTelemetryHud();
     if (input) input.focus();
   }
 
@@ -1402,6 +1432,7 @@
       return;
     }
     animBusy = true;
+    updateTelemetryHud();
     if (input) input.disabled = true;
     if (submit) submit.disabled = true;
     await animateLoader(o.label || pick(LOAD_LABELS));
@@ -1412,6 +1443,7 @@
     if (input) input.disabled = false;
     if (submit) submit.disabled = false;
     animBusy = false;
+    updateTelemetryHud();
     if (input) input.focus();
   }
 
@@ -2091,6 +2123,7 @@
     const rate = mineRate();
     playActionFx(`MINER ONLINE · +$${rate} / 4s`, { label: "hash" });
     rigLog(`mining +$${rate}/4s`);
+    updateTelemetryHud();
     if (mineTimer) clearInterval(mineTimer);
     mineTimer = setInterval(() => {
       if (!state.mining) return;
@@ -2100,6 +2133,7 @@
       save();
       renderChrome();
       renderRigMoney();
+      updateTelemetryHud();
     }, 4000);
   }
 
@@ -2172,9 +2206,48 @@
     const mon = document.getElementById("opsMonTelemetry");
     if (mon) {
       mon.textContent = state.assembled
-        ? `load ${t.load}% · cpu ${t.cpuT}° · gpu ${t.gpuT}° · psu ${t.psuLoad}%`
-        : `chassis open · parts loose · assemble to boot`;
+        ? `load ${t.load}% · cpu ${t.cpuT}° · gpu ${t.gpuT}°`
+        : `off · assemble in Rig`;
+      mon.classList.toggle("hot", t.load >= 75 || t.cpuT >= 85);
+      mon.classList.toggle("warm", t.load >= 45 && t.load < 75);
     }
+
+    const hw = document.getElementById("opsMissionHw");
+    if (hw) {
+      const sp = t.sp;
+      hw.textContent = state.assembled
+        ? `${(sp.caseForm || "pc").toUpperCase()} · ${sp.cores || 0}c · DDR${sp.ddr || "?"} ${sp.ramGb || 0}G · gfx ${sp.gpuEff || 0} · PSU ${sp.psuW || 0}W`
+        : `scrap parts · not assembled · Rig → assemble`;
+    }
+
+    const setBar = (key, pct, label, heat) => {
+      const row = document.querySelector(`.ops-mission-bar[data-k="${key}"]`);
+      if (!row) return;
+      const fill = row.querySelector("i");
+      const val = row.querySelector("b");
+      const p = Math.max(0, Math.min(100, pct));
+      if (fill) fill.style.width = `${p}%`;
+      if (val) val.textContent = label;
+      row.classList.remove("cool", "warm", "hot");
+      if (heat) row.classList.add(heat);
+    };
+    setBar("load", t.load, `${t.load}%`, t.load >= 80 ? "hot" : t.load >= 50 ? "warm" : "cool");
+    setBar("cpu", Math.min(100, (t.cpuT - 20) * 1.1), `${t.cpuT}°`, heatClass(t.cpuT));
+    setBar("gpu", Math.min(100, (t.gpuT - 20) * 1.1), `${t.gpuT}°`, heatClass(t.gpuT));
+    setBar("psu", t.psuLoad, `${t.psuLoad}%`, t.psuLoad >= 85 ? "hot" : t.psuLoad >= 60 ? "warm" : "cool");
+
+    const procs = document.getElementById("opsMissionProcs");
+    if (procs) {
+      const names = t.procs && t.procs.length ? t.procs : [state.assembled ? "idle" : "halt"];
+      procs.innerHTML = names.map((n) => `<span class="ops-proc">${escapeHtml(n)}</span>`).join("");
+    }
+
+    const panel = document.getElementById("opsMissionLoad");
+    if (panel) {
+      panel.classList.toggle("busy", !!(animBusy || state.mining || liveProcs.length));
+      panel.classList.toggle("off", !state.assembled);
+    }
+
     document.querySelectorAll(".ops-case-telem").forEach((el) => {
       el.innerHTML = `
         <span>LOAD ${t.load}%</span>
@@ -2560,6 +2633,7 @@
       applyTermPin();
       renderChapter();
       paintTower();
+      updateTelemetryHud();
       startTelemetry();
       setTimeout(() => e.input && e.input.focus(), 40);
     }

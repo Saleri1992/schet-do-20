@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=54" />
+  <link rel="stylesheet" href="style.css?v=55" />
 </head>
 <body data-theme="easy">
   <div class="sky">
@@ -650,6 +650,16 @@
               <span class="ops-monitor-brand">NEON CRT</span>
               <span class="ops-monitor-telem" id="opsMonTelemetry">load — · cpu —° · gpu —°</span>
             </div>
+            <div class="ops-mission-load" id="opsMissionLoad" aria-live="polite">
+              <div class="ops-mission-hw" id="opsMissionHw">—</div>
+              <div class="ops-mission-bars">
+                <div class="ops-mission-bar" data-k="load"><span>LOAD</span><i></i><b id="opsLoadPct">0%</b></div>
+                <div class="ops-mission-bar" data-k="cpu"><span>CPU°</span><i></i><b id="opsCpuTemp">—</b></div>
+                <div class="ops-mission-bar" data-k="gpu"><span>GPU°</span><i></i><b id="opsGpuTemp">—</b></div>
+                <div class="ops-mission-bar" data-k="psu"><span>PSU</span><i></i><b id="opsPsuPct">—</b></div>
+              </div>
+              <div class="ops-mission-procs" id="opsMissionProcs">idle</div>
+            </div>
             <div class="ops-monitor-screen">
               <p class="ops-story-nar" id="opsStoryNarrative">—</p>
               <ul class="ops-story-notes" id="opsStoryNotes"></ul>
@@ -740,7 +750,7 @@
 
   <script src="app.js?v=42"></script>
   <script src="ops.js?v=12"></script>
-  <script src="ops-story.js?v=8"></script>
+  <script src="ops-story.js?v=9"></script>
   <script src="ops-cloud.js?v=1"></script>
 </body>
 </html>
