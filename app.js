@@ -568,6 +568,18 @@ const UNIT_LEVELS = {
     balloons: ["⚖️", "📏", "⚖️"],
     subtitle: "Что больше по длине? Ответ: 1, 2 или 0 если равно. Сначала таблица 10 сек.",
   },
+  5: {
+    id: 5,
+    name: "Деньги",
+    theme: "units",
+    coin: 4,
+    limit: null,
+    units: "convert",
+    convert: "money",
+    introKind: "money",
+    balloons: ["🪙", "₽", "💵"],
+    subtitle: "Копейки и рубли: 1 руб = 100 коп. Купюры 1, 2, 5, 10, 50, 100, 500, 1000, 2000, 5000.",
+  },
 };
 
 /** Умножение — своя лестница, не как База/Хард. */
@@ -720,15 +732,16 @@ const MODE_META = {
     id: MODE_UNITS,
     name: "Меры",
     unlockText: "Единицы измерения",
-    maxLevel: 4,
-    levelNames: ["Составные", "Метры", "Через единицы", "Сравнение"],
+    maxLevel: 5,
+    levelNames: ["Составные", "Метры", "Через единицы", "Сравнение", "Деньги"],
     levelDescs: [
       "Составные и простые ×10 + обратно (два поля)",
       "Составные с метрами: 1 м = 100 см + обратно",
       "Простые переводы с напоминалкой: мм=см, см=дм, м=см",
       "Сравни длины: 1 / 2 / 0=равно",
+      "Копейки и рубли + купюры 1…5000",
     ],
-    themes: ["units", "units", "units", "unitsCmp"],
+    themes: ["units", "units", "units", "unitsCmp", "units"],
   },
   [MODE_MUL]: {
     id: MODE_MUL,
@@ -2235,6 +2248,7 @@ const ACHIEVEMENTS = [
   { id: "units_meters", icon: "🏠", name: "Метры", desc: "10/10 на этапе «Метры»", check: (s) => stateHasPerfect(s, MODE_UNITS, 2), progress: (s) => ({ current: stateHasPerfect(s, MODE_UNITS, 2) ? 10 : (s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_UNITS && r.level === 2).reduce((m, r) => Math.max(m, r.correct || 0), 0)), target: 10 }) },
   { id: "units_simple", icon: "🧠", name: "Через единицы", desc: "10/10 на простых переводах", check: (s) => stateHasPerfect(s, MODE_UNITS, 3), progress: (s) => ({ current: stateHasPerfect(s, MODE_UNITS, 3) ? 10 : (s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_UNITS && r.level === 3).reduce((m, r) => Math.max(m, r.correct || 0), 0)), target: 10 }) },
   { id: "units_compare", icon: "⚖️", name: "Весы", desc: "10/10 на сравнении мер", check: (s) => stateHasPerfect(s, MODE_UNITS, 4), progress: (s) => ({ current: stateHasPerfect(s, MODE_UNITS, 4) ? 10 : (s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_UNITS && r.level === 4).reduce((m, r) => Math.max(m, r.correct || 0), 0)), target: 10 }) },
+  { id: "units_money", icon: "🪙", name: "Кошелёк", desc: "10/10 на «Деньги»", check: (s) => stateHasPerfect(s, MODE_UNITS, 5), progress: (s) => ({ current: stateHasPerfect(s, MODE_UNITS, 5) ? 10 : (s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_UNITS && r.level === 5).reduce((m, r) => Math.max(m, r.correct || 0), 0)), target: 10 }) },
   { id: "mul_easy", icon: "💡", name: "Понял суть", desc: "10/10 на этапе «Суть» умножения", check: (s) => stateHasPerfect(s, MODE_MUL, 1), progress: (s) => ({ current: stateHasPerfect(s, MODE_MUL, 1) ? 10 : (s.runs.filter((r) => r.mode === MODE_MUL && (r.level || 1) === 1).reduce((m, r) => Math.max(m, r.correct || 0), 0)), target: 10 }) },
   { id: "mul_table", icon: "2️⃣", name: "Двойки и тройки", desc: "10/10 на этапе «×2 и ×3»", check: (s) => stateHasPerfect(s, MODE_MUL, 2), progress: (s) => ({ current: stateHasPerfect(s, MODE_MUL, 2) ? 10 : (s.runs.filter((r) => r.mode === MODE_MUL && r.level === 2).reduce((m, r) => Math.max(m, r.correct || 0), 0)), target: 10 }) },
   { id: "mul_hard", icon: "🎲", name: "Смешанный мастер", desc: "10/10 на этапе «Смешанно»", check: (s) => stateHasPerfect(s, MODE_MUL, 5), progress: (s) => ({ current: stateHasPerfect(s, MODE_MUL, 5) ? 10 : (s.runs.filter((r) => r.mode === MODE_MUL && r.level === 5).reduce((m, r) => Math.max(m, r.correct || 0), 0)), target: 10 }) },
@@ -3806,7 +3820,7 @@ function secretGateNeeds() {
   }
   for (let l = 1; l <= 5; l += 1) need.push({ mode: MODE_MUL, level: l });
   for (let l = 1; l <= 5; l += 1) need.push({ mode: MODE_DIV, level: l });
-  for (let l = 1; l <= 4; l += 1) need.push({ mode: MODE_UNITS, level: l });
+  for (let l = 1; l <= 5; l += 1) need.push({ mode: MODE_UNITS, level: l });
   return need;
 }
 
@@ -3924,7 +3938,7 @@ function equippedBattleRelic() {
 
 function battleRoundsForMode(mode = selectedMode, battleId = selectedLevel) {
   let all;
-  if (mode === MODE_UNITS) all = [1, 2, 3, 4];
+  if (mode === MODE_UNITS) all = [1, 2, 3, 4, 5];
   else if (mode === MODE_CODE) all = [1, 2, 3, 4, 5, 6, 7, 8, 9];
   else if (mode === MODE_ENG) all = [1, 2, 3, 4, 5, 6, 7];
   else if (mode === MODE_MUL || mode === MODE_DIV) all = [1, 2, 3, 4, 5];
@@ -3944,7 +3958,7 @@ function isBossOpen(id = BATTLE_LEVEL) {
   const bid = Number(id);
   if (!isBattleLevel(bid)) return false;
   const allReady = (selectedMode === MODE_UNITS
-    ? [1, 2, 3, 4]
+    ? [1, 2, 3, 4, 5]
     : [1, 2, 3, 4, 5]
   ).every((lvl) => hasPerfect(lvl));
   if (bid === 7) return allReady;
@@ -4069,6 +4083,7 @@ function mapLayoutForMode(mode = selectedMode) {
       { id: 2, kind: "level", col: 4, row: 1 },
       { id: 3, kind: "level", col: 3, row: 2 },
       { id: 4, kind: "level", col: 1, row: 3 },
+      { id: 5, kind: "level", col: 5, row: 3 },
       { id: 7, kind: "boss", col: 2, row: 4 },
       { id: 8, kind: "boss", col: 4, row: 5 },
       { id: 9, kind: "boss", col: 3, row: 6 },
@@ -4563,7 +4578,97 @@ function generateLengthCompare() {
   };
 }
 
+function generateMoneyConvert() {
+  // 1 руб = 100 коп. Номиналы: 1, 2, 5, 10, 50, 100, 500, 1000, 2000, 5000.
+  const NOTES = [1, 2, 5, 10, 50, 100, 500, 1000, 2000, 5000];
+  const mkMulti = (totalText, parts) => ({
+    text: totalText,
+    multi: true,
+    parts,
+    answerLabel: parts.map((p) => `${p.answer} ${p.unit}`).join(" "),
+  });
+  const pool = [
+    () => ({ text: "1 руб = ? коп", answer: 100 }),
+    () => ({ text: "100 коп = ? руб", answer: 1 }),
+    () => {
+      const n = rand(2, 9);
+      return { text: `${n} руб = ? коп`, answer: n * 100 };
+    },
+    () => {
+      const n = rand(2, 9);
+      return { text: `${n * 100} коп = ? руб`, answer: n };
+    },
+    () => {
+      const rub = rand(1, 9);
+      const kop = rand(1, 99);
+      return { text: `${rub} руб ${kop} коп = ? коп`, answer: rub * 100 + kop };
+    },
+    () => {
+      const rub = rand(1, 9);
+      const kop = rand(1, 99);
+      return mkMulti(`${rub * 100 + kop} коп = ? руб ? коп`, [
+        { unit: "руб", answer: rub },
+        { unit: "коп", answer: kop },
+      ]);
+    },
+    () => {
+      const note = NOTES[rand(0, NOTES.length - 1)];
+      return { text: `Купюра ${note} руб = ? коп`, answer: note * 100 };
+    },
+    () => {
+      // Сумма двух купюр
+      let a = NOTES[rand(0, 5)];
+      let b = NOTES[rand(0, 5)];
+      if (a === b && Math.random() < 0.5) b = NOTES[rand(0, 5)];
+      return { text: `${a} руб + ${b} руб = ? руб`, answer: a + b };
+    },
+    () => {
+      const note = NOTES[rand(0, 4)];
+      const n = rand(2, 5);
+      return { text: `${n} купюры по ${note} руб = ? руб`, answer: n * note };
+    },
+    () => {
+      // Что больше — две купюры
+      let a = NOTES[rand(0, NOTES.length - 1)];
+      let b = NOTES[rand(0, NOTES.length - 1)];
+      let guard = 0;
+      while (a === b && guard < 20) {
+        b = NOTES[rand(0, NOTES.length - 1)];
+        guard += 1;
+      }
+      const answer = a === b ? 0 : a > b ? 1 : 2;
+      return {
+        text: `Что больше?\n1) ${a} руб\n2) ${b} руб\n(0 = равно)`,
+        answer,
+        compare: true,
+      };
+    },
+    () => {
+      const idx = rand(0, NOTES.length - 1);
+      const note = NOTES[idx];
+      // сколько таких купюр в следующей крупной — только простые случаи
+      if (note >= 1000) {
+        return { text: `Купюра ${note} руб. Сколько это копеек?`, answer: note * 100 };
+      }
+      const bigger = NOTES.find((n) => n === note * 2) || NOTES.find((n) => n === note * 5) || NOTES.find((n) => n > note);
+      if (bigger && bigger % note === 0) {
+        return { text: `Сколько купюр по ${note} руб нужно, чтобы набрать ${bigger} руб?`, answer: bigger / note };
+      }
+      return { text: `${note} руб = ? коп`, answer: note * 100 };
+    },
+    () => {
+      // Сдача: купил за X, дал купюру Y
+      const price = rand(1, 9) * 10;
+      const payOptions = NOTES.filter((n) => n > price && n <= 500);
+      const pay = payOptions[rand(0, Math.max(0, payOptions.length - 1))] || 100;
+      return { text: `Товар ${price} руб, дали ${pay} руб. Сдача = ? руб`, answer: pay - price };
+    },
+  ];
+  return pool[rand(0, pool.length - 1)]();
+}
+
 function generateUnitsConvert(kind = "compound10") {
+  if (kind === "money") return generateMoneyConvert();
   return generateLengthConvert(kind);
 }
 
@@ -5756,8 +5861,8 @@ function renderHome() {
   } else if (selectedMode === MODE_UNITS) {
     if (!isLevelOpen(1)) {
       els.unlockHint.textContent = "Меры откроются после 10/10 на «Сложный» (База или 2 действия).";
-    } else if (!isLevelOpen(4)) {
-      const next = [2, 3, 4].find((id) => !isLevelOpen(id));
+    } else if (!isLevelOpen(5)) {
+      const next = [2, 3, 4, 5].find((id) => !isLevelOpen(id));
       const prev = next - 1;
       els.unlockHint.textContent = `10/10 на «${modeInfo.levelNames[prev - 1]}» откроет «${modeInfo.levelNames[next - 1]}»`;
     } else if (!isBossOpen(7)) {
@@ -5940,6 +6045,15 @@ function showUnitsIntro(level = selectedLevel) {
             <li>1 см = 10 мм</li>
           </ul>
           <p class="units-note">Ответ: 1, 2 или 0 если равно.</p>`;
+      } else if (kind === "money") {
+        bodyEl.innerHTML = `
+          <h3>Деньги</h3>
+          <ul>
+            <li>1 рубль = 100 копеек</li>
+            <li>Монеты/купюры: 1 · 2 · 5 · 10 · 50</li>
+            <li>Купюры: 100 · 500 · 1000 · 2000 · 5000</li>
+          </ul>
+          <p class="units-note">Пример: 3 руб 25 коп = 325 коп. Сдача и сумма купюр — целые числа.</p>`;
       } else {
         bodyEl.innerHTML = `
           <h3>Только ×10</h3>
