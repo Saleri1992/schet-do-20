@@ -348,9 +348,9 @@
       id: "intro",
       title: "PROLOGUE · neon freelancers",
       narrative:
-        "Неоновый район Grid-7. На столе — раздолбанный mATX: старый C2D + DDR2, детали в корпусе, но ещё не собраны.\n" +
-        "Это ИСТОРИЯ-СИМУЛЯТОР: учебный терминал на мониторе + железо справа (Rig).\n" +
-        "План: собрать этот ящик → поставить Linux на него → заказы → инцидент → контракты → апгрейд DDR/CPU/GPU.",
+        "Неоновый район Grid-7. На столе scrap mATX (C2D + DDR2) — детали УЖЕ в Rig, assemble бесплатно, потом POWER.\n" +
+        "Деньги на апгрейд зарабатываются drills на хабе (не сюжет).\n" +
+        "Сюжет: собрать/включить ящик → Linux → заказы → инцидент → контракты.",
       mode: "continue",
       reward: 25,
     },
@@ -358,12 +358,15 @@
       id: "linux",
       title: "CH.01 · bootstrap linux",
       narrative:
-        "Цель: поднять Linux именно на этом scrap-ПК (C2D / DDR2).\n" +
-        "Если ещё не собрал — Rig → assemble (или команда assemble).\n" +
-        "1) sudo apt update\n" +
-        "2) sudo apt upgrade -y\n" +
-        "3) sudo apt install curl git htop net-tools\n" +
-        "4) hostnamectl set-hostname neon-ops",
+        "Цель: Linux на scrap-ПК.\n" +
+        "1) Rig → assemble (бесплатно, kit уже стоит)\n" +
+        "2) POWER ON\n" +
+        "3) команды:\n" +
+        "   sudo apt update\n" +
+        "   sudo apt upgrade -y\n" +
+        "   sudo apt install curl git htop net-tools\n" +
+        "   hostnamectl set-hostname neon-ops\n" +
+        "Мало $? → hub → drills.",
       mode: "term",
       host: "local",
       cwd: "~",
@@ -1061,13 +1064,17 @@
   function defaultState() {
     return {
       chapter: 0,
-      money: 55,
+      money: 25,
       doneGoals: {},
       flags: {},
-      notes: ["Scrap PC: C2D + DDR2 · assemble в Rig"],
+      notes: [
+        "Scrap-kit уже в слотах Rig · assemble бесплатно",
+        "Деньги на апгрейд: drills на хабе (не сюжет)",
+      ],
       parts: { ...STARTER_PARTS },
       servers: {},
       assembled: false,
+      powered: false,
       mining: false,
       mined: 0,
       quizIndex: 0,
@@ -1121,7 +1128,9 @@
         skillPts: Number(raw.skillPts) || 0,
         eggs: raw.eggs && typeof raw.eggs === "object" ? raw.eggs : {},
         termPinned: !!raw.termPinned,
-        money: raw.money != null ? Number(raw.money) : 55,
+        money: raw.money != null ? Number(raw.money) : 25,
+        assembled: !!raw.assembled,
+        powered: !!(raw.assembled && raw.powered),
       };
     } catch {
       return defaultState();
@@ -1157,10 +1166,11 @@
   }
 
   function activeProcList() {
+    if (!isPcOn()) return [];
     const list = liveProcs.map((p) => p.name);
     if (state.mining) list.unshift("miner");
     if (animBusy && !list.length) list.push("shell");
-    if (state.assembled && !list.length) list.push("init");
+    if (!list.length) list.push("init");
     return list;
   }
 
@@ -1250,8 +1260,23 @@
     return s;
   }
 
+  function isPcOn() {
+    return !!(state.assembled && state.powered);
+  }
+
   function computeTelemetry() {
     const sp = computeSpecs();
+    if (!isPcOn()) {
+      return {
+        load: 0,
+        cpuT: 0,
+        gpuT: 0,
+        psuLoad: 0,
+        sp,
+        procs: [],
+        offline: true,
+      };
+    }
     const cool = installedPart("cool");
     const coolN = cool ? (cool.boost || 1) * 9 : 0;
     const procExtra = liveProcs.reduce((a, p) => a + (p.load || 0), 0);
@@ -1262,20 +1287,15 @@
     if (state.mining) load += 28 + sp.gpu * 0.09;
     if (animBusy) load += 10;
     load += Math.min(40, procExtra);
-    if (!state.assembled) load = Math.max(1, Math.round(load * 0.2));
     load = Math.round(Math.min(99, Math.max(1, load + (Date.now() % 5) - 2)));
     let cpuT = 28 + load * 0.52 + (sp.cores > 8 ? 6 : 0) + (sp.ddr <= 2 ? 5 : 0) - coolN;
     let gpuT = 26 + (state.mining ? 38 : 8) + sp.gpuEff * 0.11 - coolN * 0.55;
     if (animBusy) cpuT += 4;
-    if (!state.assembled) {
-      cpuT = 22 + Math.min(6, liveProcs.length);
-      gpuT = 21;
-    }
     cpuT = Math.round(Math.min(105, Math.max(22, cpuT)));
     gpuT = Math.round(Math.min(110, Math.max(22, gpuT)));
     const drawW = sp.wattsNeed + (state.mining ? Math.round(sp.gpu * 0.35) : 0) + (animBusy ? 25 : 0) + procExtra;
     const psuLoad = Math.round(Math.min(100, (drawW / Math.max(1, sp.psuW || 1)) * 100));
-    return { load, cpuT, gpuT, psuLoad, sp, procs };
+    return { load, cpuT, gpuT, psuLoad, sp, procs, offline: false };
   }
 
   function skill(id) {
@@ -1818,7 +1838,7 @@
     return [
       "help · clear · pwd · ls [path] · cd [path] · cat <file>",
       "grep <pat> <file> · find <name> · shop · buy <id> · inv",
-      "assemble · mine-start · mine-stop · status · hint",
+      "assemble · power · mine-start · mine-stop · status · hint",
       termHost === "router" ? `track ${HOST_IP}` : "",
       termHost === "remote" ? `unlock-vault <pass>` : "",
     ].filter(Boolean).join("\n");
@@ -2007,14 +2027,17 @@
     state.money -= item.price;
     state.parts[item.slot] = item.id;
     state.assembled = false;
+    state.powered = false;
+    if (state.mining) stopMine();
     ejectIncompatible(item);
     playActionFx(`INSTALLED ${item.name}`, { label: "mount" });
-    rigLog(`bought ${item.name}`);
+    rigLog(`bought ${item.name} · нужно снова assemble + POWER`);
     save();
     renderShop();
     renderChrome();
     renderRig();
     paintTower();
+    updateTelemetryHud();
   }
 
   function buyServer(id) {
@@ -2087,15 +2110,42 @@
       return;
     }
     state.assembled = true;
-    pay(25, "assemble bonus");
+    state.powered = false;
+    if (state.mining) stopMine();
+    pay(15, "assemble bonus");
     playActionFx(
-      `PC ONLINE · ${sp.caseForm.toUpperCase()} · ${sp.cores}c/DDR${sp.ddr} ${sp.ramGb}G · gfx${sp.gpuEff} · rate ${mineRate()}`,
-      { label: "boot" }
+      `ASSEMBLED · ${sp.caseForm.toUpperCase()} · ${sp.cores}c/DDR${sp.ddr} ${sp.ramGb}G · gfx${sp.gpuEff} · нажми POWER`,
+      { label: "mount" }
     );
-    addNote(`Workstation ${sp.caseForm} · DDR${sp.ddr} online`);
+    addNote(`Workstation ${sp.caseForm} · DDR${sp.ddr} assembled · POWER to boot`);
+    rigLog("assembled · press POWER");
     save();
     renderRig();
     paintTower();
+    updateTelemetryHud();
+  }
+
+  function togglePower() {
+    if (!state.assembled) {
+      appendOut("сначала assemble (scrap-kit уже в слотах)", "bad");
+      rigLog("assemble first");
+      return;
+    }
+    state.powered = !state.powered;
+    if (!state.powered) {
+      if (state.mining) stopMine();
+      liveProcs = [];
+      playActionFx("POWER OFF", { label: "halt", flavor: false, cls: "dim" });
+      rigLog("POWER OFF");
+    } else {
+      playActionFx("POWER ON · boot ok", { label: "boot" });
+      bumpProc("init", 8, 1200);
+      rigLog("POWER ON");
+    }
+    save();
+    renderRig();
+    paintTower();
+    updateTelemetryHud();
   }
 
   function mineRate() {
@@ -2111,7 +2161,11 @@
 
   function startMine() {
     if (!hasCap("mine")) {
-      appendOut("нужен CAP mine (собрать ПК с GPU)", "bad");
+      appendOut("нужен CAP mine (собрать ПК с GPU≥60)", "bad");
+      return;
+    }
+    if (!isPcOn()) {
+      appendOut("PC powered off · POWER ON", "bad");
       return;
     }
     if (state.mining) {
@@ -2147,27 +2201,30 @@
     const t = computeTelemetry();
     const sp = t.sp;
     const form = sp.caseForm || "matx";
+    const on = isPcOn();
     const assembled = !!state.assembled;
     const chip = (slot, x, y, w, h) => {
       const p = installedPart(slot);
-      const on = !!p;
+      const has = !!p;
       const heat =
+        !on ? "cool" :
         slot === "cpu" ? heatClass(t.cpuT) : slot === "gpu" ? heatClass(t.gpuT) : slot === "psu" ? (t.psuLoad > 80 ? "hot" : t.psuLoad > 55 ? "warm" : "cool") : "cool";
       const label = p ? escapeHtml(p.name.replace(/^[^·]*·/, "").slice(0, 14)) : slot;
-      return `<div class="ops-chip ${on ? "on" : "off"} ${on ? heat : ""} ${assembled && on ? "live" : ""}" data-slot="${slot}" style="left:${x}%;top:${y}%;width:${w}%;height:${h}%">
+      return `<div class="ops-chip ${has ? "on" : "off"} ${has ? heat : ""} ${on && has ? "live" : ""}" data-slot="${slot}" style="left:${x}%;top:${y}%;width:${w}%;height:${h}%">
         <span class="ops-chip-slot">${slot}</span>
         <strong>${label}</strong>
       </div>`;
     };
-    const power = assembled
+    const power = on
       ? `<path class="ops-trace power" d="M18 18 L18 42 M18 42 L42 42 M18 42 L42 58 M18 78 L42 78 M18 78 L70 78"/>`
       : `<path class="ops-trace power dim" d="M18 18 L18 42 L42 42"/>`;
-    const data = assembled
+    const data = on
       ? `<path class="ops-trace data" d="M50 28 L72 28 M50 28 L50 48 L72 48 M50 48 L50 68 L78 68"/>`
       : `<path class="ops-trace data dim" d="M50 28 L60 28"/>`;
+    const badge = !assembled ? "OPEN CHASSIS" : on ? "PWR ON" : "PWR OFF";
     return `
-      <div class="ops-case ops-case--${form} ${assembled ? "powered" : "open"}">
-        <div class="ops-case-badge">${form.toUpperCase()} · ${assembled ? "PWR ON" : "OPEN CHASSIS"}</div>
+      <div class="ops-case ops-case--${form} ${on ? "powered" : assembled ? "assembled" : "open"}">
+        <div class="ops-case-badge">${form.toUpperCase()} · ${badge}</div>
         <div class="ops-pcb">
           <svg class="ops-pcb-traces" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
             ${power}${data}
@@ -2184,10 +2241,12 @@
           ${chip("case", 4, 88, 92, 10)}
         </div>
         <div class="ops-case-telem">
-          <span>LOAD ${t.load}%</span>
+          ${on
+            ? `<span>LOAD ${t.load}%</span>
           <span class="${heatClass(t.cpuT)}">CPU ${t.cpuT}°</span>
           <span class="${heatClass(t.gpuT)}">GPU ${t.gpuT}°</span>
-          <span>PSU ${t.psuLoad}%</span>
+          <span>PSU ${t.psuLoad}%</span>`
+            : `<span>${assembled ? "standby · POWER OFF" : "not assembled"}</span>`}
         </div>
       </div>`;
   }
@@ -2203,21 +2262,40 @@
 
   function updateTelemetryHud() {
     const t = computeTelemetry();
+    const on = isPcOn();
+    const panel = document.getElementById("opsMissionLoad");
+    if (panel) {
+      panel.classList.toggle("hidden", !on);
+      panel.classList.toggle("busy", !!(on && (animBusy || state.mining || liveProcs.length)));
+      panel.classList.toggle("off", !on);
+    }
+
     const mon = document.getElementById("opsMonTelemetry");
     if (mon) {
-      mon.textContent = state.assembled
-        ? `load ${t.load}% · cpu ${t.cpuT}° · gpu ${t.gpuT}°`
-        : `off · assemble in Rig`;
-      mon.classList.toggle("hot", t.load >= 75 || t.cpuT >= 85);
-      mon.classList.toggle("warm", t.load >= 45 && t.load < 75);
+      if (!state.assembled) {
+        mon.textContent = "off · Rig → assemble (free scrap)";
+        mon.classList.remove("warm", "hot");
+      } else if (!state.powered) {
+        mon.textContent = "standby · POWER OFF";
+        mon.classList.remove("warm", "hot");
+      } else {
+        mon.textContent = `load ${t.load}% · cpu ${t.cpuT}° · gpu ${t.gpuT}°`;
+        mon.classList.toggle("hot", t.load >= 75 || t.cpuT >= 85);
+        mon.classList.toggle("warm", t.load >= 45 && t.load < 75);
+      }
+    }
+
+    if (!on) {
+      document.querySelectorAll(".ops-case-telem").forEach((el) => {
+        el.innerHTML = `<span>${state.assembled ? "standby · POWER OFF" : "not assembled"}</span>`;
+      });
+      return;
     }
 
     const hw = document.getElementById("opsMissionHw");
     if (hw) {
       const sp = t.sp;
-      hw.textContent = state.assembled
-        ? `${(sp.caseForm || "pc").toUpperCase()} · ${sp.cores || 0}c · DDR${sp.ddr || "?"} ${sp.ramGb || 0}G · gfx ${sp.gpuEff || 0} · PSU ${sp.psuW || 0}W`
-        : `scrap parts · not assembled · Rig → assemble`;
+      hw.textContent = `${(sp.caseForm || "pc").toUpperCase()} · ${sp.cores || 0}c · DDR${sp.ddr || "?"} ${sp.ramGb || 0}G · gfx ${sp.gpuEff || 0} · PSU ${sp.psuW || 0}W`;
     }
 
     const setBar = (key, pct, label, heat) => {
@@ -2238,14 +2316,8 @@
 
     const procs = document.getElementById("opsMissionProcs");
     if (procs) {
-      const names = t.procs && t.procs.length ? t.procs : [state.assembled ? "idle" : "halt"];
+      const names = t.procs && t.procs.length ? t.procs : ["idle"];
       procs.innerHTML = names.map((n) => `<span class="ops-proc">${escapeHtml(n)}</span>`).join("");
-    }
-
-    const panel = document.getElementById("opsMissionLoad");
-    if (panel) {
-      panel.classList.toggle("busy", !!(animBusy || state.mining || liveProcs.length));
-      panel.classList.toggle("off", !state.assembled);
     }
 
     document.querySelectorAll(".ops-case-telem").forEach((el) => {
@@ -2305,21 +2377,33 @@
     const t = computeTelemetry();
 
     if (tab === "pc") {
+      const scrapReady = !state.assembled && ["case", "mobo", "cpu", "ram", "psu", "nic"].every((s) => state.parts[s]) && (state.parts.hdd || state.parts.ssd);
       body.innerHTML = `
         <div class="ops-rig-specs">
           ${sp.caseForm.toUpperCase()} · DDR${sp.ddr || "?"} · ${sp.socket || "—"} ·
           ${sp.cores}c / ${sp.ramGb}G · gfx ${sp.gpuEff} (d${sp.gpu}/i${sp.igpu}) ·
-          PSU ${sp.psuW}W need ${sp.wattsNeed}W · NIC ${sp.nicMbps}M ·
-          LOAD ${t.load}% CPU ${t.cpuT}° GPU ${t.gpuT}° · ${state.assembled ? "ASSEMBLED" : "OPEN"}
+          PSU ${sp.psuW}W need ${sp.wattsNeed}W ·
+          ${state.assembled ? (state.powered ? "PWR ON" : "PWR OFF") : "NOT ASSEMBLED"}
+          ${isPcOn() ? ` · LOAD ${t.load}% CPU ${t.cpuT}°` : ""}
         </div>
         <div id="opsRigTower" class="ops-tower ops-tower--rig"></div>
-        <div class="ops-gate-actions">
-          <button type="button" class="ops-btn" id="opsRigAssemble">assemble</button>
-          <button type="button" class="ops-btn" id="opsRigMine">${state.mining ? "mine-stop" : "mine-start"}</button>
+        <div class="ops-power-row">
+          <button type="button" class="ops-power-btn ${state.powered ? "on" : ""}" id="opsRigPower" ${state.assembled ? "" : "disabled"} title="питание">
+            <span class="ops-power-led"></span>
+            ${state.powered ? "POWER ON" : "POWER OFF"}
+          </button>
         </div>
-        <p class="ops-lead">Сборка: case+mobo+cpu+ram+psu+nic+(hdd|ssd)+GPU/iGPU. DDR и socket должны совпасть. Корпус ≥ форм-фактор платы.</p>`;
+        <div class="ops-gate-actions">
+          <button type="button" class="ops-btn" id="opsRigAssemble">${state.assembled ? "re-assemble" : "assemble · FREE"}</button>
+          <button type="button" class="ops-btn" id="opsRigMine" ${isPcOn() ? "" : "disabled"}>${state.mining ? "mine-stop" : "mine-start"}</button>
+        </div>
+        <p class="ops-lead">
+          ${scrapReady ? "Scrap-kit уже в слотах (C2D/DDR2) — жми assemble бесплатно, потом POWER." : ""}
+          Апгрейд за $ из drills (хаб, не сюжет). Сборка: case+mobo+cpu+ram+psu+nic+disk+GPU/iGPU.
+        </p>`;
       paintTower();
       document.getElementById("opsRigAssemble")?.addEventListener("click", tryAssemble);
+      document.getElementById("opsRigPower")?.addEventListener("click", togglePower);
       document.getElementById("opsRigMine")?.addEventListener("click", () => {
         if (state.mining) stopMine();
         else startMine();
@@ -2587,6 +2671,20 @@
       tryAssemble();
       return;
     }
+    if (low === "power" || low === "power-on" || low === "power-off" || low === "pwr") {
+      if (low === "power-on" && state.powered) {
+        appendOut("already ON", "dim");
+        return;
+      }
+      if (low === "power-off" && !state.powered) {
+        appendOut("already OFF", "dim");
+        return;
+      }
+      if (low === "power-on" && !state.powered) togglePower();
+      else if (low === "power-off" && state.powered) togglePower();
+      else togglePower();
+      return;
+    }
     if (low === "mine-start") {
       startMine();
       return;
@@ -2597,6 +2695,11 @@
     }
 
     if (tryEgg(line)) return;
+
+    if (chapter().mode === "term" && (chapter().host || "local") === "local" && !isPcOn()) {
+      appendOut("PC powered off · Rig: assemble (free scrap) → POWER ON · или: assemble / power", "bad");
+      return;
+    }
 
     if (handleGoalLine(line)) return;
 
@@ -2735,6 +2838,17 @@
     isOpen: () => open,
     openRig: () => showRig(true),
     getState: () => JSON.parse(JSON.stringify(state)),
+    addDrillFunds: (amount, why) => {
+      const n = Math.max(0, Math.round(Number(amount) || 0));
+      if (!n) return 0;
+      state.money += n;
+      save();
+      renderChrome();
+      renderRigMoney();
+      const log = document.getElementById("opsRigLog");
+      if (log) log.textContent = `+$${n} · ${why || "drill"}`;
+      return n;
+    },
     applyState: (incoming) => {
       if (!incoming || typeof incoming !== "object") return;
       stopMine();
@@ -2751,6 +2865,8 @@
         skillPts: Number(incoming.skillPts) || 0,
         eggs: incoming.eggs && typeof incoming.eggs === "object" ? incoming.eggs : {},
         termPinned: !!incoming.termPinned,
+        assembled: !!incoming.assembled,
+        powered: !!(incoming.assembled && incoming.powered),
       };
       try {
         localStorage.setItem(KEY, JSON.stringify(state));
@@ -2759,9 +2875,10 @@
       if (open) renderChapter();
       if (!document.getElementById("opsRig")?.classList.contains("hidden")) renderRig();
       paintTower();
+      updateTelemetryHud();
       renderChrome();
       renderRigMoney();
-      if (state.mining && hasCap("mine")) startMine();
+      if (state.mining && hasCap("mine") && isPcOn()) startMine();
     },
     hide: () => {
       const e = els();

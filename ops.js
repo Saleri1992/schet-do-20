@@ -1786,18 +1786,22 @@
     saveState();
     run.done = true;
     run.awaitContinue = false;
+    const cash = Math.max(10, gained * 3 + (perfect ? 12 : 0));
+    if (window.OpsStory && typeof window.OpsStory.addDrillFunds === "function") {
+      window.OpsStory.addDrillFunds(cash, `drill ${run.cat.name}`);
+    }
     const e = els();
     hideExplain();
     if (e.timer) e.timer.textContent = formatMs(ms);
-    if (e.meta) e.meta.textContent = `DONE · ${run.correct}/${n} · ${formatMs(ms)} · +${gained} XP`;
+    if (e.meta) e.meta.textContent = `DONE · ${run.correct}/${n} · ${formatMs(ms)} · +${gained} XP · +$${cash}`;
     if (e.progress) e.progress.style.width = "100%";
     if (e.ask) {
       e.ask.textContent = perfect ? `clean.exit — ${run.cat.name}` : `session.end — ${run.correct}/${n}`;
     }
     if (e.tip) {
       e.tip.textContent = fresh.length
-        ? `ACH: ${fresh.map((a) => a.name).join(", ")}`
-        : "Enter → hub · время шло без лимита";
+        ? `ACH: ${fresh.map((a) => a.name).join(", ")} · +$${cash} → Rig`
+        : `+$${cash} в Rig на апгрейд · Enter → hub`;
     }
     if (e.hintBox) e.hintBox.classList.add("hidden");
     if (e.input) e.input.disabled = false;
