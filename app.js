@@ -2949,62 +2949,62 @@ function petWash(washId) {
   paintMascots();
 }
 
-/* ——— Мини-игра: укольчик ——— */
+/* ——— Лечение: вопрос вместо мини-игры ——— */
+const CARE_HEAL_QUIZ = [
+  {
+    q: "Маскот чихает. Что сделать?",
+    options: ["Дать отдых и аккуратный укольчик", "Кормить только сладким", "Игнорировать"],
+    ok: 0,
+  },
+  {
+    q: "Перед укольчиком руки лучше…",
+    options: ["Помыть", "Испачкать в земле", "Ничего не делать"],
+    ok: 0,
+  },
+  {
+    q: "Если кто-то болеет рядом, полезно…",
+    options: ["Вымыть руки и проветрить", "Облизать ложку за ним", "Кричать громче"],
+    ok: 0,
+  },
+  {
+    q: "Лекарство / укол помогает, когда…",
+    options: ["Его делают аккуратно и правильно", "Стучишь по монитору", "Ешь чипсы ночью"],
+    ok: 0,
+  },
+];
+
 let shotGame = null;
-let shotRaf = 0;
 
 function openShotGame() {
   const c = ensureCare();
   if (!c.sick) return;
   const modal = document.getElementById("petShotModal");
-  if (!modal) return;
+  const quiz = document.getElementById("petHealQuiz");
+  if (!modal || !quiz) return;
   closePetFoodPicker();
   closePetWashPicker();
-  shotGame = {
-    t: 0,
-    hit: false,
-    done: false,
-    // target zone center 0..1
-    zone: 0.55 + Math.random() * 0.2,
-    zoneW: 0.14,
-  };
+  const item = CARE_HEAL_QUIZ[Math.floor(Math.random() * CARE_HEAL_QUIZ.length)];
+  shotGame = { done: false, ok: item.ok };
   modal.classList.remove("hidden");
   modal.setAttribute("aria-hidden", "false");
   document.body.classList.add("pet-shot-open");
   const tip = document.getElementById("petShotTip");
-  if (tip) tip.textContent = "Поймай момент: жми, когда шприц над зелёной зоной!";
+  if (tip) tip.textContent = "Выбери правильный ответ — и маскот поправится!";
   const result = document.getElementById("petShotResult");
   if (result) {
     result.classList.add("hidden");
     result.textContent = "";
   }
-  const fire = document.getElementById("petShotFire");
-  if (fire) fire.disabled = false;
-  cancelAnimationFrame(shotRaf);
-  const loop = () => {
-    if (!shotGame || shotGame.done) return;
-    shotGame.t += 0.018;
-    const x = (Math.sin(shotGame.t * 2.2) + 1) / 2; // 0..1
-    shotGame.pos = x;
-    const needle = document.getElementById("petShotNeedle");
-    const track = document.getElementById("petShotTrack");
-    if (needle && track) {
-      needle.style.left = `${x * 100}%`;
-    }
-    shotRaf = requestAnimationFrame(loop);
-  };
-  // paint zone
-  const zoneEl = document.getElementById("petShotZone");
-  if (zoneEl) {
-    zoneEl.style.left = `${(shotGame.zone - shotGame.zoneW / 2) * 100}%`;
-    zoneEl.style.width = `${shotGame.zoneW * 100}%`;
-  }
-  shotRaf = requestAnimationFrame(loop);
+  quiz.innerHTML = `
+    <p class="pet-heal-q">${escapeHtml(item.q)}</p>
+    ${item.options.map((opt, i) =>
+      `<button type="button" class="pet-heal-opt" data-pet-heal="${i}">${escapeHtml(opt)}</button>`
+    ).join("")}
+  `;
 }
 
 function closeShotGame() {
   shotGame = null;
-  cancelAnimationFrame(shotRaf);
   const modal = document.getElementById("petShotModal");
   if (modal) {
     modal.classList.add("hidden");
@@ -3013,17 +3013,18 @@ function closeShotGame() {
   document.body.classList.remove("pet-shot-open");
 }
 
-function fireShotGame() {
+function answerHealQuiz(index) {
   if (!shotGame || shotGame.done) return;
-  const pos = shotGame.pos == null ? 0.5 : shotGame.pos;
-  const lo = shotGame.zone - shotGame.zoneW / 2;
-  const hi = shotGame.zone + shotGame.zoneW / 2;
-  const ok = pos >= lo && pos <= hi;
-  shotGame.done = true;
-  cancelAnimationFrame(shotRaf);
-  const fire = document.getElementById("petShotFire");
-  if (fire) fire.disabled = true;
+  const quiz = document.getElementById("petHealQuiz");
   const result = document.getElementById("petShotResult");
+  const ok = Number(index) === Number(shotGame.ok);
+  shotGame.done = true;
+  quiz?.querySelectorAll("[data-pet-heal]").forEach((btn) => {
+    const i = Number(btn.dataset.petHeal);
+    btn.disabled = true;
+    if (i === shotGame.ok) btn.classList.add("ok");
+    else if (i === Number(index)) btn.classList.add("bad");
+  });
   if (ok) {
     const c = ensureCare();
     c.sick = false;
@@ -3034,7 +3035,7 @@ function fireShotGame() {
     unlockAchievements();
     if (result) {
       result.classList.remove("hidden");
-      result.textContent = "Попал! Маскот уже поправляется 💚";
+      result.textContent = "Верно! Маскот уже поправляется 💚";
     }
     showToasts([{ plain: true, icon: "💉", name: "Вылечен!", desc: "Больше не болеет" }]);
     setTimeout(() => {
@@ -3045,13 +3046,17 @@ function fireShotGame() {
   } else {
     if (result) {
       result.classList.remove("hidden");
-      result.textContent = "Мимо… Попробуй ещё раз, когда шприц в зелёной зоне!";
+      result.textContent = "Мимо. Подумай ещё и попробуй снова!";
     }
     setTimeout(() => {
-      // restart round
+      shotGame = null;
       openShotGame();
-    }, 1100);
+    }, 900);
   }
+}
+
+function fireShotGame() {
+  /* legacy no-op: heal is quiz now */
 }
 
 function applyCareAfterStudy(correct, total, timedOut) {
@@ -3566,26 +3571,43 @@ function openDailyModal() {
   if (!els.dailyModal) return;
   const card = els.dailyModal.querySelector(".daily-modal");
   card?.classList.remove("opening", "opened");
-  els.dailyChest.textContent = "📦";
-  els.dailyModalLead.textContent = isDailyReady()
-    ? "Что спрятано сегодня?"
-    : "Сегодня уже открывали — загляни завтра!";
-  els.dailyModalReward.classList.add("hidden");
-  els.dailyModalReward.textContent = "";
-  els.dailyClaimBtn.disabled = false;
-  els.dailyClaimBtn.classList.toggle("hidden", !isDailyReady());
-  els.dailyCloseBtn.classList.toggle("hidden", isDailyReady());
-  els.dailyCloseBtn.textContent = isDailyReady() ? "Ура!" : "Понятно";
+  if (els.dailyChest) els.dailyChest.textContent = "📦";
+  if (els.dailyModalLead) {
+    els.dailyModalLead.textContent = isDailyReady()
+      ? "Что спрятано сегодня?"
+      : "Сегодня уже открывали — загляни завтра!";
+  }
+  if (els.dailyModalReward) {
+    els.dailyModalReward.classList.add("hidden");
+    els.dailyModalReward.textContent = "";
+  }
+  if (els.dailyClaimBtn) {
+    els.dailyClaimBtn.disabled = false;
+    els.dailyClaimBtn.classList.toggle("hidden", !isDailyReady());
+  }
+  if (els.dailyCloseBtn) {
+    els.dailyCloseBtn.classList.toggle("hidden", isDailyReady());
+    els.dailyCloseBtn.textContent = isDailyReady() ? "Ура!" : "Понятно";
+  }
   els.dailyModal.classList.remove("hidden");
+  els.dailyModal.setAttribute("aria-hidden", "false");
 }
 
 function closeDailyModal() {
   els.dailyModal?.classList.add("hidden");
+  els.dailyModal?.setAttribute("aria-hidden", "true");
 }
 
 function claimDailyBox() {
+  if (!els.dailyModal) {
+    openDailyModal();
+    return;
+  }
   if (!isDailyReady()) {
     openDailyModal();
+    return;
+  }
+  if (els.dailyClaimBtn && els.dailyClaimBtn.disabled) {
     return;
   }
   const today = todayKey();
@@ -3596,35 +3618,60 @@ function claimDailyBox() {
   const reward = pickDailyReward();
   const card = els.dailyModal.querySelector(".daily-modal");
   card?.classList.add("opening");
-  els.dailyClaimBtn.disabled = true;
-  els.dailyModalLead.textContent = "Открываем…";
+  card?.classList.remove("opened");
+  if (els.dailyClaimBtn) els.dailyClaimBtn.disabled = true;
+  if (els.dailyModalLead) els.dailyModalLead.textContent = "Открываем…";
+  els.dailyModal.classList.remove("hidden");
 
   setTimeout(() => {
-    state.stars += reward.stars;
-    state.coins += reward.coins;
-    state.dailyClaimDay = today;
-    const fresh = unlockAchievements();
-    saveState();
+    try {
+      state.stars += reward.stars;
+      state.coins += reward.coins;
+      state.dailyClaimDay = today;
+      let fresh = [];
+      try { fresh = unlockAchievements(); } catch { fresh = []; }
+      saveState();
 
-    card?.classList.remove("opening");
-    card?.classList.add("opened");
-    els.dailyChest.textContent = reward.kind === "stars" ? "⭐" : reward.kind === "both" ? "🎁" : "🪙";
-    els.dailyModalLead.textContent = reward.streak >= 7 && reward.streak % 7 === 0
-      ? `Серия ${reward.streak} дней — бонус!`
-      : "Ура, подарок!";
-    els.dailyModalReward.textContent = formatDailyReward(reward);
-    els.dailyModalReward.classList.remove("hidden");
-    els.dailyClaimBtn.classList.add("hidden");
-    els.dailyClaimBtn.disabled = false;
-    els.dailyCloseBtn.classList.remove("hidden");
-    els.dailyCloseBtn.textContent = "Ура!";
+      card?.classList.remove("opening");
+      card?.classList.add("opened");
+      if (els.dailyChest) {
+        els.dailyChest.textContent = reward.kind === "stars" ? "⭐" : reward.kind === "both" ? "🎁" : "🪙";
+      }
+      if (els.dailyModalLead) {
+        els.dailyModalLead.textContent = reward.streak >= 7 && reward.streak % 7 === 0
+          ? `Серия ${reward.streak} дней — бонус!`
+          : "Ура, подарок!";
+      }
+      if (els.dailyModalReward) {
+        els.dailyModalReward.textContent = formatDailyReward(reward);
+        els.dailyModalReward.classList.remove("hidden");
+      }
+      if (els.dailyClaimBtn) {
+        els.dailyClaimBtn.classList.add("hidden");
+        els.dailyClaimBtn.disabled = false;
+      }
+      if (els.dailyCloseBtn) {
+        els.dailyCloseBtn.classList.remove("hidden");
+        els.dailyCloseBtn.textContent = "Ура!";
+      }
 
-    spawnLoot(reward.stars, reward.coins);
-    renderHome();
-    if (fresh.length) {
-      showToasts(fresh.slice(0, 3).map((a) => ({ icon: a.icon, name: a.name, desc: a.desc })));
-    } else {
-      showToasts([{ plain: true, icon: els.dailyChest.textContent, name: "Ежедневный бокс", desc: formatDailyReward(reward) }]);
+      try { spawnLoot(reward.stars, reward.coins); } catch { /* ignore */ }
+      try { renderHome(); } catch { /* ignore */ }
+      try {
+        if (fresh.length) {
+          showToasts(fresh.slice(0, 3).map((a) => ({ icon: a.icon, name: a.name, desc: a.desc })));
+        } else {
+          showToasts([{ plain: true, icon: els.dailyChest?.textContent || "🎁", name: "Ежедневный бокс", desc: formatDailyReward(reward) }]);
+        }
+      } catch { /* ignore */ }
+    } catch (err) {
+      console.warn("claimDailyBox failed", err);
+      if (els.dailyClaimBtn) {
+        els.dailyClaimBtn.disabled = false;
+        els.dailyClaimBtn.classList.remove("hidden");
+      }
+      if (els.dailyModalLead) els.dailyModalLead.textContent = "Не вышло — нажми ещё раз";
+      card?.classList.remove("opening");
     }
   }, 520);
 }
@@ -8402,8 +8449,7 @@ function collectKingdom(silent = false, unlocked = false) {
   const since = Date.now() - (Number(k0.lastCollectAt) || 0);
   if (!unlocked) {
     if (since < KINGDOM_COLLECT_MIN_MS) {
-      const sec = Math.ceil((KINGDOM_COLLECT_MIN_MS - since) / 1000);
-      kingdomSoftHint(`Сбор подожди ещё ${sec}с — нельзя кликать без паузы.`);
+      kingdomSoftHint(`Сбор подожди ещё ${formatKingdomCd(KINGDOM_COLLECT_MIN_MS - since)} — пока нельзя.`);
       return kingdomPending();
     }
     const pend = kingdomPending();
@@ -8468,14 +8514,23 @@ function kingdomGatherLeft(slotIndex) {
   return Math.max(0, at - Date.now());
 }
 
+function formatKingdomCd(ms) {
+  const sec = Math.max(0, Math.ceil(ms / 1000));
+  if (sec >= 60) {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return s ? `${m} мин ${s}с` : `${m} мин`;
+  }
+  return `${sec}с`;
+}
+
 function kingdomGather(slotIndex, unlocked = false) {
   const k = ensureKingdom();
   const id = k.slots[slotIndex];
   const nat = KINGDOM_NATURE[id];
   if (!nat) return false;
   if (!kingdomGatherReady(slotIndex)) {
-    const sec = Math.ceil(kingdomGatherLeft(slotIndex) / 1000);
-    kingdomSoftHint(`${nat.name}: подожди ещё ${sec} сек.`);
+    kingdomSoftHint(`${nat.name}: подожди ещё ${formatKingdomCd(kingdomGatherLeft(slotIndex))}.`);
     return false;
   }
   if (!unlocked) {
@@ -8546,6 +8601,19 @@ function renderKingdom() {
       : `Копится… 🪙${rates.coinPerHour} 🪵${rates.woodPerHour} 🪨${rates.stonePerHour} /час${cap}`;
   }
 
+  const collectBtn = document.getElementById("kingdomCollectBtn");
+  if (collectBtn) {
+    const since = Date.now() - (Number(k.lastCollectAt) || 0);
+    const wait = KINGDOM_COLLECT_MIN_MS - since;
+    if (wait > 0) {
+      collectBtn.disabled = true;
+      collectBtn.textContent = `Подожди ${formatKingdomCd(wait)}`;
+    } else {
+      collectBtn.disabled = false;
+      collectBtn.textContent = "Собрать со зданий";
+    }
+  }
+
   map.innerHTML = k.slots.map((id, i) => {
     const nat = KINGDOM_NATURE[id];
     const b = KINGDOM_BUILDINGS[id];
@@ -8559,11 +8627,12 @@ function renderKingdom() {
     }
     if (nat) {
       const ready = kingdomGatherReady(i);
-      const sec = Math.ceil(kingdomGatherLeft(i) / 1000);
+      const left = kingdomGatherLeft(i);
       return `<button type="button" class="kd-slot nature ${nat.gather}${ready ? " ready" : " cd"}" data-kd-slot="${i}">
         <span class="kd-ico">${nat.ico}</span>
         <span class="kd-name">${nat.name}</span>
-        <span class="kd-rate">${ready ? `+${nat.amount} ${nat.gather === "wood" ? "🪵" : "🪨"}` : `${sec}с`}</span>
+        <span class="kd-rate">${ready ? `+${nat.amount} ${nat.gather === "wood" ? "🪵" : "🪨"}` : "занято"}</span>
+        ${ready ? "" : `<span class="kd-cd">ещё ${formatKingdomCd(left)}</span>`}
       </button>`;
     }
     const lv = kingdomLevelOf(i);
@@ -8571,12 +8640,41 @@ function renderKingdom() {
     if (b.rate) rateBits.push(`🪙${b.rate * lv}`);
     if (b.woodRate) rateBits.push(`🪵${b.woodRate * lv}`);
     if (b.stoneRate) rateBits.push(`🪨${b.stoneRate * lv}`);
+    let upLine = "";
+    if (!b.fixed) {
+      const price = kingdomUpgradePrice(i);
+      const can = kingdomCanAfford(price);
+      upLine = `<span class="kd-up">${can ? "⬆" : "🔒"} Lv${lv + 1} · ${kingdomFormatCost(price)}</span>`;
+    }
     return `<button type="button" class="kd-slot filled${mid}" data-kd-slot="${i}">
       <span class="kd-ico">${b.ico}</span>
       <span class="kd-name">${b.name}${lv > 1 ? ` L${lv}` : ""}</span>
       <span class="kd-rate">${rateBits.length ? `${rateBits.join(" ")}/ч` : "декор"}</span>
+      ${upLine}
     </button>`;
   }).join("");
+
+  const actions = document.getElementById("kingdomSlotActions");
+  if (actions && actions.dataset.keep === "1" && actions.dataset.slot != null) {
+    const si = Number(actions.dataset.slot);
+    const sid = k.slots[si];
+    if (KINGDOM_NATURE[sid]) {
+      const nat = KINGDOM_NATURE[sid];
+      const ready = kingdomGatherReady(si);
+      const left = kingdomGatherLeft(si);
+      actions.innerHTML = `
+        <strong>${nat.ico} ${nat.name}</strong>
+        <span>${ready ? "Можно собрать!" : `Восстановление: ${formatKingdomCd(left)}`}</span>
+        <button type="button" class="btn ghost-btn" data-kd-clear="${si}">Расчистить · 5🪙 (задача)</button>`;
+    } else if (KINGDOM_BUILDINGS[sid] && !KINGDOM_BUILDINGS[sid].fixed) {
+      const b = KINGDOM_BUILDINGS[sid];
+      const price = kingdomUpgradePrice(si);
+      actions.innerHTML = `
+        <strong>${b.ico} ${b.name} Lv${kingdomLevelOf(si)}</strong>
+        <button type="button" class="btn primary" data-kd-up="${si}">Улучшить · ${kingdomFormatCost(price)}</button>
+        <button type="button" class="btn ghost-btn" data-kd-sell="${si}">Снести (−40%)</button>`;
+    }
+  }
 
   shop.innerHTML = KINGDOM_SHOP_ORDER.map((id) => {
     const b = KINGDOM_BUILDINGS[id];
@@ -9415,14 +9513,14 @@ document.getElementById("kingdom")?.addEventListener("click", (e) => {
       if (panel) {
         panel.classList.remove("hidden");
         panel.dataset.keep = "1";
+        panel.dataset.slot = String(i);
         const nat = KINGDOM_NATURE[id];
-        const sec = Math.ceil(kingdomGatherLeft(i) / 1000);
         panel.innerHTML = `
           <strong>${nat.ico} ${nat.name}</strong>
-          <span>Восстановление: ${sec}с</span>
+          <span>Восстановление: ${formatKingdomCd(kingdomGatherLeft(i))} (пауза 3 мин)</span>
           <button type="button" class="btn ghost-btn" data-kd-clear="${i}">Расчистить · 5🪙 (задача)</button>`;
       }
-      kingdomSoftHint(`${KINGDOM_NATURE[id].name}: ещё ${Math.ceil(kingdomGatherLeft(i) / 1000)}с.`);
+      kingdomSoftHint(`${KINGDOM_NATURE[id].name}: ещё ${formatKingdomCd(kingdomGatherLeft(i))}.`);
     }
     return;
   }
@@ -9434,8 +9532,10 @@ document.getElementById("kingdom")?.addEventListener("click", (e) => {
     const price = kingdomUpgradePrice(i);
     panel.classList.remove("hidden");
     panel.dataset.keep = "1";
+    panel.dataset.slot = String(i);
     panel.innerHTML = `
       <strong>${b.ico} ${b.name} Lv${kingdomLevelOf(i)}</strong>
+      <span>Улучшение: ${kingdomFormatCost(price)}</span>
       <button type="button" class="btn primary" data-kd-up="${i}">Улучшить · ${kingdomFormatCost(price)}</button>
       <button type="button" class="btn ghost-btn" data-kd-sell="${i}">Снести (−40%)</button>`;
   }
@@ -9504,6 +9604,11 @@ document.getElementById("petShotModal")?.addEventListener("click", (e) => {
     closeShotGame();
     return;
   }
+  const heal = e.target.closest("[data-pet-heal]");
+  if (heal) {
+    answerHealQuiz(Number(heal.dataset.petHeal));
+    return;
+  }
   if (e.target.closest("#petShotFire") || e.target.closest("[data-pet-shot-fire]")) {
     fireShotGame();
   }
@@ -9514,6 +9619,9 @@ els.dailyBoxBtn?.addEventListener("click", () => {
 });
 els.dailyClaimBtn?.addEventListener("click", () => {
   claimDailyBox();
+});
+els.dailyChest?.addEventListener("click", () => {
+  if (isDailyReady()) claimDailyBox();
 });
 els.dailyCloseBtn?.addEventListener("click", () => {
   closeDailyModal();

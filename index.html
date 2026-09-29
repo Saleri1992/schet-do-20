@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=60" />
+  <link rel="stylesheet" href="style.css?v=61" />
 </head>
 <body data-theme="easy">
   <div class="sky">
@@ -537,17 +537,10 @@
   <div class="modal-overlay pet-shot-modal hidden" id="petShotModal" aria-hidden="true">
     <div class="modal-card pet-shot-card" role="dialog" aria-label="Укольчик">
       <p class="modal-kicker">💉 Укольчик</p>
-      <p class="pet-shot-tip" id="petShotTip">Поймай момент: жми, когда шприц над зелёной зоной!</p>
-      <div class="pet-shot-stage" aria-hidden="true">
-        <div class="pet-shot-arm">💪</div>
-        <div class="pet-shot-track" id="petShotTrack">
-          <div class="pet-shot-zone" id="petShotZone"></div>
-          <div class="pet-shot-needle" id="petShotNeedle">💉</div>
-        </div>
-      </div>
+      <p class="pet-shot-tip" id="petShotTip">Ответь верно — и маскот поправится!</p>
+      <div class="pet-heal-quiz" id="petHealQuiz"></div>
       <p class="pet-shot-result hidden" id="petShotResult"></p>
       <div class="pet-shot-actions">
-        <button type="button" class="btn primary" id="petShotFire" data-pet-shot-fire>Укол!</button>
         <button type="button" class="btn ghost-btn" data-pet-shot-close>Позже</button>
       </div>
     </div>
@@ -767,7 +760,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=42"></script>
+  <script src="app.js?v=43"></script>
   <script src="ops.js?v=14"></script>
   <script src="ops-story.js?v=13"></script>
   <script src="ops-cloud.js?v=1"></script>
