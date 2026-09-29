@@ -2789,6 +2789,15 @@ function openPetFoodPicker() {
     </button>`;
   }).join("");
   modal.classList.remove("hidden");
+  modal.style.display = "flex";
+  const card = modal.querySelector(".modal-card");
+  if (card) {
+    card.style.opacity = "1";
+    card.style.visibility = "visible";
+    card.style.display = "block";
+    card.style.background = "#fffdf8";
+    card.style.color = "#3d3a4a";
+  }
   modal.setAttribute("aria-hidden", "false");
 }
 
@@ -2796,6 +2805,7 @@ function closePetFoodPicker() {
   const modal = document.getElementById("petFoodModal");
   if (!modal) return;
   modal.classList.add("hidden");
+  modal.style.display = "";
   modal.setAttribute("aria-hidden", "true");
 }
 
@@ -2820,6 +2830,15 @@ function openPetWashPicker() {
       <span class="desc">+${w.hygiene} чистота</span>
     </button>`).join("");
   modal.classList.remove("hidden");
+  modal.style.display = "flex";
+  const card = modal.querySelector(".modal-card");
+  if (card) {
+    card.style.opacity = "1";
+    card.style.visibility = "visible";
+    card.style.display = "block";
+    card.style.background = "#fffdf8";
+    card.style.color = "#3d3a4a";
+  }
   modal.setAttribute("aria-hidden", "false");
 }
 
@@ -2827,6 +2846,7 @@ function closePetWashPicker() {
   const modal = document.getElementById("petWashModal");
   if (!modal) return;
   modal.classList.add("hidden");
+  modal.style.display = "";
   modal.setAttribute("aria-hidden", "true");
 }
 
@@ -2986,6 +3006,7 @@ function openShotGame() {
   const item = CARE_HEAL_QUIZ[Math.floor(Math.random() * CARE_HEAL_QUIZ.length)];
   shotGame = { done: false, ok: item.ok };
   modal.classList.remove("hidden");
+  modal.style.display = "flex";
   modal.setAttribute("aria-hidden", "false");
   document.body.classList.add("pet-shot-open");
   const tip = document.getElementById("petShotTip");
@@ -2994,6 +3015,14 @@ function openShotGame() {
   if (result) {
     result.classList.add("hidden");
     result.textContent = "";
+  }
+  const card = modal.querySelector(".modal-card");
+  if (card) {
+    card.style.opacity = "1";
+    card.style.visibility = "visible";
+    card.style.display = "block";
+    card.style.background = "#fffdf8";
+    card.style.color = "#3d3a4a";
   }
   quiz.innerHTML = `
     <p class="pet-heal-q">${escapeHtml(item.q)}</p>
@@ -3008,6 +3037,7 @@ function closeShotGame() {
   const modal = document.getElementById("petShotModal");
   if (modal) {
     modal.classList.add("hidden");
+    modal.style.display = "";
     modal.setAttribute("aria-hidden", "true");
   }
   document.body.classList.remove("pet-shot-open");
@@ -3569,8 +3599,15 @@ function renderDailyBox() {
 
 function openDailyModal() {
   if (!els.dailyModal) return;
-  const card = els.dailyModal.querySelector(".daily-modal");
+  const card = els.dailyModal.querySelector(".daily-modal") || els.dailyModal.querySelector(".modal-card");
   card?.classList.remove("opening", "opened");
+  if (card) {
+    card.style.opacity = "1";
+    card.style.visibility = "visible";
+    card.style.display = "block";
+    card.style.background = "#fffdf8";
+    card.style.color = "#3d3a4a";
+  }
   if (els.dailyChest) els.dailyChest.textContent = "📦";
   if (els.dailyModalLead) {
     els.dailyModalLead.textContent = isDailyReady()
@@ -3590,12 +3627,16 @@ function openDailyModal() {
     els.dailyCloseBtn.textContent = isDailyReady() ? "Ура!" : "Понятно";
   }
   els.dailyModal.classList.remove("hidden");
+  els.dailyModal.style.display = "flex";
   els.dailyModal.setAttribute("aria-hidden", "false");
 }
 
 function closeDailyModal() {
-  els.dailyModal?.classList.add("hidden");
-  els.dailyModal?.setAttribute("aria-hidden", "true");
+  if (els.dailyModal) {
+    els.dailyModal.classList.add("hidden");
+    els.dailyModal.style.display = "";
+    els.dailyModal.setAttribute("aria-hidden", "true");
+  }
 }
 
 function claimDailyBox() {
@@ -7434,10 +7475,10 @@ function spawnLoot(stars, coins) {
   const starN = Math.min(Math.max(stars, 0), 12);
   const coinN = Math.min(Math.max(coins, 0), 12);
   for (let i = 0; i < starN; i += 1) {
-    addFlyBit("fly-star", `<span class="star-chip"></span><span class="fly-spark">✦</span>`, i, -0.3);
+    addFlyBit("fly-star", `<span class="star-chip"></span>`, i, -0.3);
   }
   for (let i = 0; i < coinN; i += 1) {
-    addFlyBit("fly-coin", `<span class="coin"></span><span class="fly-spark">✦</span>`, i, 0.4);
+    addFlyBit("fly-coin", `<span class="coin"></span>`, i, 0.4);
   }
 }
 
@@ -8166,6 +8207,7 @@ function closeKingdomGate() {
   const modal = document.getElementById("kingdomGate");
   if (modal) {
     modal.classList.add("hidden");
+    modal.style.display = "";
     modal.setAttribute("aria-hidden", "true");
   }
   document.body.classList.remove("kd-gate-open");
@@ -8199,8 +8241,17 @@ function openKingdomGate(action) {
     document.getElementById("kdGateAnswer").textContent = "?";
   }
   modal.classList.remove("hidden");
+  modal.style.display = "flex";
   modal.setAttribute("aria-hidden", "false");
   document.body.classList.add("kd-gate-open");
+  const card = modal.querySelector(".modal-card");
+  if (card) {
+    card.style.opacity = "1";
+    card.style.visibility = "visible";
+    card.style.display = "block";
+    card.style.background = "#fffdf8";
+    card.style.color = "#3d3a4a";
+  }
 }
 
 function kingdomGateSetInput(v) {
@@ -8533,25 +8584,17 @@ function kingdomGather(slotIndex, unlocked = false) {
     kingdomSoftHint(`${nat.name}: подожди ещё ${formatKingdomCd(kingdomGatherLeft(slotIndex))}.`);
     return false;
   }
-  if (!unlocked) {
-    // короткая блокировка на время задачи — нельзя спамить кликами
-    k.gatherAt[slotIndex] = Date.now() + KINGDOM_GATHER_FAIL_CD_MS;
-    saveState();
-    openKingdomGate({ type: "gather", slot: slotIndex });
-    renderKingdom();
-    return false;
-  }
+  // Рубка/копание — сразу в склад (без ворот). Кулдаун 3 мин на клетку.
   const amt = nat.amount || 1;
   if (nat.gather === "wood") k.wood = (k.wood || 0) + amt;
   if (nat.gather === "stone") k.stone = (k.stone || 0) + amt;
-  // полный кулдаун уже стоит с открытия гейта; продлим от момента успеха
   k.gatherAt[slotIndex] = Date.now() + KINGDOM_GATHER_CD_MS;
   saveState();
   showToasts([{
     plain: true,
     icon: nat.ico,
     name: nat.gather === "wood" ? "Дерево!" : "Камень!",
-    desc: `+${amt} · следующая рубка через ${Math.round(KINGDOM_GATHER_CD_MS / 60000)} мин`,
+    desc: `+${amt} · следующая через ${Math.round(KINGDOM_GATHER_CD_MS / 60000)} мин`,
   }]);
   unlockAchievements();
   renderKingdom();
