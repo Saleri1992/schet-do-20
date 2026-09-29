@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=51" />
+  <link rel="stylesheet" href="style.css?v=52" />
 </head>
 <body data-theme="easy">
   <div class="sky">
@@ -664,11 +664,13 @@
                   <span class="ops-story-term-label">tty · local shell</span>
                   <button type="button" class="ops-btn ghost ops-story-term-pin" id="opsStoryTermPin" title="зафиксировать терминал">pin</button>
                 </div>
-                <div class="ops-story-out" id="opsStoryOut"></div>
-                <div class="ops-prompt-row">
-                  <span class="ops-prompt" id="opsStoryPrompt">ops@local:~$</span>
-                  <input id="opsStoryInput" class="ops-input" type="text" autocomplete="off" spellcheck="false" autocapitalize="off" />
-                  <button type="button" class="ops-btn" id="opsStorySubmit">enter</button>
+                <div class="ops-story-console">
+                  <div class="ops-story-out" id="opsStoryOut"></div>
+                  <div class="ops-story-cmdline" id="opsStoryCmdline">
+                    <span class="ops-story-prompt" id="opsStoryPrompt">ops@local:~$</span>
+                    <input id="opsStoryInput" class="ops-story-cmdline-input" type="text" autocomplete="off" spellcheck="false" autocapitalize="off" />
+                    <button type="button" class="ops-story-enter" id="opsStorySubmit" title="enter">↵</button>
+                  </div>
                 </div>
               </div>
             </div>
