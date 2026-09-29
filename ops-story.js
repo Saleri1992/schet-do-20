@@ -13,21 +13,22 @@
   const ALIAS_CODE = "NEON-7741";
 
   const FORM_RANK = { itx: 1, matx: 2, atx: 3, eatx: 4 };
-  const PC_SLOTS = ["case", "mobo", "cpu", "ram", "gpu", "psu", "hdd", "ssd", "nic", "cool"];
+  const PC_SLOTS_BASE = ["case", "mobo", "cpu", "gpu", "psu", "hdd", "ssd", "nic", "cool"];
+  const RAM_SLOT_IDS = ["ram1", "ram2", "ram3", "ram4"];
 
-  /** Каталог: case/form, mobo ddr+socket, cpu/gpu модели, DDR2→5. */
+  /** Каталог: case/form, mobo ddr+socket+ramSlots, cpu/gpu, DDR2→5. */
   const PARTS = [
     { id: "case_itx", slot: "case", name: "CASE·Mini-ITX", price: 35, tier: 1, form: "itx", need: true },
     { id: "case_matx", slot: "case", name: "CASE·mATX scrap", price: 12, tier: 0, form: "matx", need: true },
     { id: "case_atx", slot: "case", name: "CASE·ATX Mid", price: 45, tier: 1, form: "atx", need: true },
     { id: "case_ft", slot: "case", name: "CASE·Full Tower", price: 95, tier: 2, form: "eatx", need: true },
 
-    { id: "mobo_g31", slot: "mobo", name: "MOBO·G31 DDR2", price: 18, tier: 0, need: true, ddr: 2, socket: "lga775", form: "matx", specs: { wattsNeed: 25 } },
-    { id: "mobo_h61", slot: "mobo", name: "MOBO·H61 DDR3", price: 28, tier: 1, need: true, ddr: 3, socket: "lga1155", form: "matx", specs: { wattsNeed: 30 } },
-    { id: "mobo_b", slot: "mobo", name: "MOBO·B450 DDR4", price: 40, tier: 2, need: true, ddr: 4, socket: "am4", form: "atx", specs: { wattsNeed: 35 } },
-    { id: "mobo_itx", slot: "mobo", name: "MOBO·B550-I DDR4", price: 75, tier: 2, need: true, ddr: 4, socket: "am4", form: "itx", specs: { wattsNeed: 30 } },
-    { id: "mobo_x", slot: "mobo", name: "MOBO·X570 DDR4", price: 90, tier: 3, need: true, ddr: 4, socket: "am4", form: "atx", specs: { wattsNeed: 40 } },
-    { id: "mobo_z", slot: "mobo", name: "MOBO·Z790 DDR5", price: 160, tier: 4, need: true, ddr: 5, socket: "lga1700", form: "atx", specs: { wattsNeed: 45 } },
+    { id: "mobo_g31", slot: "mobo", name: "MOBO·G31 DDR2", price: 18, tier: 0, need: true, ddr: 2, socket: "lga775", form: "matx", ramSlots: 2, specs: { wattsNeed: 25 } },
+    { id: "mobo_h61", slot: "mobo", name: "MOBO·H61 DDR3", price: 28, tier: 1, need: true, ddr: 3, socket: "lga1155", form: "matx", ramSlots: 2, specs: { wattsNeed: 30 } },
+    { id: "mobo_b", slot: "mobo", name: "MOBO·B450 DDR4", price: 40, tier: 2, need: true, ddr: 4, socket: "am4", form: "atx", ramSlots: 4, specs: { wattsNeed: 35 } },
+    { id: "mobo_itx", slot: "mobo", name: "MOBO·B550-I DDR4", price: 75, tier: 2, need: true, ddr: 4, socket: "am4", form: "itx", ramSlots: 2, specs: { wattsNeed: 30 } },
+    { id: "mobo_x", slot: "mobo", name: "MOBO·X570 DDR4", price: 90, tier: 3, need: true, ddr: 4, socket: "am4", form: "atx", ramSlots: 4, specs: { wattsNeed: 40 } },
+    { id: "mobo_z", slot: "mobo", name: "MOBO·Z790 DDR5", price: 160, tier: 4, need: true, ddr: 5, socket: "lga1700", form: "atx", ramSlots: 4, specs: { wattsNeed: 45 } },
 
     { id: "cpu_c2d", slot: "cpu", name: "CPU·C2D E8400", price: 14, tier: 0, need: true, socket: "lga775", specs: { cores: 2, igpu: 8, wattsNeed: 65 }, reqSlots: ["mobo"] },
     { id: "cpu_i5o", slot: "cpu", name: "CPU·i5-2500", price: 32, tier: 1, need: true, socket: "lga1155", specs: { cores: 4, igpu: 18, wattsNeed: 95 }, reqSlots: ["mobo"] },
@@ -79,7 +80,7 @@
     case: "case_matx",
     mobo: "mobo_g31",
     cpu: "cpu_c2d",
-    ram: "ram_ddr2_2",
+    ram1: "ram_ddr2_2",
     psu: "psu_3",
     hdd: "hdd_250",
     nic: "nic_100",
@@ -1068,10 +1069,12 @@
       doneGoals: {},
       flags: {},
       notes: [
-        "Scrap-kit уже в слотах Rig · assemble бесплатно",
-        "Деньги на апгрейд: drills на хабе (не сюжет)",
+        "Scrap-kit в слотах · assemble → POWER",
+        "Shop: купить → Bag: install/sell · uninstall снимает в сумку",
+        "Деньги: drills на хабе",
       ],
       parts: { ...STARTER_PARTS },
+      inv: [],
       servers: {},
       assembled: false,
       powered: false,
@@ -1089,8 +1092,12 @@
     };
   }
 
-  function migrateParts(raw) {
+  function migrateHardware(raw) {
     const parts = { ...(raw.parts || {}) };
+    if (parts.ram && !parts.ram1) {
+      parts.ram1 = parts.ram;
+      delete parts.ram;
+    }
     const empty = !Object.keys(parts).length;
     if (empty) Object.assign(parts, STARTER_PARTS);
     if (parts.mobo && !parts.case) {
@@ -1098,12 +1105,12 @@
       const f = (mobo && mobo.form) || "atx";
       parts.case = f === "itx" ? "case_itx" : f === "matx" ? "case_matx" : f === "eatx" ? "case_ft" : "case_atx";
     }
-    // drop unknown ids from older builds
     Object.keys(parts).forEach((slot) => {
       if (!partById(parts[slot])) delete parts[slot];
     });
     if (!Object.keys(parts).length) Object.assign(parts, STARTER_PARTS);
-    return parts;
+    let inv = Array.isArray(raw.inv) ? raw.inv.filter((id) => !!partById(id)) : [];
+    return { parts, inv };
   }
 
   function load() {
@@ -1114,13 +1121,14 @@
         raw = legacy && typeof legacy === "object" ? legacy : null;
       }
       if (!raw || typeof raw !== "object") return defaultState();
-      const parts = migrateParts(raw);
+      const hw = migrateHardware(raw);
       return {
         ...defaultState(),
         ...raw,
         flags: raw.flags || {},
         doneGoals: raw.doneGoals || {},
-        parts,
+        parts: hw.parts,
+        inv: hw.inv,
         servers: raw.servers || {},
         notes: raw.notes && raw.notes.length ? raw.notes : defaultState().notes,
         skills: { linux: 0, net: 0, forensics: 0, defense: 0, devops: 0, ...(raw.skills || {}) },
@@ -1215,6 +1223,45 @@
     return id ? partById(id) : null;
   }
 
+  function moboRamSlots() {
+    const m = installedPart("mobo");
+    return Math.max(2, Math.min(4, (m && m.ramSlots) || 2));
+  }
+
+  function activeRamSlots() {
+    return RAM_SLOT_IDS.slice(0, moboRamSlots());
+  }
+
+  function activePcSlots() {
+    return ["case", "mobo", "cpu", ...activeRamSlots(), "gpu", "psu", "hdd", "ssd", "nic", "cool"];
+  }
+
+  function ensureInv() {
+    if (!Array.isArray(state.inv)) state.inv = [];
+  }
+
+  function pushInv(id) {
+    ensureInv();
+    if (id) state.inv.push(id);
+  }
+
+  function takeInv(id) {
+    ensureInv();
+    const i = state.inv.indexOf(id);
+    if (i < 0) return false;
+    state.inv.splice(i, 1);
+    return true;
+  }
+
+  function countInv(id) {
+    ensureInv();
+    return state.inv.filter((x) => x === id).length;
+  }
+
+  function sellPrice(item) {
+    return Math.max(1, Math.floor((item.price || 1) * 0.6));
+  }
+
   function formRankOf(part) {
     if (!part || !part.form) return 0;
     return FORM_RANK[part.form] || 0;
@@ -1235,8 +1282,10 @@
       socket: "",
       form: "matx",
       caseForm: "matx",
+      ramSlots: moboRamSlots(),
+      ramFilled: 0,
     };
-    PC_SLOTS.forEach((slot) => {
+    activePcSlots().forEach((slot) => {
       const p = installedPart(slot);
       if (!p) return;
       const sp = p.specs || {};
@@ -1253,8 +1302,10 @@
         s.ddr = p.ddr || 0;
         s.socket = p.socket || "";
         s.form = p.form || s.form;
+        s.ramSlots = p.ramSlots || s.ramSlots;
       }
       if (slot === "case") s.caseForm = p.form || s.caseForm;
+      if (RAM_SLOT_IDS.includes(slot)) s.ramFilled += 1;
     });
     s.gpuEff = s.gpu || s.igpu;
     return s;
@@ -1838,6 +1889,7 @@
     return [
       "help · clear · pwd · ls [path] · cd [path] · cat <file>",
       "grep <pat> <file> · find <name> · shop · buy <id> · inv",
+      "install <id> [ramN] · uninstall <slot> · sell <id>",
       "assemble · power · mine-start · mine-stop · status · hint",
       termHost === "router" ? `track ${HOST_IP}` : "",
       termHost === "remote" ? `unlock-vault <pass>` : "",
@@ -1932,25 +1984,30 @@
     const e = els();
     if (!e.shop) return;
     e.shop.innerHTML = PARTS.map((item) => {
-      const cur = state.parts[item.slot];
-      const owned = cur === item.id;
-      const better = cur && partById(cur) && partById(cur).tier > item.tier;
-      return `<button type="button" class="ops-btn ${owned ? "ghost" : ""}" data-buy="${item.id}" ${owned || better ? "disabled" : ""}>${item.name} · $${item.price}${owned ? " · ON" : ""}</button>`;
+      const bag = countInv(item.id);
+      return `<button type="button" class="ops-btn" data-buy="${item.id}">${item.name} · $${item.price}${bag ? ` · bag×${bag}` : ""}</button>`;
     }).join("");
   }
 
-  function canInstall(item) {
+  function canInstall(item, targetSlot) {
+    if (!item) return "unknown part";
     if (item.reqSlots) {
       for (let i = 0; i < item.reqSlots.length; i += 1) {
         if (!state.parts[item.reqSlots[i]]) return `нужен слот ${item.reqSlots[i]}`;
       }
     }
     const mobo = installedPart("mobo");
+    const isRam = item.slot === "ram" || (targetSlot && String(targetSlot).startsWith("ram"));
     if (item.slot === "cpu" && mobo && item.socket && mobo.socket && item.socket !== mobo.socket) {
       return `socket ${item.socket} ≠ mobo ${mobo.socket}`;
     }
-    if (item.slot === "ram" && mobo && item.ddr && mobo.ddr && item.ddr !== mobo.ddr) {
+    if (isRam && mobo && item.ddr && mobo.ddr && item.ddr !== mobo.ddr) {
       return `DDR${item.ddr} ≠ mobo DDR${mobo.ddr}`;
+    }
+    if (isRam && targetSlot) {
+      const max = moboRamSlots();
+      const n = Number(String(targetSlot).replace("ram", "")) || 0;
+      if (n < 1 || n > max) return `плата даёт только ${max} DIMM`;
     }
     if (item.slot === "mobo") {
       const cse = installedPart("case");
@@ -1969,11 +2026,31 @@
     const extraNeed = (item.specs && item.specs.wattsNeed) || 0;
     if (item.slot === "gpu" && state.parts.psu) {
       const psuW = (installedPart("psu").specs || {}).psuW || 0;
-      const otherNeed = PARTS.filter((p) => state.parts[p.slot] === p.id && p.slot !== "gpu")
-        .reduce((a, p) => a + ((p.specs && p.specs.wattsNeed) || 0), 0);
+      const otherNeed = Object.keys(state.parts)
+        .filter((sl) => sl !== "gpu")
+        .reduce((a, sl) => {
+          const p = partById(state.parts[sl]);
+          return a + ((p && p.specs && p.specs.wattsNeed) || 0);
+        }, 0);
       if (psuW < otherNeed + extraNeed) return `не хватает питания PSU (${psuW}W)`;
     }
     return null;
+  }
+
+  function findEmptyRamSlot() {
+    return activeRamSlots().find((s) => !state.parts[s]) || null;
+  }
+
+  function resolveInstallSlot(item, prefer) {
+    if (prefer) return prefer;
+    if (item.slot === "ram") return findEmptyRamSlot();
+    return item.slot;
+  }
+
+  function markDirtyHardware() {
+    state.assembled = false;
+    state.powered = false;
+    if (state.mining) stopMine();
   }
 
   function ejectIncompatible(changed) {
@@ -1981,21 +2058,34 @@
     const mobo = installedPart("mobo");
     const cse = installedPart("case");
     if (mobo && cse && formRankOf(cse) < formRankOf(mobo)) {
+      pushInv(state.parts.mobo);
       delete state.parts.mobo;
-      appendOut("mobo ejected · case too small", "dim");
+      appendOut("mobo → bag · case too small", "dim");
     }
     const m2 = installedPart("mobo");
     if (!m2) return;
     const cpu = installedPart("cpu");
     if (cpu && cpu.socket && m2.socket && cpu.socket !== m2.socket) {
+      pushInv(state.parts.cpu);
       delete state.parts.cpu;
-      appendOut("cpu ejected · socket", "dim");
+      appendOut("cpu → bag · socket", "dim");
     }
-    const ram = installedPart("ram");
-    if (ram && ram.ddr && m2.ddr && ram.ddr !== m2.ddr) {
-      delete state.parts.ram;
-      appendOut(`ram ejected · need DDR${m2.ddr}`, "dim");
-    }
+    const max = m2.ramSlots || 2;
+    RAM_SLOT_IDS.forEach((slot, idx) => {
+      if (!state.parts[slot]) return;
+      if (idx >= max) {
+        pushInv(state.parts[slot]);
+        delete state.parts[slot];
+        appendOut(`${slot} → bag · no DIMM on board`, "dim");
+        return;
+      }
+      const ram = partById(state.parts[slot]);
+      if (ram && ram.ddr && m2.ddr && ram.ddr !== m2.ddr) {
+        pushInv(state.parts[slot]);
+        delete state.parts[slot];
+        appendOut(`${slot} → bag · need DDR${m2.ddr}`, "dim");
+      }
+    });
   }
 
   function buyPart(id) {
@@ -2004,40 +2094,129 @@
       appendOut("unknown part", "bad");
       return;
     }
-    const block = canInstall(item);
-    if (block) {
-      appendOut(`dep: ${block}`, "bad");
-      rigLog(`dep: ${block}`);
-      return;
-    }
-    const cur = installedPart(item.slot);
-    if (cur && cur.id === item.id) {
-      appendOut("already installed", "dim");
-      return;
-    }
-    if (cur && cur.tier > item.tier) {
-      appendOut("уже стоит тир выше", "dim");
-      return;
-    }
     if (state.money < item.price) {
       appendOut("not enough $", "bad");
       rigLog("not enough $");
       return;
     }
     state.money -= item.price;
-    state.parts[item.slot] = item.id;
-    state.assembled = false;
-    state.powered = false;
-    if (state.mining) stopMine();
+    pushInv(item.id);
+    playActionFx(`BOUGHT ${item.name} → bag`, { label: "shop" });
+    rigLog(`bag + ${item.name}`);
+    save();
+    renderShop();
+    renderChrome();
+    renderRig();
+  }
+
+  function installPart(id, preferSlot) {
+    const item = partById(id);
+    if (!item) {
+      appendOut("unknown part", "bad");
+      return;
+    }
+    if (!takeInv(id)) {
+      appendOut("нет в bag · сначала buy", "bad");
+      return;
+    }
+    const slot = resolveInstallSlot(item, preferSlot);
+    if (!slot) {
+      pushInv(id);
+      appendOut(`нет свободного DIMM (плата: ${moboRamSlots()})`, "bad");
+      return;
+    }
+    if (item.slot === "ram" && !String(slot).startsWith("ram")) {
+      pushInv(id);
+      appendOut("RAM только в ram1..ramN", "bad");
+      return;
+    }
+    if (item.slot !== "ram" && String(slot).startsWith("ram")) {
+      pushInv(id);
+      appendOut("этот слот только для RAM", "bad");
+      return;
+    }
+    const block = canInstall(item, slot);
+    if (block) {
+      pushInv(id);
+      appendOut(`dep: ${block}`, "bad");
+      return;
+    }
+    if (state.parts[slot]) pushInv(state.parts[slot]);
+    state.parts[slot] = id;
+    markDirtyHardware();
     ejectIncompatible(item);
-    playActionFx(`INSTALLED ${item.name}`, { label: "mount" });
-    rigLog(`bought ${item.name} · нужно снова assemble + POWER`);
+    playActionFx(`INSTALL ${item.name} → ${slot}`, { label: "mount" });
+    rigLog(`install ${item.name} @ ${slot}`);
     save();
     renderShop();
     renderChrome();
     renderRig();
     paintTower();
     updateTelemetryHud();
+  }
+
+  function uninstallSlot(slot) {
+    if (!state.parts[slot]) {
+      appendOut(`слот ${slot} пуст`, "dim");
+      return;
+    }
+    if (state.powered) {
+      appendOut("сначала POWER OFF", "bad");
+      return;
+    }
+    const id = state.parts[slot];
+    pushInv(id);
+    delete state.parts[slot];
+    markDirtyHardware();
+    const item = partById(id);
+    playActionFx(`UNINSTALL ${(item && item.name) || id} → bag`, { label: "umount", flavor: false });
+    rigLog(`uninstall ${slot}`);
+    save();
+    renderRig();
+    paintTower();
+    updateTelemetryHud();
+  }
+
+  function sellPart(id) {
+    const item = partById(id);
+    if (!item) {
+      appendOut("unknown part", "bad");
+      return;
+    }
+    if (!takeInv(id)) {
+      appendOut("нет в bag · uninstall в сумку, потом sell", "bad");
+      return;
+    }
+    const got = sellPrice(item);
+    state.money += got;
+    playActionFx(`SOLD ${item.name} · +$${got}`, { label: "shop" });
+    rigLog(`sold ${item.name} +$${got}`);
+    save();
+    renderShop();
+    renderChrome();
+    renderRig();
+  }
+
+  function bootBlockers() {
+    const miss = [];
+    ["case", "mobo", "cpu", "psu", "nic"].forEach((s) => {
+      if (!state.parts[s]) miss.push(s);
+    });
+    if (!activeRamSlots().some((s) => state.parts[s])) miss.push("ram (DIMM)");
+    if (!state.parts.hdd && !state.parts.ssd) miss.push("hdd|ssd");
+    const mobo = installedPart("mobo");
+    const cse = installedPart("case");
+    if (mobo && cse && formRankOf(cse) < formRankOf(mobo)) miss.push("case too small");
+    const cpu = installedPart("cpu");
+    if (cpu && mobo && cpu.socket !== mobo.socket) miss.push("cpu socket");
+    activeRamSlots().forEach((s) => {
+      const ram = installedPart(s);
+      if (ram && mobo && ram.ddr !== mobo.ddr) miss.push(`${s} DDR`);
+    });
+    const sp = computeSpecs();
+    if (sp.psuW < sp.wattsNeed) miss.push(`PSU ${sp.psuW}W<${sp.wattsNeed}W`);
+    if (!sp.gpu && !sp.igpu) miss.push("gpu/igpu");
+    return miss;
   }
 
   function buyServer(id) {
@@ -2067,54 +2246,19 @@
   }
 
   function tryAssemble() {
-    const need = ["case", "mobo", "cpu", "ram", "psu"];
-    const miss = need.filter((s) => !state.parts[s]);
+    const miss = bootBlockers();
     if (miss.length) {
-      appendOut(`missing: ${miss.join(", ")}`, "bad");
+      appendOut(`не хватает: ${miss.join(", ")}`, "bad");
       rigLog(`missing: ${miss.join(", ")}`);
-      return;
-    }
-    if (!state.parts.hdd && !state.parts.ssd) {
-      appendOut("нужен HDD или SSD", "bad");
-      rigLog("нужен HDD или SSD");
-      return;
-    }
-    if (!state.parts.nic) {
-      appendOut("нужен NIC (сеть)", "bad");
-      rigLog("нужен NIC");
-      return;
-    }
-    const mobo = installedPart("mobo");
-    const cse = installedPart("case");
-    if (mobo && cse && formRankOf(cse) < formRankOf(mobo)) {
-      appendOut("корпус не вмещает плату", "bad");
-      return;
-    }
-    const cpu = installedPart("cpu");
-    const ram = installedPart("ram");
-    if (cpu && mobo && cpu.socket !== mobo.socket) {
-      appendOut("cpu/mobo socket mismatch", "bad");
-      return;
-    }
-    if (ram && mobo && ram.ddr !== mobo.ddr) {
-      appendOut(`нужна DDR${mobo.ddr}`, "bad");
-      return;
-    }
-    const sp = computeSpecs();
-    if (sp.psuW < sp.wattsNeed) {
-      appendOut(`PSU ${sp.psuW}W < need ${sp.wattsNeed}W`, "bad");
-      return;
-    }
-    if (!sp.gpu && !sp.igpu) {
-      appendOut("нет GPU и iGPU — поставь видео или APU", "bad");
       return;
     }
     state.assembled = true;
     state.powered = false;
     if (state.mining) stopMine();
+    const sp = computeSpecs();
     pay(15, "assemble bonus");
     playActionFx(
-      `ASSEMBLED · ${sp.caseForm.toUpperCase()} · ${sp.cores}c/DDR${sp.ddr} ${sp.ramGb}G · gfx${sp.gpuEff} · нажми POWER`,
+      `ASSEMBLED · ${sp.caseForm.toUpperCase()} · ${sp.cores}c/DDR${sp.ddr} ${sp.ramGb}G (${sp.ramFilled}/${sp.ramSlots} DIMM) · gfx${sp.gpuEff} · нажми POWER`,
       { label: "mount" }
     );
     addNote(`Workstation ${sp.caseForm} · DDR${sp.ddr} assembled · POWER to boot`);
@@ -2127,20 +2271,38 @@
 
   function togglePower() {
     if (!state.assembled) {
-      appendOut("сначала assemble (scrap-kit уже в слотах)", "bad");
-      rigLog("assemble first");
+      const miss = bootBlockers();
+      appendOut(
+        miss.length
+          ? `не собран · не хватает: ${miss.join(", ")} · install из bag или assemble`
+          : "сначала assemble (scrap-kit в слотах)",
+        "bad"
+      );
+      rigLog(miss.length ? `need: ${miss.join(", ")}` : "assemble first");
       return;
     }
-    state.powered = !state.powered;
     if (!state.powered) {
+      const miss = bootBlockers();
+      if (miss.length) {
+        state.assembled = false;
+        appendOut(`POWER FAIL · не хватает деталей: ${miss.join(", ")}`, "bad");
+        rigLog(`power fail: ${miss.join(", ")}`);
+        save();
+        renderRig();
+        paintTower();
+        updateTelemetryHud();
+        return;
+      }
+      state.powered = true;
+      playActionFx("POWER ON · boot ok", { label: "boot" });
+      bumpProc("init", 8, 1200);
+      rigLog("POWER ON");
+    } else {
+      state.powered = false;
       if (state.mining) stopMine();
       liveProcs = [];
       playActionFx("POWER OFF", { label: "halt", flavor: false, cls: "dim" });
       rigLog("POWER OFF");
-    } else {
-      playActionFx("POWER ON · boot ok", { label: "boot" });
-      bumpProc("init", 8, 1200);
-      rigLog("POWER ON");
     }
     save();
     renderRig();
@@ -2232,7 +2394,7 @@
           ${chip("psu", 4, 4, 28, 18)}
           ${chip("cool", 70, 4, 26, 14)}
           ${chip("cpu", 36, 22, 28, 20)}
-          ${chip("ram", 68, 22, 28, 16)}
+          ${activeRamSlots().map((rs, i) => chip(rs, 68, 18 + i * 12, 28, 11)).join("")}
           ${chip("mobo", 4, 28, 28, 22)}
           ${chip("gpu", 36, 48, 60, 18)}
           ${chip("hdd", 4, 72, 28, 14)}
@@ -2377,18 +2539,19 @@
     const t = computeTelemetry();
 
     if (tab === "pc") {
-      const scrapReady = !state.assembled && ["case", "mobo", "cpu", "ram", "psu", "nic"].every((s) => state.parts[s]) && (state.parts.hdd || state.parts.ssd);
+      const scrapReady = !state.assembled && !bootBlockers().length;
+      const miss = bootBlockers();
       body.innerHTML = `
         <div class="ops-rig-specs">
           ${sp.caseForm.toUpperCase()} · DDR${sp.ddr || "?"} · ${sp.socket || "—"} ·
-          ${sp.cores}c / ${sp.ramGb}G · gfx ${sp.gpuEff} (d${sp.gpu}/i${sp.igpu}) ·
-          PSU ${sp.psuW}W need ${sp.wattsNeed}W ·
+          DIMM ${sp.ramFilled}/${sp.ramSlots} · ${sp.cores}c / ${sp.ramGb}G · gfx ${sp.gpuEff} ·
+          PSU ${sp.psuW}W/${sp.wattsNeed}W ·
           ${state.assembled ? (state.powered ? "PWR ON" : "PWR OFF") : "NOT ASSEMBLED"}
-          ${isPcOn() ? ` · LOAD ${t.load}% CPU ${t.cpuT}°` : ""}
+          ${isPcOn() ? ` · LOAD ${t.load}%` : ""}
         </div>
         <div id="opsRigTower" class="ops-tower ops-tower--rig"></div>
         <div class="ops-power-row">
-          <button type="button" class="ops-power-btn ${state.powered ? "on" : ""}" id="opsRigPower" ${state.assembled ? "" : "disabled"} title="питание">
+          <button type="button" class="ops-power-btn ${state.powered ? "on" : ""}" id="opsRigPower" title="питание">
             <span class="ops-power-led"></span>
             ${state.powered ? "POWER ON" : "POWER OFF"}
           </button>
@@ -2397,9 +2560,16 @@
           <button type="button" class="ops-btn" id="opsRigAssemble">${state.assembled ? "re-assemble" : "assemble · FREE"}</button>
           <button type="button" class="ops-btn" id="opsRigMine" ${isPcOn() ? "" : "disabled"}>${state.mining ? "mine-stop" : "mine-start"}</button>
         </div>
+        <div class="ops-rig-slots">
+          ${activePcSlots().map((slot) => {
+            const p = installedPart(slot);
+            return `<div class="ops-rig-slot"><span class="ops-rig-slot-id">${slot}</span><strong>${p ? escapeHtml(p.name) : "— empty —"}</strong>${p ? `<button type="button" class="ops-btn ghost" data-uninstall="${slot}">uninstall</button>` : ""}</div>`;
+          }).join("")}
+        </div>
         <p class="ops-lead">
-          ${scrapReady ? "Scrap-kit уже в слотах (C2D/DDR2) — жми assemble бесплатно, потом POWER." : ""}
-          Апгрейд за $ из drills (хаб, не сюжет). Сборка: case+mobo+cpu+ram+psu+nic+disk+GPU/iGPU.
+          ${miss.length ? `Не хватает: ${escapeHtml(miss.join(", "))} · Bag → install или Shop → buy.` : ""}
+          ${scrapReady ? "Scrap-kit готов — assemble, потом POWER." : ""}
+          Shop покупает в bag · Bag: install / sell · uninstall снимает в bag (сначала POWER OFF).
         </p>`;
       paintTower();
       document.getElementById("opsRigAssemble")?.addEventListener("click", tryAssemble);
@@ -2408,6 +2578,9 @@
         if (state.mining) stopMine();
         else startMine();
         renderRig();
+      });
+      body.querySelectorAll("[data-uninstall]").forEach((btn) => {
+        btn.addEventListener("click", () => uninstallSlot(btn.dataset.uninstall));
       });
     } else if (tab === "servers") {
       body.innerHTML = `
@@ -2431,17 +2604,50 @@
         if (!bySlot[p.slot]) bySlot[p.slot] = [];
         bySlot[p.slot].push(p);
       });
-      body.innerHTML = PC_SLOTS.map((slot) => `
-        <h3 class="ops-h">${slot}</h3>
+      const shopSlots = ["case", "mobo", "cpu", "ram", "gpu", "psu", "hdd", "ssd", "nic", "cool"];
+      body.innerHTML = `
+        <p class="ops-lead">Покупка кладёт деталь в Bag. Потом Bag → install. DIMM слотов на плате: ${moboRamSlots()}.</p>
+        ${shopSlots.map((slot) => `
+        <h3 class="ops-h">${slot}${slot === "ram" ? ` · mobo ${moboRamSlots()} DIMM` : ""}</h3>
         <div class="ops-rig-shop">
           ${(bySlot[slot] || []).map((item) => {
-            const cur = state.parts[item.slot];
-            const owned = cur === item.id;
-            return `<button type="button" class="ops-btn ${owned ? "ghost" : ""}" data-buy-part="${item.id}">${escapeHtml(item.name)} · $${item.price}${item.ddr ? ` · DDR${item.ddr}` : ""}${item.socket ? ` · ${item.socket}` : ""}${item.form ? ` · ${item.form}` : ""}${owned ? " · ON" : ""}</button>`;
+            const bag = countInv(item.id);
+            return `<button type="button" class="ops-btn" data-buy-part="${item.id}">${escapeHtml(item.name)} · $${item.price}${item.ddr ? ` · DDR${item.ddr}` : ""}${item.socket ? ` · ${item.socket}` : ""}${item.ramSlots ? ` · ${item.ramSlots}DIMM` : ""}${bag ? ` · bag×${bag}` : ""}</button>`;
           }).join("")}
-        </div>`).join("");
+        </div>`).join("")}`;
       body.querySelectorAll("[data-buy-part]").forEach((btn) => {
         btn.addEventListener("click", () => buyPart(btn.dataset.buyPart));
+      });
+    } else if (tab === "bag") {
+      ensureInv();
+      const counts = {};
+      state.inv.forEach((id) => { counts[id] = (counts[id] || 0) + 1; });
+      const ids = Object.keys(counts);
+      const ramChoices = activeRamSlots().map((s) => `<option value="${s}">${s}${state.parts[s] ? " · busy" : ""}</option>`).join("");
+      body.innerHTML = `
+        <p class="ops-lead">Bag: install в слот · sell (~60%). Снять с ПК: PC → uninstall (POWER OFF).</p>
+        ${ids.length ? `<div class="ops-rig-caps">${ids.map((id) => {
+          const item = partById(id);
+          const isRam = item && item.slot === "ram";
+          return `<div class="ops-rig-cap on">
+            <strong>${escapeHtml((item && item.name) || id)} ×${counts[id]}</strong>
+            <span>${item ? `slot:${item.slot}${item.ddr ? ` DDR${item.ddr}` : ""}` : ""} · sell $${item ? sellPrice(item) : 0}</span>
+            <div class="ops-gate-actions">
+              ${isRam ? `<select data-ram-slot-for="${id}" class="ops-input ops-bag-select">${ramChoices}</select>` : ""}
+              <button type="button" class="ops-btn" data-install="${id}">install</button>
+              <button type="button" class="ops-btn ghost" data-sell="${id}">sell</button>
+            </div>
+          </div>`;
+        }).join("")}</div>` : `<p class="ops-lead">Bag пуст · купи в Shop или uninstall со слота.</p>`}`;
+      body.querySelectorAll("[data-install]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const id = btn.dataset.install;
+          const sel = body.querySelector(`[data-ram-slot-for="${id}"]`);
+          installPart(id, sel ? sel.value : undefined);
+        });
+      });
+      body.querySelectorAll("[data-sell]").forEach((btn) => {
+        btn.addEventListener("click", () => sellPart(btn.dataset.sell));
       });
     } else if (tab === "skills") {
       body.innerHTML = `
@@ -2653,8 +2859,11 @@
       }
     }
     if (low === "inv") {
-      const slots = Object.keys(state.parts);
-      appendOut(slots.length ? slots.map((s) => `${s}:${state.parts[s]}`).join(" · ") : "(empty)");
+      ensureInv();
+      const installed = activePcSlots().map((s) => `${s}:${state.parts[s] || "—"}`).join(" · ");
+      const bag = state.inv.length ? state.inv.join(", ") : "(empty)";
+      appendOut(`installed: ${installed}`);
+      appendOut(`bag: ${bag}`);
       return;
     }
     if (low === "shop") {
@@ -2665,6 +2874,19 @@
     }
     if (low.startsWith("buy ")) {
       buyPart(low.slice(4).trim());
+      return;
+    }
+    if (low.startsWith("install ")) {
+      const bits = low.slice(8).trim().split(/\s+/);
+      installPart(bits[0], bits[1]);
+      return;
+    }
+    if (low.startsWith("uninstall ")) {
+      uninstallSlot(low.slice(10).trim());
+      return;
+    }
+    if (low.startsWith("sell ")) {
+      sellPart(low.slice(5).trim());
       return;
     }
     if (low === "assemble") {
@@ -2697,7 +2919,17 @@
     if (tryEgg(line)) return;
 
     if (chapter().mode === "term" && (chapter().host || "local") === "local" && !isPcOn()) {
-      appendOut("PC powered off · Rig: assemble (free scrap) → POWER ON · или: assemble / power", "bad");
+      const miss = bootBlockers();
+      if (!state.assembled) {
+        appendOut(
+          miss.length
+            ? `PC off · не хватает для сборки: ${miss.join(", ")} · Rig Bag/Shop · assemble`
+            : "PC off · Rig → assemble → POWER ON",
+          "bad"
+        );
+      } else {
+        appendOut("PC powered off · включи питание: Rig → POWER ON · или команда power", "bad");
+      }
       return;
     }
 
@@ -2852,12 +3084,14 @@
     applyState: (incoming) => {
       if (!incoming || typeof incoming !== "object") return;
       stopMine();
+      const hw = migrateHardware(incoming);
       state = {
         ...defaultState(),
         ...incoming,
         flags: incoming.flags || {},
         doneGoals: incoming.doneGoals || {},
-        parts: migrateParts(incoming),
+        parts: hw.parts,
+        inv: hw.inv,
         servers: incoming.servers || {},
         notes: incoming.notes || [],
         skills: { linux: 0, net: 0, forensics: 0, defense: 0, devops: 0, ...(incoming.skills || {}) },
