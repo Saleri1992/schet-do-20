@@ -349,7 +349,7 @@
       id: "intro",
       title: "PROLOGUE · neon freelancers",
       narrative:
-        "Неоновый район Grid-7. На столе scrap mATX (C2D + DDR2) — детали УЖЕ в Rig, assemble бесплатно, потом POWER.\n" +
+        "Неоновый район Grid-7. На столе scrap mATX (C2D + DDR2) — детали УЖЕ в Rig. Открой Rig → POWER · ON (assemble сам).\n" +
         "Деньги на апгрейд зарабатываются drills на хабе (не сюжет).\n" +
         "Сюжет: собрать/включить ящик → Linux → заказы → инцидент → контракты.",
       mode: "continue",
@@ -360,8 +360,8 @@
       title: "CH.01 · bootstrap linux",
       narrative:
         "Цель: Linux на scrap-ПК.\n" +
-        "1) Rig → assemble (бесплатно, kit уже стоит)\n" +
-        "2) POWER ON\n" +
+        "1) Rig → POWER · ON (scrap-kit уже в слотах, assemble сам)\n" +
+        "2) кнопка станет зелёной POWER ON\n" +
         "3) команды:\n" +
         "   sudo apt update\n" +
         "   sudo apt upgrade -y\n" +
@@ -1069,7 +1069,7 @@
       doneGoals: {},
       flags: {},
       notes: [
-        "Scrap-kit в слотах · assemble → POWER",
+        "Scrap-kit в слотах · Rig → POWER · ON",
         "Shop: купить → Bag: install/sell · uninstall снимает в сумку",
         "Деньги: drills на хабе",
       ],
@@ -2247,46 +2247,55 @@
     renderChrome();
   }
 
-  function tryAssemble() {
+  function tryAssemble(opts) {
+    const quiet = !!(opts && opts.quiet);
     const miss = bootBlockers();
     if (miss.length) {
-      appendOut(`не хватает: ${miss.join(", ")}`, "bad");
-      rigLog(`missing: ${miss.join(", ")}`);
-      return;
+      if (!quiet) {
+        appendOut(`не хватает: ${miss.join(", ")}`, "bad");
+        rigLog(`missing: ${miss.join(", ")}`);
+      }
+      return false;
     }
+    const wasAssembled = !!state.assembled;
     state.assembled = true;
     state.powered = false;
     if (state.mining) stopMine();
     const sp = computeSpecs();
-    pay(15, "assemble bonus");
-    playActionFx(
-      `ASSEMBLED · ${sp.caseForm.toUpperCase()} · ${sp.cores}c/DDR${sp.ddr} ${sp.ramGb}G (${sp.ramFilled}/${sp.ramSlots} DIMM) · gfx${sp.gpuEff} · нажми POWER`,
-      { label: "mount" }
-    );
-    addNote(`Workstation ${sp.caseForm} · DDR${sp.ddr} assembled · POWER to boot`);
-    rigLog("assembled · press POWER");
-    save();
-    renderRig();
-    paintTower();
-    updateTelemetryHud();
+    if (!wasAssembled) pay(15, "assemble bonus");
+    if (!quiet) {
+      playActionFx(
+        `ASSEMBLED · ${sp.caseForm.toUpperCase()} · ${sp.cores}c/DDR${sp.ddr} ${sp.ramGb}G (${sp.ramFilled}/${sp.ramSlots} DIMM) · gfx${sp.gpuEff} · нажми POWER`,
+        { label: "mount" }
+      );
+      addNote(`Workstation ${sp.caseForm} · DDR${sp.ddr} assembled · POWER to boot`);
+      rigLog("assembled · press POWER");
+      save();
+      renderRig();
+      paintTower();
+      updateTelemetryHud();
+    }
+    return true;
   }
 
   function togglePower() {
     if (!state.assembled) {
       const miss = bootBlockers();
-      appendOut(
-        miss.length
-          ? `не собран · не хватает: ${miss.join(", ")} · install из bag или assemble`
-          : "сначала assemble (scrap-kit в слотах)",
-        "bad"
-      );
-      rigLog(miss.length ? `need: ${miss.join(", ")}` : "assemble first");
-      return;
+      if (miss.length) {
+        appendOut(
+          `не собран · не хватает: ${miss.join(", ")} · install из bag или Shop`,
+          "bad"
+        );
+        rigLog(`need: ${miss.join(", ")}`);
+        return;
+      }
+      // scrap-kit уже в слотах — assemble сам, затем boot
+      if (!tryAssemble({ quiet: true })) return;
+      rigLog("auto-assembled · booting…");
     }
     if (!state.powered) {
       const miss = bootBlockers();
       if (miss.length) {
-        state.assembled = false;
         appendOut(`POWER FAIL · не хватает деталей: ${miss.join(", ")}`, "bad");
         rigLog(`power fail: ${miss.join(", ")}`);
         save();
@@ -2553,9 +2562,9 @@
         </div>
         <div id="opsRigTower" class="ops-tower ops-tower--rig"></div>
         <div class="ops-power-row">
-          <button type="button" class="ops-power-btn ${state.powered ? "on" : ""}" id="opsRigPower" title="питание">
+          <button type="button" class="ops-power-btn ${state.powered ? "on" : ""}" id="opsRigPower" title="${state.powered ? "выключить" : "включить ПК"}">
             <span class="ops-power-led"></span>
-            ${state.powered ? "POWER ON" : "POWER OFF"}
+            ${state.powered ? "POWER ON" : "POWER · ON"}
           </button>
         </div>
         <div class="ops-gate-actions">
@@ -2570,11 +2579,12 @@
         </div>
         <p class="ops-lead">
           ${miss.length ? `Не хватает: ${escapeHtml(miss.join(", "))} · Bag → install или Shop → buy.` : ""}
-          ${scrapReady ? "Scrap-kit готов — assemble, потом POWER." : ""}
+          ${scrapReady ? "Scrap-kit готов — жми POWER · ON (assemble сам)." : ""}
+          ${state.assembled && !state.powered && !miss.length ? "Стендбай — жми POWER · ON." : ""}
           Shop покупает в bag · Bag: install / sell · uninstall снимает в bag (сначала POWER OFF).
         </p>`;
       paintTower();
-      document.getElementById("opsRigAssemble")?.addEventListener("click", tryAssemble);
+      document.getElementById("opsRigAssemble")?.addEventListener("click", () => tryAssemble());
       document.getElementById("opsRigPower")?.addEventListener("click", togglePower);
       document.getElementById("opsRigMine")?.addEventListener("click", () => {
         if (state.mining) stopMine();
