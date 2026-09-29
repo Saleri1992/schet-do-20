@@ -1062,6 +1062,443 @@
     },
   ];
 
+  /** Тикеты заказчиков — имитация переписки / брифа по главе */
+  const MAILS = {
+    intro: {
+      from: "Mira · биржа Grid-7",
+      subject: "Добро пожаловать на стол",
+      tone: "soft",
+      body:
+        "Эй. Ты новый? На столе scrap mATX — детали уже в Rig.\n" +
+        "Включи ящик (POWER · ON), потом разберёмся с Linux.\n" +
+        "Деньги на апгрейд — drills на хабе. Сюжет платит отдельно.",
+    },
+    linux: {
+      from: "Mira · freelance desk",
+      subject: "Тикет #L-01 · bootstrap Linux",
+      tone: "normal",
+      body:
+        "Нужен живой Linux на scrap-ПК.\n" +
+        "Обнови пакеты, поставь curl/git/htop/net-tools, назови хост neon-ops.\n" +
+        "Когда чеклист зелёный — кину оплату.",
+      tasks: {
+        upd: "apt update — обновить списки",
+        upg: "apt upgrade — обновить систему",
+        ins: "поставить curl git htop net-tools",
+        host: "hostnamectl set-hostname neon-ops",
+      },
+      pings: ["Вижу обновление зеркал…", "Система свежее — норм.", "Пакеты на месте, супер.", "Хост neon-ops принят. Спасибо!"],
+    },
+    quiz1: {
+      from: "Mira · мини-тест",
+      subject: "Закрепим слова до заказов",
+      tone: "quiz",
+      body: "Быстрый квиз: apt, sudo, htop, net-tools. Не ради оценки — чтобы в заказах не тупить.",
+    },
+    gigs1: {
+      from: "Client-A · биржа FILE-OPS",
+      subject: "Папка и status.txt",
+      tone: "normal",
+      body:
+        "Нужна рабочая папка ~/projects/client-a.\n" +
+        "Внутри status.txt со словом ready, копия .bak и покажи содержимое cat'ом.\n" +
+        "Простая задача — плачу быстро.",
+      tasks: {
+        g1: "mkdir -p ~/projects/client-a",
+        g2: "echo ready > status.txt",
+        g3: "cp → status.bak",
+        g4: "cat status.txt",
+      },
+      pings: ["Папку вижу.", "status.txt ок.", "Бэкап на месте.", "Готово — перевод ушёл."],
+    },
+    gigs2: {
+      from: "Client-B · SERVICE-LITE",
+      subject: "SSH-служба: статус → enable → restart",
+      tone: "normal",
+      body:
+        "Проверь ssh: status, enable, restart, потом journalctl -u ssh -n 20.\n" +
+        "Это lab-имитация — привыкай к гигиене сервисов.",
+      tasks: {
+        s1: "systemctl status ssh",
+        s2: "systemctl enable ssh",
+        s3: "systemctl restart ssh",
+        s4: "journalctl -u ssh -n 20",
+      },
+      pings: ["Статус вижу.", "Autostart ок.", "Рестарт прошёл.", "Логи чистые — зачёт."],
+    },
+    quiz2: {
+      from: "Mira · перед ночью",
+      subject: "Слова: grep · ssh · ufw · journalctl",
+      tone: "quiz",
+      body: "Скоро инцидент. Проверь, что эти слова не пустые звуки.",
+    },
+    netlab: {
+      from: "Client-C · net check",
+      subject: "«Проверьте нам сеть»",
+      tone: "normal",
+      body:
+        "Клиент паникует из-за «интернета».\n" +
+        "Сделай: ip a → ping 1.1.1.1 → dig example.com → curl -I https://example.com.\n" +
+        "Отчёт не нужен — только зелёный чеклист.",
+      tasks: {
+        n1: "ip a",
+        n2: "ping -c 3 1.1.1.1",
+        n3: "dig example.com",
+        n4: "curl -I https://example.com",
+      },
+      pings: ["Интерфейс UP.", "Пинг живой.", "DNS отвечает.", "HTTP 200 — клиент спокоен."],
+    },
+    night: {
+      from: "Биржа · СРОЧНО",
+      subject: "03:17 · диск пустой, сайты молчат",
+      tone: "urgent",
+      body:
+        "Срочно. У клиента диск «обнулён», сайты молчат.\n" +
+        "Платим за восстановление + отчёт.\n" +
+        "Ты ещё не знаешь: кто-то уже унёс бэкап. Жми далее — BLACKOUT.",
+    },
+    incident: {
+      from: "tty · записка",
+      subject: "BLACKOUT · «бэкап у меня»",
+      tone: "urgent",
+      body:
+        `Рабочий ПК обнулён. В tty записка: «бэкап у меня».\n` +
+        `Железа нет — только консоль домашнего роутера (СИМУЛЯЦИЯ).\n` +
+        `Найди IP эксфильтрации. В логах шум ${DECOY_IP} и цель ${HOST_IP}. Не ведись на decoy.`,
+    },
+    router: {
+      from: "Case · router forensics",
+      subject: `Найди IP · track ${HOST_IP}`,
+      tone: "urgent",
+      body:
+        "Роутер lab. Копай /var/log: ls, cd, cat, grep, find.\n" +
+        "Полезно: grep SSH connections.log · cat alerts.json.\n" +
+        `Когда уверен — track ${HOST_IP} (decoy не засчитается).`,
+      tasks: {
+        track: `track ${HOST_IP}`,
+      },
+      pings: ["TRACE LOCK. IP зафиксирован."],
+    },
+    osint: {
+      from: "Case · label the host",
+      subject: "Кто этот VPS? (lab OSINT)",
+      tone: "normal",
+      body:
+        `Без реального интернета: whois и dig -x для ${HOST_IP}, затем заметка в ~/case/host.txt.`,
+      tasks: {
+        w1: `whois ${HOST_IP}`,
+        w2: `dig -x ${HOST_IP}`,
+        w3: "echo shadow-vps-lab > ~/case/host.txt",
+      },
+      pings: ["whois ок.", "PTR на месте.", "Хост помечен в кейсе."],
+    },
+    ssh: {
+      from: "Case · shadow shell",
+      subject: `SSH на ${HOST_IP}`,
+      tone: "urgent",
+      body:
+        `Fiction lab-VPS. Клише admin/admin — только сюжет.\n` +
+        `ssh admin@${HOST_IP} → пароль admin.`,
+      tasks: {
+        sshcmd: `ssh admin@${HOST_IP}`,
+      },
+      pings: ["Сессия открыта. Ищи vault."],
+    },
+    explore: {
+      from: "Case · vault",
+      subject: "Найди пароль бэкапа",
+      tone: "urgent",
+      body:
+        "ФС lab: /home/admin — notes, loot (есть decoy), .secret, tools, mail, work.\n" +
+        `Найди реальный пароль и: unlock-vault ${BACKUP_PASS}\n` +
+        "Бонус: tools/* и .secret/alias.txt пригодятся в отчёте.",
+      tasks: {
+        unlock: `unlock-vault ${BACKUP_PASS}`,
+      },
+      pings: ["VAULT OPEN. Снимок готов к restore."],
+    },
+    parse: {
+      from: "Case · timeline",
+      subject: "Собери картину атаки",
+      tone: "normal",
+      body:
+        "На том же хосте: grep exfil events.json, cat todo.csv, find pass|backup,\n" +
+        `затем confirm-case ${HOST_IP}.`,
+      tasks: {
+        p1: "grep exfil …/events.json",
+        p2: "cat …/todo.csv",
+        p3: "find pass | find backup",
+        p4: `confirm-case ${HOST_IP}`,
+      },
+      pings: ["exfil в логе.", "todo прочитан.", "хлебные крошки найдены.", "CASE CONFIRMED."],
+    },
+    restore: {
+      from: "Клиент · restore",
+      subject: "Верните нам систему!",
+      tone: "urgent",
+      body:
+        `1) restore-backup --pass ${BACKUP_PASS}\n` +
+        "2) sudo systemctl reboot\n" +
+        "3) hostnamectl — убедись, что neon-ops жив.",
+      tasks: {
+        r1: "restore-backup --pass …",
+        r2: "sudo systemctl reboot",
+        r3: "hostnamectl",
+      },
+      pings: ["Снимок накатывается…", "Ребут…", "Хост жив. Спасибо!!!"],
+    },
+    quiz3: {
+      from: "Mira · defense quiz",
+      subject: "Перед забором — 4 вопроса",
+      tone: "quiz",
+      body: "fail2ban, ufw, IDS, что делать после restore. Коротко.",
+    },
+    defense: {
+      from: "Клиент · fence",
+      subject: "Закройте дверь (ufw + fail2ban + IDS)",
+      tone: "urgent",
+      body:
+        `Включи ufw, запрети ${HOST_IP}, поставь/запусти fail2ban и suricata.\n` +
+        "Без этого снова придут.",
+      tasks: {
+        d1: "ufw enable",
+        d2: `ufw deny from ${HOST_IP}`,
+        d3: "apt install fail2ban",
+        d4: "enable fail2ban",
+        d5: "start fail2ban",
+        d6: "start suricata",
+      },
+      pings: ["Firewall up.", "IP в бане.", "fail2ban стоит.", "enabled.", "fail2ban бежит.", "IDS online — флаг!" ],
+    },
+    report: {
+      from: "Клиент · отчёт",
+      subject: "Нужен письменный отчёт по кейсу",
+      tone: "normal",
+      body:
+        `Запиши attacker ${HOST_IP} и alias ${ALIAS_CODE} в ~/case/report.txt, потом cat.\n` +
+        "(alias мог быть в .secret/alias.txt)",
+      tasks: {
+        rp1: "echo attacker … > report.txt",
+        rp2: "echo alias … >> report.txt",
+        rp3: "cat report.txt",
+      },
+      pings: ["Отчёт создан.", "Alias добавлен.", "Принято. Перевод + оффер на почте."],
+    },
+    offer: {
+      from: "NeonOps GmbH · HR",
+      subject: "Оффер после BLACKOUT",
+      tone: "corp",
+      body:
+        "Отчёт видели. Оффер: VPN для филиала, позже витрина nginx.\n" +
+        `VPN host: ${VPN_IP} · admin/admin · стек WireGuard.\n` +
+        "Чеклисты могли остаться в notes со shadow-хоста.",
+    },
+    corpquiz: {
+      from: "NeonOps · онбординг",
+      subject: "4 вопроса перед продом",
+      tone: "quiz",
+      body: "WireGuard, wg-quick, nginx, enable+journal. Стандарт онбординга.",
+    },
+    vpn: {
+      from: "NeonOps · филиал",
+      subject: "Поднять WireGuard VPN",
+      tone: "corp",
+      body:
+        `Нужен CAP VPN. ssh admin@${VPN_IP} (admin), поставь wireguard,\n` +
+        "enable/start wg-quick@wg0, проверь status.",
+      tasks: {
+        vpnssh: `ssh admin@${VPN_IP}`,
+        wgins: "apt install wireguard",
+        wgen: "enable wg-quick@wg0",
+        wgst: "start wg-quick@wg0",
+        wgs: "status wg-quick@wg0",
+      },
+      pings: ["Зашли на ноду.", "Пакет есть.", "Autostart.", "Туннель up.", "VPN READY — оплата."],
+    },
+    web: {
+      from: "NeonOps · витрина",
+      subject: "nginx shopfront",
+      tone: "corp",
+      body:
+        `CAP Web. ssh ${WEB_IP}, nginx enable/start, index «neon», curl localhost.`,
+      tasks: {
+        wssh: `ssh admin@${WEB_IP}`,
+        ni: "apt install nginx",
+        ne: "enable nginx",
+        ns: "start nginx",
+        nw: "echo neon > index.html",
+        nc: "curl http://localhost",
+      },
+      pings: ["SSH ок.", "nginx стоит.", "enabled.", "started.", "index написан.", "Витрина отвечает neon."],
+    },
+    smtp: {
+      from: "NeonOps · почта",
+      subject: "Поднять postfix",
+      tone: "corp",
+      body:
+        `CAP SMTP · ${SMTP_IP}. Поставь postfix, enable/start, тестовое письмо, status.`,
+      tasks: {
+        sssh: `ssh admin@${SMTP_IP}`,
+        si: "apt install postfix",
+        se: "enable postfix",
+        sst: "start postfix",
+        sm: "echo test | mail …",
+        ss: "status postfix",
+      },
+      pings: ["На почтовом узле.", "postfix есть.", "enabled.", "started.", "Письмо в очереди.", "SMTP READY."],
+    },
+    monitor: {
+      from: "NOC · смена",
+      subject: "Keep the lights on",
+      tone: "normal",
+      body: "Смена мониторинга: status/journal nginx, df, free, uptime. Без сюрпризов — спим спокойно.",
+      tasks: {
+        m1: "systemctl status nginx",
+        m2: "journalctl -u nginx -n 20",
+        m3: "df -h",
+        m4: "free -m",
+        m5: "uptime",
+      },
+      pings: ["nginx ok.", "логи тихие.", "диск есть.", "RAM ок.", "uptime зелёный."],
+    },
+    skill_brief: {
+      from: "NeonOps · skill-chip",
+      subject: "Тебе выдали очки навыков",
+      tone: "corp",
+      body:
+        "Skill-chip: XP с заказов → очки в Rig → Skills\n" +
+        "(Linux / Network / Forensics / Defense / DevOps).\n" +
+        "Прокачка открывает контракты и бусты.",
+    },
+    proxy: {
+      from: "NeonOps · edge",
+      subject: "Reverse-proxy для app",
+      tone: "corp",
+      body: "CAP Proxy: nginx site file, symlink, nginx -t, reload.",
+      tasks: {
+        px1: "apt install nginx",
+        px2: "sites-available/app",
+        px3: "ln -s → sites-enabled",
+        px4: "nginx -t",
+        px5: "reload nginx",
+      },
+      pings: ["nginx ready.", "конфиг записан.", "symlink ок.", "syntax ok.", "PROXY OK."],
+    },
+    ssl: {
+      from: "NeonOps · TLS",
+      subject: "Сертификат на shop.neon.test",
+      tone: "corp",
+      body: "CAP web: certbot --nginx -d shop.neon.test, reload, заметка tls_ok.",
+      tasks: {
+        t1: "apt install certbot",
+        t2: "certbot --nginx -d shop.neon.test",
+        t3: "reload nginx",
+        t4: "echo tls_ok > ~/case/ssl.txt",
+      },
+      pings: ["certbot есть.", "сертификат (lab) выдан.", "nginx TLS.", "заметка сохранена."],
+    },
+    cronbak: {
+      from: "NeonOps · бэкапы",
+      subject: "Ночной cron на /var/www",
+      tone: "normal",
+      body: "Автобэкап в 03:00: staging → /etc/cron.d/neon-backup → reload cron → grep.",
+      tasks: {
+        c1: "echo cron line > /tmp/bak.cron",
+        c2: "cp → /etc/cron.d/neon-backup",
+        c3: "systemctl reload cron",
+        c4: "grep neon-backup …",
+      },
+      pings: ["строка готова.", "cron.d установлен.", "cron reload.", "задание на месте."],
+    },
+    docker: {
+      from: "NeonOps · containers",
+      subject: "neon-web на :8080",
+      tone: "corp",
+      body: "CAP Container: docker.io, enable/start, run nginx:alpine, docker ps, curl :8080.",
+      tasks: {
+        dk1: "apt install docker.io",
+        dk2: "enable docker",
+        dk3: "start docker",
+        dk4: "docker run neon-web …",
+        dk5: "docker ps",
+        dk6: "curl :8080",
+      },
+      pings: ["docker стоит.", "enabled.", "started.", "контейнер up.", "ps ок.", "8080 отвечает."],
+    },
+    dns: {
+      from: "NeonOps · DNS",
+      subject: "Резолвер neon.test",
+      tone: "corp",
+      body: "CAP DNS: unbound enable/start, dig @127.0.0.1 neon.test, staging resolv.",
+      tasks: {
+        dn1: "apt install unbound",
+        dn2: "enable unbound",
+        dn3: "start unbound",
+        dn4: "dig @127.0.0.1 neon.test",
+        dn5: "echo nameserver → /tmp/resolv.lab",
+      },
+      pings: ["unbound есть.", "enabled.", "started.", "имя резолвится.", "resolv staged."],
+    },
+    db: {
+      from: "NeonOps · data",
+      subject: "Postgres pocket",
+      tone: "corp",
+      body: "CAP DB: postgresql enable/start, SELECT 1, заметка db_ok.",
+      tasks: {
+        db1: "apt install postgresql",
+        db2: "enable postgresql",
+        db3: "start postgresql",
+        db4: "psql -c 'SELECT 1'",
+        db5: "echo db_ok > ~/case/db.txt",
+      },
+      pings: ["postgres стоит.", "enabled.", "started.", "SELECT 1 ok.", "заметка сохранена."],
+    },
+    insider: {
+      from: "SOC · whisper",
+      subject: "Ночные логины с bastion",
+      tone: "urgent",
+      body: "Тикет: странные ночные сессии. Нужен CAP Bastion — потом аудит last/auth/ufw.",
+    },
+    bastion: {
+      from: "SOC · bastion audit",
+      subject: "Укрепить jump-host",
+      tone: "urgent",
+      body: "last -a, grep Accepted auth.log, ufw allow 10.0.0.0/8:22, restart ssh, заметка в case.",
+      tasks: {
+        b1: "last -a",
+        b2: "grep Accepted auth.log",
+        b3: "ufw allow 10.0.0.0/8 → 22",
+        b4: "restart ssh",
+        b5: "echo bastion_hardened",
+      },
+      pings: ["сессии видны.", "Accepted найден.", "правило ufw.", "ssh перезапущен.", "кейc закрыт."],
+    },
+    quiz4: {
+      from: "Board · senior check",
+      subject: "Совет директоров проверяет уровень",
+      tone: "quiz",
+      body: "reverse-proxy, certbot, cron, контейнеры — senior ops quiz.",
+    },
+    finale_mail: {
+      from: "NeonOps Board",
+      subject: "Инфра жива. Что дальше",
+      tone: "corp",
+      body: "Инфра жива. Дальше — Rig + Skills. Контракты на бирже. Хорошая работа.",
+    },
+    garage: {
+      from: "Mira · гараж",
+      subject: "Открыт доступ к Rig",
+      tone: "soft",
+      body: "Тюнинг ПК, серверы под CAP, Skills. UI — «rig · железо». shop/buy/assemble/mine в терминале тоже.",
+    },
+    epilogue: {
+      from: "Grid-7 · эхо",
+      subject: "Город всё ещё гудит",
+      tone: "soft",
+      body: "Качай Skills, апгрейди GPU, бери Rack, сейвь в cloud nick. Увидимся на бирже.",
+    },
+  };
+
   function defaultState() {
     return {
       chapter: 0,
@@ -1194,6 +1631,107 @@
     return CHAPTERS[Math.min(state.chapter, CHAPTERS.length - 1)];
   }
 
+  function mailFor(ch) {
+    if (!ch) return null;
+    return MAILS[ch.id] || null;
+  }
+
+  function mailToneBadge(tone, done) {
+    if (done) return { cls: "done", label: "DONE" };
+    if (tone === "urgent") return { cls: "urgent", label: "СРОЧНО" };
+    if (tone === "quiz") return { cls: "quiz", label: "КВИЗ" };
+    if (tone === "corp") return { cls: "corp", label: "CORP" };
+    if (tone === "soft") return { cls: "soft", label: "BRIEF" };
+    return { cls: "", label: "ТИКЕТ" };
+  }
+
+  function goalTaskLabel(ch, g) {
+    const mail = mailFor(ch);
+    if (mail && mail.tasks && mail.tasks[g.id]) return mail.tasks[g.id];
+    if (g.task) return g.task;
+    if (g.hintCmd) return g.hintCmd;
+    return g.id;
+  }
+
+  function chapterPayEstimate(ch) {
+    if (!ch) return 0;
+    if (ch.mode === "quiz" || ch.mode === "continue" || ch.mode === "garage") return ch.reward || 0;
+    return (ch.goals || []).reduce((s, g) => s + (g.pay || 0), 0);
+  }
+
+  let lastMailPing = "";
+
+  function renderMail(ch, pingText) {
+    const box = document.getElementById("opsStoryMail");
+    if (!box) return;
+    const mail = mailFor(ch);
+    if (!mail) {
+      box.classList.add("hidden");
+      box.innerHTML = "";
+      return;
+    }
+    box.classList.remove("hidden");
+    const goals = ch.goals || [];
+    const doneCount = goals.filter((g) => state.doneGoals[`${ch.id}:${g.id}`]).length;
+    const allDone = goals.length ? doneCount >= goals.length : !!state.doneGoals[`chpay_${ch.id}`] || state.finished;
+    const badge = mailToneBadge(mail.tone, goals.length ? doneCount === goals.length && goals.length > 0 : false);
+    const payEst = chapterPayEstimate(ch);
+    const next = nextOpenGoal(ch);
+    const ping = pingText != null ? pingText : lastMailPing;
+    if (pingText != null) lastMailPing = pingText;
+
+    const checklist = goals.length
+      ? `<ul class="ops-mail-check">${goals
+          .map((g) => {
+            const done = !!state.doneGoals[`${ch.id}:${g.id}`];
+            const now = !done && next && next.id === g.id;
+            const mark = done ? "✓" : now ? "▸" : "○";
+            const cls = done ? "done" : now ? "now" : "";
+            return `<li class="${cls}"><span class="ops-mail-mark">${mark}</span><span>${escapeHtml(goalTaskLabel(ch, g))}</span></li>`;
+          })
+          .join("")}</ul>`
+      : ch.mode === "quiz"
+        ? `<ul class="ops-mail-check"><li class="now"><span class="ops-mail-mark">▸</span><span>ответь на вопросы квиза</span></li></ul>`
+        : ch.mode === "continue" || ch.mode === "garage"
+          ? `<ul class="ops-mail-check"><li class="${allDone ? "done" : "now"}"><span class="ops-mail-mark">${allDone ? "✓" : "▸"}</span><span>${ch.mode === "garage" ? "открой Rig / жми далее" : "прочитай бриф и жми «далее»"}</span></li></ul>`
+          : "";
+
+    box.innerHTML = `
+      <div class="ops-mail-head">
+        <span class="ops-mail-badge ${badge.cls}">${badge.label}</span>
+        <span class="ops-mail-id">${escapeHtml(ch.title || ch.id)}</span>
+        <span class="ops-mail-pay">~$${payEst}${goals.length ? ` · ${doneCount}/${goals.length}` : ""}</span>
+      </div>
+      <div class="ops-mail-meta">
+        <span>от: <b>${escapeHtml(mail.from)}</b></span>
+        <span>кому: <b>ops@neon-ops</b></span>
+      </div>
+      <p class="ops-mail-subject">${escapeHtml(mail.subject)}</p>
+      <p class="ops-mail-body">${escapeHtml(mail.body)}</p>
+      ${checklist}
+      <div class="ops-mail-foot">
+        <span>${goals.length ? (doneCount === goals.length ? "заказчик ждёт закрытия главы…" : "отмечай пункты командами в терминале") : "продолжение по кнопке / квизу"}</span>
+        <span>lab · не прод</span>
+      </div>
+      ${ping ? `<div class="ops-mail-ping">✉ ${escapeHtml(ping)}</div>` : ""}`;
+  }
+
+  function clientPing(ch, g) {
+    const mail = mailFor(ch);
+    if (!mail) return;
+    const goals = ch.goals || [];
+    const idx = goals.findIndex((x) => x.id === g.id);
+    let msg = "";
+    if (mail.pings && mail.pings[idx]) msg = mail.pings[idx];
+    else if (mail.pings && mail.pings.length) msg = pick(mail.pings);
+    else msg = "Принято.";
+    const who = String(mail.from || "заказчик").split("·")[0].trim();
+    const line = `${who}: «${msg}»`;
+    lastMailPing = line;
+    appendOut(`✉ ${line}`, "ok");
+    renderMail(ch, line);
+  }
+
   function els() {
     return {
       panel: document.getElementById("opsStory"),
@@ -1211,6 +1749,7 @@
       notes: document.getElementById("opsStoryNotes"),
       continueBtn: document.getElementById("opsStoryContinue"),
       garage: document.getElementById("opsStoryGarage"),
+      mail: document.getElementById("opsStoryMail"),
     };
   }
 
@@ -1594,7 +2133,10 @@
         e.narrative.textContent =
           `${ch.narrative}\n\n⚠ CAP locked: ${capHint(ch.requireCap)}\n` +
           "Открой вкладку «rig · железо», докупи ПК/сервер, затем вернись в сюжет.";
+        e.narrative.classList.remove("ops-story-nar--aside");
       }
+      lastMailPing = "";
+      renderMail(ch);
       if (e.continueBtn) {
         e.continueBtn.classList.remove("hidden");
         e.continueBtn.textContent = "проверить CAP →";
@@ -1607,12 +2149,19 @@
     }
     document.getElementById("opsStoryRigGate")?.classList.add("hidden");
 
-    if (e.narrative) e.narrative.textContent = ch.narrative;
+    lastMailPing = "";
+    renderMail(ch);
+    if (e.narrative) {
+      e.narrative.textContent = ch.narrative;
+      e.narrative.classList.toggle("ops-story-nar--aside", !!mailFor(ch));
+    }
 
     if (ch.mode === "continue") {
       if (e.term) e.term.classList.remove("hidden");
       updatePrompt();
-      appendOut(`link · ${ch.id}`, "dim");
+      const mail = mailFor(ch);
+      if (mail) appendOut(`✉ inbox · ${mail.from} · ${mail.subject}`, "ok");
+      else appendOut(`link · ${ch.id}`, "dim");
       if (e.continueBtn) {
         e.continueBtn.classList.remove("hidden");
         e.continueBtn.textContent = state.chapter >= CHAPTERS.length - 1 ? "в hub / Rig" : "далее →";
@@ -1623,14 +2172,18 @@
       if (e.term) e.term.classList.remove("hidden");
       if (e.quiz) e.quiz.classList.remove("hidden");
       updatePrompt();
+      const mail = mailFor(ch);
+      if (mail) appendOut(`✉ inbox · ${mail.from} · ${mail.subject}`, "ok");
       appendOut(`quiz channel · ${ch.id}`, "dim");
       renderQuiz();
     } else if (ch.mode === "term") {
       if (e.term) e.term.classList.remove("hidden");
       updatePrompt();
+      const mail = mailFor(ch);
+      if (mail) appendOut(`✉ inbox · ${mail.from} · ${mail.subject}`, "ok");
       appendOut(`session · ${ch.id} · type help | hint`, "dim");
       const next = nextOpenGoal(ch);
-      if (next) appendOut(`next: ${next.hintCmd || next.id}`, "ok");
+      if (next) appendOut(`next: ${next.hintCmd || goalTaskLabel(ch, next)}`, "ok");
     } else if (ch.mode === "garage") {
       if (e.term) e.term.classList.remove("hidden");
       if (e.garage) e.garage.classList.remove("hidden");
@@ -1820,8 +2373,12 @@
     if (g.pay) pay(g.pay, g.id);
     const left = (ch.goals || []).filter((x) => !state.doneGoals[`${ch.id}:${x.id}`]).length;
     if (left > 0) appendOut(`ok · goal ${g.id} · left ${left}`, "dim");
+    clientPing(ch, g);
     save();
     if (goalsDone(ch)) {
+      const mail = mailFor(ch);
+      const who = mail ? String(mail.from).split("·")[0].trim() : "заказчик";
+      appendOut(`✉ ${who}: «Принято. Оплата на счёт — спасибо.»`, "ok");
       playActionFx("CHAPTER CLEAR", {
         label: "commit",
         after: () => setTimeout(() => advanceChapter(), 280),
