@@ -580,6 +580,17 @@ const UNIT_LEVELS = {
     balloons: ["🪙", "₽", "💵"],
     subtitle: "Копейки и рубли: 1 руб = 100 коп. Купюры 1, 2, 5, 10, 50, 100, 500, 1000, 2000, 5000.",
   },
+  6: {
+    id: 6,
+    name: "Часы",
+    theme: "units",
+    coin: 5,
+    limit: null,
+    units: "clock",
+    introKind: "clock",
+    balloons: ["🕒", "⏰", "🕐"],
+    subtitle: "Механические часы: обучение, четверть/половина, прочитать стрелки и поставить их самому.",
+  },
 };
 
 /** Умножение — своя лестница, не как База/Хард. */
@@ -732,16 +743,17 @@ const MODE_META = {
     id: MODE_UNITS,
     name: "Меры",
     unlockText: "Единицы измерения",
-    maxLevel: 5,
-    levelNames: ["Составные", "Метры", "Через единицы", "Сравнение", "Деньги"],
+    maxLevel: 6,
+    levelNames: ["Составные", "Метры", "Через единицы", "Сравнение", "Деньги", "Часы"],
     levelDescs: [
       "Составные и простые ×10 + обратно (два поля)",
       "Составные с метрами: 1 м = 100 см + обратно",
       "Простые переводы с напоминалкой: мм=см, см=дм, м=см",
       "Сравни длины: 1 / 2 / 0=равно",
       "Копейки и рубли + купюры 1…5000",
+      "Циферблат 12 часов: учить → читать стрелки → ставить стрелки",
     ],
-    themes: ["units", "units", "units", "unitsCmp", "units"],
+    themes: ["units", "units", "units", "unitsCmp", "units", "units"],
   },
   [MODE_MUL]: {
     id: MODE_MUL,
@@ -2249,6 +2261,7 @@ const ACHIEVEMENTS = [
   { id: "units_simple", icon: "🧠", name: "Через единицы", desc: "10/10 на простых переводах", check: (s) => stateHasPerfect(s, MODE_UNITS, 3), progress: (s) => ({ current: stateHasPerfect(s, MODE_UNITS, 3) ? 10 : (s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_UNITS && r.level === 3).reduce((m, r) => Math.max(m, r.correct || 0), 0)), target: 10 }) },
   { id: "units_compare", icon: "⚖️", name: "Весы", desc: "10/10 на сравнении мер", check: (s) => stateHasPerfect(s, MODE_UNITS, 4), progress: (s) => ({ current: stateHasPerfect(s, MODE_UNITS, 4) ? 10 : (s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_UNITS && r.level === 4).reduce((m, r) => Math.max(m, r.correct || 0), 0)), target: 10 }) },
   { id: "units_money", icon: "🪙", name: "Кошелёк", desc: "10/10 на «Деньги»", check: (s) => stateHasPerfect(s, MODE_UNITS, 5), progress: (s) => ({ current: stateHasPerfect(s, MODE_UNITS, 5) ? 10 : (s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_UNITS && r.level === 5).reduce((m, r) => Math.max(m, r.correct || 0), 0)), target: 10 }) },
+  { id: "units_clock", icon: "🕒", name: "Часовщик", desc: "10/10 на «Часы»", check: (s) => stateHasPerfect(s, MODE_UNITS, 6), progress: (s) => ({ current: stateHasPerfect(s, MODE_UNITS, 6) ? 10 : (s.runs.filter((r) => (r.mode || MODE_BASIC) === MODE_UNITS && r.level === 6).reduce((m, r) => Math.max(m, r.correct || 0), 0)), target: 10 }) },
   { id: "mul_easy", icon: "💡", name: "Понял суть", desc: "10/10 на этапе «Суть» умножения", check: (s) => stateHasPerfect(s, MODE_MUL, 1), progress: (s) => ({ current: stateHasPerfect(s, MODE_MUL, 1) ? 10 : (s.runs.filter((r) => r.mode === MODE_MUL && (r.level || 1) === 1).reduce((m, r) => Math.max(m, r.correct || 0), 0)), target: 10 }) },
   { id: "mul_table", icon: "2️⃣", name: "Двойки и тройки", desc: "10/10 на этапе «×2 и ×3»", check: (s) => stateHasPerfect(s, MODE_MUL, 2), progress: (s) => ({ current: stateHasPerfect(s, MODE_MUL, 2) ? 10 : (s.runs.filter((r) => r.mode === MODE_MUL && r.level === 2).reduce((m, r) => Math.max(m, r.correct || 0), 0)), target: 10 }) },
   { id: "mul_hard", icon: "🎲", name: "Смешанный мастер", desc: "10/10 на этапе «Смешанно»", check: (s) => stateHasPerfect(s, MODE_MUL, 5), progress: (s) => ({ current: stateHasPerfect(s, MODE_MUL, 5) ? 10 : (s.runs.filter((r) => r.mode === MODE_MUL && r.level === 5).reduce((m, r) => Math.max(m, r.correct || 0), 0)), target: 10 }) },
@@ -3938,7 +3951,7 @@ function equippedBattleRelic() {
 
 function battleRoundsForMode(mode = selectedMode, battleId = selectedLevel) {
   let all;
-  if (mode === MODE_UNITS) all = [1, 2, 3, 4, 5];
+  if (mode === MODE_UNITS) all = [1, 2, 3, 4, 5, 6];
   else if (mode === MODE_CODE) all = [1, 2, 3, 4, 5, 6, 7, 8, 9];
   else if (mode === MODE_ENG) all = [1, 2, 3, 4, 5, 6, 7];
   else if (mode === MODE_MUL || mode === MODE_DIV) all = [1, 2, 3, 4, 5];
@@ -3958,7 +3971,7 @@ function isBossOpen(id = BATTLE_LEVEL) {
   const bid = Number(id);
   if (!isBattleLevel(bid)) return false;
   const allReady = (selectedMode === MODE_UNITS
-    ? [1, 2, 3, 4, 5]
+    ? [1, 2, 3, 4, 5, 6]
     : [1, 2, 3, 4, 5]
   ).every((lvl) => hasPerfect(lvl));
   if (bid === 7) return allReady;
@@ -4084,7 +4097,8 @@ function mapLayoutForMode(mode = selectedMode) {
       { id: 3, kind: "level", col: 3, row: 2 },
       { id: 4, kind: "level", col: 1, row: 3 },
       { id: 5, kind: "level", col: 5, row: 3 },
-      { id: 7, kind: "boss", col: 2, row: 4 },
+      { id: 6, kind: "level", col: 3, row: 4 },
+      { id: 7, kind: "boss", col: 2, row: 5 },
       { id: 8, kind: "boss", col: 4, row: 5 },
       { id: 9, kind: "boss", col: 3, row: 6 },
     ];
@@ -4669,12 +4683,289 @@ function generateMoneyConvert() {
 
 function generateUnitsConvert(kind = "compound10") {
   if (kind === "money") return generateMoneyConvert();
+  if (kind === "clock") return generateClockProblem();
   return generateLengthConvert(kind);
 }
 
 function generateUnitsCompare() {
   return generateLengthCompare();
 }
+
+/** 12-часовой циферблат: угол стрелок от 12 часов по часовой. */
+function clockAngles(h12, m) {
+  const hour = ((h12 % 12) + m / 60) * 30;
+  const minute = m * 6;
+  return { hour, minute };
+}
+
+function clockPeriodRu(h24) {
+  const h = ((h24 % 24) + 24) % 24;
+  if (h >= 5 && h <= 11) return "утра";
+  if (h >= 12 && h <= 16) return "дня";
+  if (h >= 17 && h <= 22) return "вечера";
+  return "ночи";
+}
+
+function clockPeriodEmoji(period) {
+  if (period === "утра") return "🌅";
+  if (period === "дня") return "☀️";
+  if (period === "вечера") return "🌇";
+  return "🌙";
+}
+
+function toH12(h24) {
+  const h = ((h24 % 24) + 24) % 24;
+  const h12 = h % 12;
+  return h12 === 0 ? 12 : h12;
+}
+
+function formatClockHm(h12, m) {
+  return `${h12}:${String(m).padStart(2, "0")}`;
+}
+
+function clockFaceSvg(h12, m, opts = {}) {
+  const size = opts.size || 200;
+  const { hour, minute } = clockAngles(h12, m);
+  const interactive = !!opts.interactive;
+  const marks = [];
+  for (let i = 0; i < 60; i += 1) {
+    const a = (i * 6 - 90) * (Math.PI / 180);
+    const major = i % 5 === 0;
+    const r1 = major ? 78 : 82;
+    const r2 = 88;
+    const x1 = 100 + Math.cos(a) * r1;
+    const y1 = 100 + Math.sin(a) * r1;
+    const x2 = 100 + Math.cos(a) * r2;
+    const y2 = 100 + Math.sin(a) * r2;
+    marks.push(`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${major ? "#3d3a4a" : "#c5c0d0"}" stroke-width="${major ? 2.2 : 1}"/>`);
+  }
+  const nums = [];
+  for (let n = 1; n <= 12; n += 1) {
+    const a = (n * 30 - 90) * (Math.PI / 180);
+    const x = 100 + Math.cos(a) * 62;
+    const y = 100 + Math.sin(a) * 62;
+    nums.push(`<text x="${x.toFixed(1)}" y="${(y + 5).toFixed(1)}" text-anchor="middle" font-size="14" font-weight="700" fill="#3d3a4a" font-family="system-ui,sans-serif">${n}</text>`);
+  }
+  return `
+    <svg class="clock-face ${interactive ? "interactive" : ""}" viewBox="0 0 200 200" width="${size}" height="${size}" aria-hidden="true">
+      <circle cx="100" cy="100" r="94" fill="#fffaf0" stroke="#5b4a8a" stroke-width="6"/>
+      <circle cx="100" cy="100" r="88" fill="#fffdf8" stroke="#e8e0f0" stroke-width="1"/>
+      ${marks.join("")}
+      ${nums.join("")}
+      <line class="clock-hand hour" x1="100" y1="100" x2="100" y2="55" stroke="#3d3a4a" stroke-width="6" stroke-linecap="round"
+        transform="rotate(${hour.toFixed(2)} 100 100)"/>
+      <line class="clock-hand minute" x1="100" y1="100" x2="100" y2="38" stroke="#6c5ce7" stroke-width="4" stroke-linecap="round"
+        transform="rotate(${minute.toFixed(2)} 100 100)"/>
+      <circle cx="100" cy="100" r="6" fill="#6c5ce7"/>
+      <circle cx="100" cy="100" r="2.5" fill="#fff"/>
+    </svg>`;
+}
+
+function clockChoice(ok, pool) {
+  const q = shuffleChoices(ok, pool);
+  return {
+    text: "",
+    choices: q.choices,
+    answer: q.answer,
+    choice: true,
+  };
+}
+
+function makeClockQuiz(text, ok, pool, hint) {
+  const q = clockChoice(ok, pool);
+  return {
+    ...q,
+    text,
+    hint: hint || "Выбери ответ: 1, 2 или 3",
+    clockQuiz: true,
+    op: "CLK",
+    a: text,
+    b: ok,
+  };
+}
+
+function makeClockRead(h24, m) {
+  const h12 = toH12(h24);
+  const period = clockPeriodRu(h24);
+  return {
+    text: `Который час?\n${clockPeriodEmoji(period)} Напиши часы и минуты, выбери часть суток.`,
+    clock: { h12, m, h24, period },
+    clockRead: true,
+    multi: true,
+    parts: [
+      { unit: "ч", answer: h12 },
+      { unit: "мин", answer: m },
+    ],
+    period,
+    periodChoices: ["утра", "дня", "вечера", "ночи"],
+    answerLabel: `${formatClockHm(h12, m)} ${period}`,
+    op: "CLK",
+    a: formatClockHm(h12, m),
+    b: period,
+  };
+}
+
+function makeClockSet(h24, m) {
+  const h12 = toH12(h24);
+  const period = clockPeriodRu(h24);
+  return {
+    text: `Поставь стрелки: ${formatClockHm(h12, m)}\n${clockPeriodEmoji(period)} ${period}`,
+    clock: { h12, m, h24, period },
+    clockSet: true,
+    answerLabel: formatClockHm(h12, m),
+    op: "CLK",
+    a: h12,
+    b: m,
+  };
+}
+
+function generateClockProblem() {
+  // fallback random if asked singly
+  const packs = [
+    () => makeClockQuiz("Сколько минут в одном часе?", "60", ["60", "100", "24"]),
+    () => makeClockQuiz("Сколько секунд в одной минуте?", "60", ["60", "100", "12"]),
+    () => makeClockRead(rand(7, 11), [0, 15, 30, 45][rand(0, 3)]),
+    () => makeClockSet(rand(14, 20), [0, 15, 30, 45][rand(0, 3)]),
+  ];
+  return packs[rand(0, packs.length - 1)]();
+}
+
+function generateClockRun() {
+  const readPool = [
+    { h24: 7, m: 0 },
+    { h24: 9, m: 15 },
+    { h24: 10, m: 30 },
+    { h24: 8, m: 45 },
+    { h24: 16, m: 0 },
+    { h24: 18, m: 30 },
+    { h24: 20, m: 15 },
+    { h24: 22, m: 45 },
+  ];
+  const setPool = [
+    { h24: 3, m: 0 },
+    { h24: 5, m: 30 },
+    { h24: 11, m: 15 },
+    { h24: 14, m: 45 },
+    { h24: 19, m: 0 },
+    { h24: 21, m: 30 },
+  ];
+  const reads = shuffle(readPool).slice(0, 3);
+  const sets = shuffle(setPool).slice(0, 2);
+  // 5 квиз + 3 прочитать + 2 поставить = 10
+  return [
+    makeClockQuiz(
+      "Сколько минут в часе и секунд в минуте?",
+      "по 60",
+      ["по 60", "по 100", "по 12"],
+      "И минут, и секунд — по 60"
+    ),
+    makeClockQuiz(
+      "Что значит 00:00 (или 24:00)? А 15:00 на циферблате 12?",
+      "полночь · и 3 часа дня",
+      ["полночь · и 3 часа дня", "полдень · и 15 утра", "семь утра · и пять вечера"],
+      "00:00 — полночь. После 12 дня: 13→1, 14→2, 15→3…"
+    ),
+    makeClockQuiz(
+      "«Половина четвёртого» — это…",
+      "3:30",
+      ["3:30", "4:30", "4:00"],
+      "Половина N-го = (N−1):30"
+    ),
+    makeClockQuiz(
+      "«Четверть пятого» — это…",
+      "4:15",
+      ["4:15", "5:15", "4:45"],
+      "Четверть N-го = (N−1):15"
+    ),
+    makeClockQuiz(
+      "«Без четверти семь» (без пятнадцати семь) — это…",
+      "6:45",
+      ["6:45", "7:45", "7:15"],
+      "Без четверти N = (N−1):45"
+    ),
+    makeClockRead(reads[0].h24, reads[0].m),
+    makeClockRead(reads[1].h24, reads[1].m),
+    makeClockRead(reads[2].h24, reads[2].m),
+    makeClockSet(sets[0].h24, sets[0].m),
+    makeClockSet(sets[1].h24, sets[1].m),
+  ];
+}
+
+const CLOCK_LESSON = [
+  {
+    title: "Циферблат",
+    html: `
+      <p class="clock-lesson-lead">На механических часах круг с числами <strong>1…12</strong>.</p>
+      ${clockFaceSvg(10, 10, { size: 160 })}
+      <ul class="clock-lesson-list">
+        <li><strong>Короткая</strong> стрелка — часы</li>
+        <li><strong>Длинная</strong> стрелка — минуты</li>
+      </ul>`,
+  },
+  {
+    title: "Минуты и секунды",
+    html: `
+      <ul class="clock-lesson-list">
+        <li>В <strong>1 часе</strong> = <strong>60 минут</strong></li>
+        <li>В <strong>1 минуте</strong> = <strong>60 секунд</strong></li>
+        <li>Когда длинная стрелка на <strong>12</strong> — ровно N часов</li>
+        <li>На <strong>3</strong> → :15 · на <strong>6</strong> → :30 · на <strong>9</strong> → :45</li>
+      </ul>
+      <div class="clock-lesson-row">
+        ${clockFaceSvg(2, 0, { size: 100 })}
+        ${clockFaceSvg(2, 15, { size: 100 })}
+        ${clockFaceSvg(2, 30, { size: 100 })}
+      </div>
+      <p class="units-note">2:00 · 2:15 · 2:30</p>`,
+  },
+  {
+    title: "12 и 24 часа",
+    html: `
+      <ul class="clock-lesson-list">
+        <li>Циферблат показывает только <strong>12</strong> часов — круг дважды за сутки</li>
+        <li>Цифровые часто считают <strong>0…23</strong> (сутки)</li>
+        <li><strong>00:00</strong> (или 24:00) — <strong>полночь</strong>, новые сутки</li>
+        <li><strong>12:00</strong> — <strong>полдень</strong></li>
+        <li>15:00 = <strong>3 часа дня</strong> · 20:00 = <strong>8 часов вечера</strong></li>
+      </ul>`,
+  },
+  {
+    title: "Утро · день · вечер · ночь",
+    html: `
+      <ul class="clock-lesson-list">
+        <li>🌅 <strong>утра</strong> — примерно 5…11</li>
+        <li>☀️ <strong>дня</strong> — примерно 12…16</li>
+        <li>🌇 <strong>вечера</strong> — примерно 17…22</li>
+        <li>🌙 <strong>ночи</strong> — 23…4</li>
+      </ul>
+      <p class="units-note">Одинаковые стрелки «7:30» могут быть утра или вечера — смотри часть суток.</p>`,
+  },
+  {
+    title: "Четверть и половина",
+    html: `
+      <ul class="clock-lesson-list">
+        <li><strong>Четверть пятого</strong> = 4:15</li>
+        <li><strong>Половина шестого</strong> = 5:30</li>
+        <li><strong>Без четверти семь</strong> = без пятнадцати семь = 6:45</li>
+      </ul>
+      <div class="clock-lesson-row">
+        ${clockFaceSvg(4, 15, { size: 100 })}
+        ${clockFaceSvg(5, 30, { size: 100 })}
+        ${clockFaceSvg(6, 45, { size: 100 })}
+      </div>
+      <p class="units-note">«N-го» значит: часовая уже ушла с (N−1) к N.</p>`,
+  },
+  {
+    title: "Готов к миссиям?",
+    html: `
+      <ol class="clock-lesson-list">
+        <li>Короткие вопросы про минуты и слова</li>
+        <li>Прочитай время по стрелкам (часы + минуты + утро/вечер)</li>
+        <li>Поставь стрелки сам по цифрам</li>
+      </ol>
+      <p class="units-note">Жми «Начать» — удачи!</p>`,
+  },
+];
 
 function generateMedium() {
   if (Math.random() < 0.5) {
@@ -5011,6 +5302,7 @@ function generateCodeProblem(level) {
 function generateProblem(level) {
   if (selectedMode === MODE_UNITS) {
     const cfg = levelCfg(level);
+    if (cfg.units === "clock") return generateClockProblem();
     if (cfg.units === "compare") return generateUnitsCompare();
     return generateUnitsConvert(cfg.convert || "compound10");
   }
@@ -5065,6 +5357,7 @@ function generateSharpRun() {
 function generateRun(level) {
   if (selectedMode === MODE_UNITS) {
     const cfg = levelCfg(level);
+    if (cfg.units === "clock") return generateClockRun();
     const items = [];
     const seen = new Set();
     let guard = 0;
@@ -5189,7 +5482,7 @@ function showScreen(name) {
     document.body.classList.remove("safe-fail", "safe-win");
   }
   if (name !== "game") {
-    document.body.classList.remove("type-mode", "choice-mode");
+    document.body.classList.remove("type-mode", "choice-mode", "clock-set-mode", "clock-read-mode");
   }
   if (name !== "kingdom" && kingdomTimerId) {
     clearInterval(kingdomTimerId);
@@ -6005,7 +6298,54 @@ function renderSessions() {
   els.sessionList.innerHTML = filtered.map((r) => historyItemHtml(r, true)).join("");
 }
 
+function showClockIntro() {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById("clockIntro");
+    const bodyEl = document.getElementById("clockIntroBody");
+    const titleEl = document.getElementById("clockIntroTitle");
+    const stepEl = document.getElementById("clockIntroStep");
+    const nextBtn = document.getElementById("clockIntroNext");
+    const skipBtn = document.getElementById("clockIntroSkip");
+    if (!overlay || !bodyEl || !nextBtn) {
+      resolve();
+      return;
+    }
+    let step = 0;
+    const done = () => {
+      overlay.classList.add("hidden");
+      overlay.setAttribute("aria-hidden", "true");
+      nextBtn.onclick = null;
+      if (skipBtn) skipBtn.onclick = null;
+      resolve();
+    };
+    const paint = () => {
+      const slide = CLOCK_LESSON[step];
+      if (!slide) {
+        done();
+        return;
+      }
+      if (stepEl) stepEl.textContent = `${step + 1} / ${CLOCK_LESSON.length}`;
+      if (titleEl) titleEl.textContent = slide.title;
+      bodyEl.innerHTML = slide.html;
+      nextBtn.textContent = step >= CLOCK_LESSON.length - 1 ? "Начать!" : "Далее →";
+    };
+    overlay.classList.remove("hidden");
+    overlay.setAttribute("aria-hidden", "false");
+    paint();
+    nextBtn.onclick = () => {
+      step += 1;
+      if (step >= CLOCK_LESSON.length) done();
+      else paint();
+    };
+    if (skipBtn) skipBtn.onclick = done;
+  });
+}
+
 function showUnitsIntro(level = selectedLevel) {
+  const cfgEarly = levelCfg(level);
+  if (cfgEarly.units === "clock" || cfgEarly.introKind === "clock") {
+    return showClockIntro();
+  }
   return new Promise((resolve) => {
     const overlay = document.getElementById("unitsIntro");
     const countEl = document.getElementById("unitsCountdown");
@@ -6440,9 +6780,96 @@ function stopTimer() {
   }
 }
 
+function ensureClockStage() {
+  let stage = document.getElementById("clockStage");
+  if (!stage && els.problemCard) {
+    stage = document.createElement("div");
+    stage.id = "clockStage";
+    stage.className = "clock-stage hidden";
+    els.problemCard.appendChild(stage);
+  }
+  return stage;
+}
+
+function paintClockStage(item) {
+  const stage = ensureClockStage();
+  if (!stage) return;
+  if (!item || (!item.clockRead && !item.clockSet && !item.clock)) {
+    stage.classList.add("hidden");
+    stage.innerHTML = "";
+    document.body.classList.remove("clock-set-mode", "clock-read-mode");
+    return;
+  }
+  if (item.clockRead && item.clock) {
+    document.body.classList.add("clock-read-mode");
+    document.body.classList.remove("clock-set-mode");
+    stage.classList.remove("hidden");
+    stage.innerHTML = `
+      <div class="clock-stage-face">${clockFaceSvg(item.clock.h12, item.clock.m, { size: 200 })}</div>
+      <div class="clock-period-pad" id="clockPeriodPad">
+        ${(item.periodChoices || []).map((p) =>
+          `<button type="button" class="clock-period-btn" data-period="${escapeHtml(p)}">${clockPeriodEmoji(p)} ${escapeHtml(p)}</button>`
+        ).join("")}
+      </div>`;
+    return;
+  }
+  if (item.clockSet && item.clock) {
+    document.body.classList.add("clock-set-mode");
+    document.body.classList.remove("clock-read-mode");
+    run.clockH = run.clockH != null ? run.clockH : 12;
+    run.clockM = run.clockM != null ? run.clockM : 0;
+    stage.classList.remove("hidden");
+    stage.innerHTML = `
+      <div class="clock-stage-face" id="clockSetFace">${clockFaceSvg(run.clockH, run.clockM, { size: 200, interactive: true })}</div>
+      <div class="clock-set-readout" id="clockSetReadout">${formatClockHm(run.clockH, run.clockM)}</div>
+      <div class="clock-set-pad">
+        <div class="clock-set-row">
+          <span>Часы</span>
+          <button type="button" class="key" data-clock="h-">−</button>
+          <button type="button" class="key" data-clock="h+">+</button>
+        </div>
+        <div class="clock-set-row">
+          <span>Минуты</span>
+          <button type="button" class="key" data-clock="m-">−</button>
+          <button type="button" class="key" data-clock="m+">+</button>
+        </div>
+      </div>`;
+    return;
+  }
+  stage.classList.add("hidden");
+  stage.innerHTML = "";
+  document.body.classList.remove("clock-set-mode", "clock-read-mode");
+}
+
+function refreshClockSetFace() {
+  const face = document.getElementById("clockSetFace");
+  const read = document.getElementById("clockSetReadout");
+  if (!run) return;
+  const h = ((run.clockH % 12) + 12) % 12 || 12;
+  const m = ((run.clockM % 60) + 60) % 60;
+  run.clockH = h;
+  run.clockM = m;
+  if (face) face.innerHTML = clockFaceSvg(h, m, { size: 200, interactive: true });
+  if (read) read.textContent = formatClockHm(h, m);
+}
+
+function nudgeClock(which) {
+  if (!run || run.done) return;
+  const item = run.items[run.index];
+  if (!item || !item.clockSet) return;
+  if (which === "h+") run.clockH = (run.clockH % 12) + 1;
+  if (which === "h-") run.clockH = run.clockH <= 1 ? 12 : run.clockH - 1;
+  if (which === "m+") run.clockM = (run.clockM + 5) % 60;
+  if (which === "m-") run.clockM = (run.clockM + 55) % 60;
+  refreshClockSetFace();
+}
+
 function renderProblem() {
   const item = run.items[run.index];
   run.input = "";
+  run.periodInput = "";
+  run.clockH = item.clockSet ? 12 : null;
+  run.clockM = item.clockSet ? 0 : null;
   if (item.multi && Array.isArray(item.parts)) {
     run.inputs = item.parts.map(() => "");
     run.field = 0;
@@ -6455,7 +6882,7 @@ function renderProblem() {
   const rawText = item.text || `${item.a}  ${item.op}  ${item.b}  =  ?`;
   els.problem.innerHTML = escapeHtml(rawText).replace(/\n/g, "<br>");
   els.problem.classList.toggle("units-cmp", Boolean(item.compare) || Boolean(item.choice) || (item.text && item.text.includes("\n")));
-  els.problem.classList.toggle("mul-long", Boolean(item.hint) || (item.text && item.text.length > 22) || Boolean(item.choice) || Boolean(item.multi));
+  els.problem.classList.toggle("mul-long", Boolean(item.hint) || (item.text && item.text.length > 22) || Boolean(item.choice) || Boolean(item.multi) || Boolean(item.clockRead) || Boolean(item.clockSet));
   let hintEl = document.getElementById("mulHint");
   if (!hintEl && els.problemCard) {
     hintEl = document.createElement("div");
@@ -6495,10 +6922,26 @@ function renderProblem() {
   document.body.classList.toggle("type-mode", Boolean(item.typeText));
   ensureLetterPad(item);
   setupAnswerBox(item);
+  paintClockStage(item);
+  if (item.clockSet) {
+    // answer box unused — стрелки сами ответ
+    if (els.answerBox) {
+      els.answerBox.classList.add("hidden");
+    }
+  } else if (els.answerBox) {
+    els.answerBox.classList.remove("hidden");
+  }
   els.problemCard.classList.remove("pop");
   void els.problemCard.offsetWidth;
   els.problemCard.classList.add("pop");
   drawAnswer();
+  syncClockPeriodButtons();
+}
+
+function syncClockPeriodButtons() {
+  document.querySelectorAll("#clockPeriodPad .clock-period-btn").forEach((b) => {
+    b.classList.toggle("picked", b.dataset.period === run.periodInput);
+  });
 }
 
 function ensureLetterPad(item) {
@@ -6642,17 +7085,39 @@ function formatMultiGiven(item, inputs) {
 
 function captureCurrent(emptyMark) {
   const item = run.items[run.index];
+  if (item.clockSet && item.clock) {
+    const h = run.clockH;
+    const m = run.clockM;
+    const ok = h === item.clock.h12 && m === item.clock.m;
+    const given = (h == null || m == null) ? emptyMark : formatClockHm(h, m);
+    run.answers.push({
+      ...item,
+      given,
+      ok,
+    });
+    return;
+  }
   if (item.multi && Array.isArray(item.parts)) {
     const inputs = (run.inputs || []).map((v) => (v == null ? "" : String(v).trim()));
-    const ok = item.parts.every((p, i) => {
+    const numsOk = item.parts.every((p, i) => {
       const typed = inputs[i];
       if (typed === "") return false;
       const n = Number(typed);
       return Number.isFinite(n) && n === p.answer;
     });
-    const given = inputs.every((v) => v === "")
+    let ok = numsOk;
+    let given = inputs.every((v) => v === "")
       ? emptyMark
       : formatMultiGiven(item, inputs);
+    if (item.clockRead && item.period) {
+      const periodOk = run.periodInput === item.period;
+      ok = numsOk && periodOk;
+      if (given !== emptyMark) {
+        given = `${given} ${run.periodInput || "?"}`.trim();
+      } else if (run.periodInput) {
+        given = `? ${run.periodInput}`;
+      }
+    }
     run.answers.push({
       ...item,
       given,
@@ -9589,6 +10054,19 @@ function onChoicePadClick(e) {
     b.classList.toggle("picked", b === btn);
   });
 }
+
+document.addEventListener("click", (e) => {
+  const periodBtn = e.target.closest("#clockPeriodPad [data-period]");
+  if (periodBtn && run && !run.done) {
+    run.periodInput = periodBtn.dataset.period || "";
+    syncClockPeriodButtons();
+    return;
+  }
+  const clockBtn = e.target.closest("[data-clock]");
+  if (clockBtn && run && !run.done) {
+    nudgeClock(clockBtn.dataset.clock);
+  }
+});
 
 document.getElementById("boardModeFilters").addEventListener("click", (e) => {
   const btn = e.target.closest("[data-board-mode]");

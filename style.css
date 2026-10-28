@@ -6068,3 +6068,117 @@ body.ops-on .toast-stack {
 @media (min-width: 921px) and (pointer: fine) {
   .ops-softkb { display: none !important; }
 }
+
+/* ЧЧ „асы (ћеры Ј уровень 6) ЧЧ */
+.clock-intro-card { max-width: 420px; }
+.clock-intro-step {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: #8a8498;
+  letter-spacing: 0.04em;
+}
+.clock-intro-body {
+  margin: 10px 0 14px;
+  text-align: center;
+}
+.clock-intro-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+.clock-lesson-lead {
+  margin: 0 0 10px;
+  font-size: 15px;
+  line-height: 1.45;
+  color: #3d3a4a;
+}
+.clock-lesson-list {
+  text-align: left;
+  margin: 8px auto 12px;
+  padding-left: 1.2em;
+  max-width: 340px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #3d3a4a;
+}
+.clock-lesson-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin: 8px 0;
+}
+.clock-face {
+  display: inline-block;
+  vertical-align: middle;
+  filter: drop-shadow(0 4px 8px rgba(61, 58, 74, 0.12));
+}
+.clock-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 4px;
+}
+.clock-stage.hidden { display: none !important; }
+.clock-stage-face { line-height: 0; }
+.clock-period-pad {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  width: min(100%, 320px);
+}
+.clock-period-btn {
+  font: inherit;
+  font-size: 14px;
+  padding: 10px 8px;
+  border-radius: 12px;
+  border: 2px solid #d8d2e4;
+  background: #fff;
+  color: #3d3a4a;
+  cursor: pointer;
+  box-shadow: 0 3px 0 rgba(61, 58, 74, 0.08);
+}
+.clock-period-btn.picked {
+  border-color: #6c5ce7;
+  background: #6c5ce7;
+  color: #fff;
+  box-shadow: 0 3px 0 #4b3fb0;
+}
+.clock-set-readout {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #5b4a8a;
+}
+.clock-set-pad {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(100%, 280px);
+}
+.clock-set-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #3d3a4a;
+}
+.clock-set-row .key {
+  min-width: 52px;
+}
+body.clock-set-mode .pad .key:not(.next):not([data-key="back"]) {
+  visibility: hidden;
+  pointer-events: none;
+}
+body.clock-set-mode #answerBox.hidden,
+#answerBox.hidden {
+  display: none !important;
+}
+body.clock-read-mode .pad .key.next {
+  /* leave numpad for hours/minutes */
+}

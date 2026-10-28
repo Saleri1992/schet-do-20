@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=65" />
+  <link rel="stylesheet" href="style.css?v=66" />
 </head>
 <body data-theme="easy">
   <div class="sky">
@@ -450,6 +450,19 @@
     </div>
   </div>
 
+  <div class="units-intro clock-intro hidden" id="clockIntro" aria-hidden="true">
+    <div class="units-intro-card clock-intro-card">
+      <p class="clock-intro-step" id="clockIntroStep">1 / 6</p>
+      <h2 id="clockIntroTitle">Часы</h2>
+      <div class="clock-intro-body" id="clockIntroBody"></div>
+      <div class="clock-intro-actions">
+        <button type="button" class="btn ghost-btn" id="clockIntroSkip">Пропустить обучение</button>
+        <button type="button" class="btn primary" id="clockIntroNext">Далее →</button>
+      </div>
+      <p class="units-note">Время обучения в зачёт не идёт.</p>
+    </div>
+  </div>
+
   <div class="units-intro mul-intro hidden" id="mulIntro" aria-hidden="true">
     <div class="units-intro-card">
       <h2>Что такое умножение?</h2>
@@ -761,7 +774,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=45"></script>
+  <script src="app.js?v=46"></script>
   <script src="ops.js?v=14"></script>
   <script src="ops-story.js?v=15"></script>
   <script src="ops-cloud.js?v=1"></script>
