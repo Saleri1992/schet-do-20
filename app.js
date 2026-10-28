@@ -4015,7 +4015,8 @@ function isLevelOpen(id) {
   const max = modeInfo.maxLevel || 5;
   if (id < 1 || id > max) return false;
   if (selectedMode === MODE_UNITS) {
-    if (id === 1) return modeProgress(MODE_BASIC, 3) || modeProgress(MODE_CHAIN, 3);
+    // «Часы» — боковая ветка: доступна сразу, как только открыты Меры
+    if (id === 1 || id === 6) return modeProgress(MODE_BASIC, 3) || modeProgress(MODE_CHAIN, 3);
     return hasPerfect(id - 1);
   }
   if (selectedMode === MODE_MUL || selectedMode === MODE_DIV || selectedMode === MODE_ENG || selectedMode === MODE_CODE) {
